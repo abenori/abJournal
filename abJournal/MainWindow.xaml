@@ -1,0 +1,200 @@
+﻿<Window x:Class="abJournal.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Height="auto" Width="auto"
+        Stylus.IsTapFeedbackEnabled="False" Stylus.IsPressAndHoldEnabled="False"
+        Stylus.IsTouchFeedbackEnabled="False" Stylus.IsFlicksEnabled="False"
+        SizeChanged="Window_SizeChanged"
+        Closing="Window_Closing" Loaded="Window_Loaded"
+        xmlns:local="clr-namespace:abJournal" xmlns:ablib="clr-namespace:ablib"
+        FocusManager.FocusedElement="{Binding RelativeSource={x:Static RelativeSource.Self},Mode=OneTime}"
+        Title="{Binding Path=WindowTitle,Mode=OneWay}"
+        >
+    <Window.CommandBindings>
+        <CommandBinding Command="New" Executed="NewCommandExecuted"/>
+        <CommandBinding Command="Save" Executed="SaveCommandExecuted"/>
+        <CommandBinding Command="SaveAs" Executed="SaveAsCommandExecuted"/>
+        <CommandBinding Command="Open" Executed="OpenCommandExecuted"/>
+        <CommandBinding Command="Delete" Executed="DeleteCommandExecuted"/>
+        <CommandBinding Command="Print" Executed="PrintCommandExecuted"/>
+        <CommandBinding Command="Close" Executed="CloseCommandExecuted"/>
+        <CommandBinding Command="SelectAll" Executed="SelectAllCommandExecuted"/>
+        <CommandBinding Command="Paste" Executed="PasteCommandExecuted"/>
+        <CommandBinding Command="Undo" Executed="UndoCommandExecuted" CanExecute="UndoCommandCanExecute"/>
+        <CommandBinding Command="Redo" Executed="RedoCommandExecuted" CanExecute="RedoCommandCanExecute"/>
+        <CommandBinding Command="Copy" Executed="CopyCommandExecuted"/>
+        <CommandBinding Command="Cut" Executed="CutCommandExecuted"/>
+        <CommandBinding Command="NextPage" Executed="NextPageExecuted"/>
+        <CommandBinding Command="PreviousPage" Executed="PreviousPageExecuted"/>
+        <CommandBinding Command="LastPage" Executed="LastPageExecuted"/>
+        <CommandBinding Command="FirstPage" Executed="FirstPageExecuted"/>
+        <CommandBinding Command="ScrollPageDown" Executed="ScrollPageDownExecuted"/>
+        <CommandBinding Command="ScrollPageUp" Executed="ScrollPageUpExecuted"/>
+        <CommandBinding Command="MoveDown" Executed="MoveDownExecuted"/>
+        <CommandBinding Command="MoveUp" Executed="MoveUpExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.AddPage}" Executed="AddPageCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.InsertPage}" Executed="InsertPageCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.DeletePage}" Executed="DeletePageCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.FullScreen}" Executed="FullScreenCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.PenSetting}" Executed="PenSettingCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.PageSetting}" Executed="PageSettingCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.SystemSetting}" Executed="SystemSettingCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToPen}" Executed="ModeChangeToPenCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToEraser}" Executed="ModeChangeToEraserCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToSelection}" Executed="ModeChangeToSelectionCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ClearSelection}" Executed="ClearSelectionCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.OpenHistory}" Executed="OpenHistoryCommandExecuted"/>
+    </Window.CommandBindings>
+    <Window.Resources>
+        <local:ColorBrushConverter x:Key="ColorBrushConverter"/>
+        <local:PlusOneConverter x:Key="PlusOneConverter"/>
+        <local:IsInkingModeConverter x:Key="IsInkingModeConverter"/>
+        <local:IsErasingModeConverter x:Key="IsErasingModeConverter"/>
+        <local:MakeDashArrayConverter x:Key="MakeDashArrayConverter"/>
+        <ContextMenu x:Key="CanvasCollectionMenu">
+            <MenuItem Header="削除" Command="Delete"/>
+            <MenuItem Header="コピー" Command="Copy"/>
+            <MenuItem Header="切り取り" Command="Cut"/>
+            <MenuItem Header="貼り付け" Command="Paste"/>
+            <MenuItem Header="新しいページ" Command="{x:Static local:MainWindow.AddPage}"/>
+            <MenuItem Header="選択を解除" Command="{x:Static local:MainWindow.ClearSelection}"/>
+        </ContextMenu>
+    </Window.Resources>
+    <DockPanel x:Name="MainPanel" Height="Auto" Width="Auto">
+        <DockPanel DockPanel.Dock="Top" Panel.ZIndex="100" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
+        <Menu DockPanel.Dock="Top">
+                <MenuItem Header="ファイル(_F)">
+                    <MenuItem Header="新しいノート(_N)" Command="New"/>
+                    <MenuItem Header="開く(_O)" Command="Open"/>
+                    <MenuItem Header="保存(_S)" Command="Save"/>
+                    <MenuItem Header="名前をつけて保存(_A)" Command="SaveAs"/>
+                    <MenuItem Header="印刷(_P)" Command="Print"/>
+                    <MenuItem Header="履歴(_L)" ItemsSource="{Binding History}" Command="{x:Static local:MainWindow.OpenHistory}">
+                        <MenuItem.ItemContainerStyle>
+                            <Style TargetType="{x:Type MenuItem}">
+                                <Setter Property="Command" Value="{x:Static local:MainWindow.OpenHistory}"/>
+                                <Setter Property="CommandParameter" Value="{Binding}"/>
+                            </Style>
+                        </MenuItem.ItemContainerStyle>
+                    </MenuItem>
+                    <MenuItem Header="閉じる(_X)" Command="Close"/>
+                </MenuItem>
+                <MenuItem Header="編集(_E)">
+                <MenuItem Header="元に戻す(_U)" Command="Undo"/>
+                <MenuItem Header="やり直し(_R)" Command="Redo"/>
+                <MenuItem Header="削除(_D)" Command="Delete"/>
+                <MenuItem Header="コピー(_C)" Command="Copy"/>
+                <MenuItem Header="切り取り(_T)" Command="Cut"/>
+                <MenuItem Header="貼り付け(_P)" Command="Paste"/>
+                <MenuItem Header="新しいページ" Command="{x:Static local:MainWindow.AddPage}"/>
+                <MenuItem Header="ページを挿入" Command="{x:Static local:MainWindow.InsertPage}"/>
+                <MenuItem Header="ページを削除" Command="{x:Static local:MainWindow.DeletePage}"/>
+                </MenuItem>
+            <MenuItem Header="ツール(_T)">
+                <MenuItem Header="鉛筆(_P)" Command="{x:Static local:MainWindow.ModeChangeToPen}"/>
+                <MenuItem Header="消しゴム(_E)" Command="{x:Static local:MainWindow.ModeChangeToEraser}"/>
+                <MenuItem Header="選択" Command="{x:Static local:MainWindow.ModeChangeToSelection}"/>
+                <MenuItem Header="ペン設定" Command="{x:Static local:MainWindow.PenSetting}"/>
+                <MenuItem Header="ページ設定" Command="{x:Static local:MainWindow.PageSetting}"/>
+                    <MenuItem Header="システム設定" Command="{x:Static local:MainWindow.SystemSetting}"/>
+                </MenuItem>
+            <MenuItem Header="表示(_V)">
+                <MenuItem Header="全画面(_F)" Command="{x:Static local:MainWindow.FullScreen}"/>
+            </MenuItem>
+        </Menu>
+            <ToolBar DockPanel.Dock="Top">
+                <Button Command="Save" ToolTip="保存">
+                <Image Height="18" Source="icon/saveHS.png"/>
+            </Button>
+            <Button Command="Undo" ToolTip="元に戻す">
+                <Image Height="18" Source="icon/Edit_UndoHS.png"/>
+            </Button>
+            <Button Command="Redo" ToolTip="やり直し">
+                <Image Height="18" Source="icon/Edit_RedoHS.png"/>
+            </Button>
+            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
+                <Image Height="18" Source="icon/Pen-icon.png"/>
+            </ToggleButton>
+            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
+                <Image Height="18" Source="icon/Eraser-icon.png"/>
+            </ToggleButton>
+            <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン1</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[0]}" Stroke="{Binding PenColor[0],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[0],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン2</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[1]}" Stroke="{Binding PenColor[1],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[1],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン3</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[2]}" Stroke="{Binding PenColor[2],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[2],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン4</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[3]}" Stroke="{Binding PenColor[3],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[3],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン5</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[4]}" Stroke="{Binding PenColor[4],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[4],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン6</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[5]}" Stroke="{Binding PenColor[5],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[5],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン7</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[6]}" Stroke="{Binding PenColor[6],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[6],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+                <ComboBoxItem>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock>ぺン8</TextBlock>
+                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[7]}" Stroke="{Binding PenColor[7],Converter={StaticResource ColorBrushConverter}}"  StrokeDashArray="{Binding PenDashed[7],Converter={StaticResource MakeDashArrayConverter}}"/>
+                    </StackPanel>
+                </ComboBoxItem>
+            </ComboBox>
+            <ComboBox Width="70" SelectedIndex="{Binding ScaleComboBoxIndex}">
+                <ComboBoxItem>ページ幅</ComboBoxItem>
+                <ComboBoxItem>50%</ComboBoxItem>
+                <ComboBoxItem>70%</ComboBoxItem>
+                <ComboBoxItem>100%</ComboBoxItem>
+                <ComboBoxItem>150%</ComboBoxItem>
+                <ComboBoxItem>200%</ComboBoxItem>
+            </ComboBox>
+            <Button Command="{x:Static local:MainWindow.AddPage}" ToolTip="新しいページ">
+                <Image Height="18" Source="icon/AddMark_10580.png"/>
+            </Button>
+            <ToggleButton Command="{x:Static local:MainWindow.FullScreen}" ToolTip="全画面切り替え" x:Name="FullScreenButton">
+                <Image Height="18" Source="icon/FullScreenHS.png"/>
+            </ToggleButton>
+            <TextBlock Margin="5"><TextBlock Text="{Binding MainCanvas.CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding MainCanvas.Count,Mode=OneWay}"/>（ページ）</TextBlock>
+        </ToolBar>
+        </DockPanel>
+        <ablib:InkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}"
+                                   AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop"
+                                   Focusable="True"
+                                   />
+        <!--
+            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="10" Content="Copy" Click="Button_Click"/>
+            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="30" Content="Paster" Click="Button_Click_1"/>
+            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="50" Content="Select" Click="Button_Click_2"/>
+            <InkCanvas Width="300" Height="300" x:Name="TestInkCanvas"></InkCanvas>
+        <InkPresenter Width="30" Height="30" StylusDown="InkPresenter_StylusDown" MouseLeftButtonDown="InkPresenter_MouseLeftButtonDown" Panel.ZIndex="100"></InkPresenter>
+            -->
+    </DockPanel>
+</Window>

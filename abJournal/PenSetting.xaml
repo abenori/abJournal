@@ -1,0 +1,107 @@
+﻿<Window x:Class="abJournal.PenSettingDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="ペン設定" Height="300" Width="300"
+        xmlns:local="clr-namespace:abJournal">
+    <Window.Resources>
+        <local:ColorBrushConverter x:Key="ColorBrushConverter"/>
+        <local:ThicknessComboBoxSelConvereter x:Key="ThicknessComboBoxSelConvereter"/>
+    </Window.Resources>
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="7*"/>
+            <RowDefinition Height="1*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <Grid Grid.Row="0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.7*"/>
+            <ColumnDefinition Width="0.8*"/>
+            <ColumnDefinition Width="0.3*"/>
+            <ColumnDefinition Width="0.4*"/>
+            <ColumnDefinition Width="0.6*"/>
+            <ColumnDefinition Width="0.6*"/>
+        </Grid.ColumnDefinitions>
+            <Label Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="5" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+            <Label Grid.Column="1" Grid.Row="7" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
+
+
+            <Button Grid.Column="2" Grid.Row="0" Click="Pen0Color_Click" x:Name="Pen0ColorButton" Background="{Binding PenColor[0],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="1" Click="Pen1Color_Click" x:Name="Pen1ColorButton" Background="{Binding PenColor[1],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="2" Click="Pen2Color_Click" x:Name="Pen2ColorButton" Background="{Binding PenColor[2],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="3" Click="Pen3Color_Click" x:Name="Pen3ColorButton" Background="{Binding PenColor[3],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="4" Click="Pen4Color_Click" x:Name="Pen4ColorButton" Background="{Binding PenColor[4],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="5" Click="Pen5Color_Click" x:Name="Pen5ColorButton" Background="{Binding PenColor[5],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="6" Click="Pen6Color_Click" x:Name="Pen6ColorButton" Background="{Binding PenColor[6],Converter={StaticResource ColorBrushConverter}}"/>
+            <Button Grid.Column="2" Grid.Row="7" Click="Pen7Color_Click" x:Name="Pen7ColorButton" Background="{Binding PenColor[7],Converter={StaticResource ColorBrushConverter}}"/>
+
+            <Label Grid.Column="0" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center">ペン1</Label>
+            <Label Grid.Column="0" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center">ペン2</Label>
+            <Label Grid.Column="0" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center">ペン3</Label>
+            <Label Grid.Column="0" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center">ペン4</Label>
+            <Label Grid.Column="0" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center">ペン5</Label>
+            <Label Grid.Column="0" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center">ペン6</Label>
+            <Label Grid.Column="0" Grid.Row="6" HorizontalAlignment="Center" VerticalAlignment="Center">ペン7</Label>
+            <Label Grid.Column="0" Grid.Row="7" HorizontalAlignment="Center" VerticalAlignment="Center">ペン8</Label>
+
+            <Label Grid.Column="3" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="3" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="4" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="5" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="6" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+            <Label Grid.Column="3" Grid.Row="7" HorizontalAlignment="Right" VerticalAlignment="Center">太さ</Label>
+
+            <ComboBox Grid.Column="4" Grid.Row="0" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen0Thickness_ComboBox" SelectedIndex="{Binding PenThickness[0],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="1" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen1Thickness_ComboBox" SelectedIndex="{Binding PenThickness[1],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="2" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen2Thickness_ComboBox" SelectedIndex="{Binding PenThickness[2],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="3" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen3Thickness_ComboBox" SelectedIndex="{Binding PenThickness[3],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="4" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen4Thickness_ComboBox" SelectedIndex="{Binding PenThickness[4],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="5" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen5Thickness_ComboBox" SelectedIndex="{Binding PenThickness[5],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="6" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen6Thickness_ComboBox" SelectedIndex="{Binding PenThickness[6],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+            <ComboBox Grid.Column="4" Grid.Row="7" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen7Thickness_ComboBox" SelectedIndex="{Binding PenThickness[7],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
+
+            <CheckBox Grid.Column="5" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[0],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[1],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[2],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[3],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[4],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[5],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="6" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[6],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="7" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[7],Mode=TwoWay}">破線</CheckBox>
+        </Grid>
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+                <ColumnDefinition Width="1*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Row="5" Grid.Column="1" Click="OK_Click">OK</Button>
+            <Button Grid.Row="5" Grid.Column="2" Click="Cancel_Click" IsCancel="True">Cancel</Button>
+        </Grid>
+    </Grid>
+</Window>
