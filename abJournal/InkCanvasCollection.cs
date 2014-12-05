@@ -338,17 +338,24 @@ namespace ablib {
 
         Rect SelectedRect;
         void SelectedRectTracker_TrackerEnd(object sender, RectTracker.TrackerEventArgs rect) {
-            CanvasContainingSelection.InkData.MoveSelected(SelectedRect, rect.Rect);
+            double y = Canvas.GetTop(CanvasContainingSelection);
+            Rect hoseiRect = new Rect(rect.Rect.X, rect.Rect.Y - y, rect.Rect.Width, rect.Rect.Height);
+            SelectedRect = hoseiRect;
+            CanvasContainingSelection.InkData.MoveSelected(SelectedRect, hoseiRect);
             CanvasContainingSelection.InkData.EndUndoGroup();
         }
 
         void SelectedRectTracker_TrackerSizeChanged(object sender, RectTracker.TrackerEventArgs rect) {
-            CanvasContainingSelection.InkData.MoveSelected(SelectedRect, rect.Rect);
-            SelectedRect = rect.Rect;
+            double y = Canvas.GetTop(CanvasContainingSelection);
+            Rect hoseiRect = new Rect(rect.Rect.X, rect.Rect.Y - y, rect.Rect.Width, rect.Rect.Height);
+            CanvasContainingSelection.InkData.MoveSelected(SelectedRect, hoseiRect);
+            SelectedRect = hoseiRect;
         }
 
         void SelectedRectTracker_TrackerStart(object sender, RectTracker.TrackerEventArgs rect) {
-            SelectedRect = rect.Rect;
+            double y = Canvas.GetTop(CanvasContainingSelection);
+            Rect hoseiRect = new Rect(rect.Rect.X, rect.Rect.Y - y, rect.Rect.Width, rect.Rect.Height);
+            SelectedRect = hoseiRect;
             CanvasContainingSelection.InkData.BeginUndoGroup();
         }
 

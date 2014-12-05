@@ -610,6 +610,7 @@ namespace ablib {
         #endregion
 
         public void Paste() {
+            ClearSelected();
             Point basePoint = new Point(20, 20);
             Matrix shift = new Matrix(1, 0, 0, 1, basePoint.X, basePoint.Y);
             DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
