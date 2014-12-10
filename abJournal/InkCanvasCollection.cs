@@ -319,7 +319,9 @@ namespace ablib {
                     foreach(var c in CanvasCollection) c.IsEnabled = true;
                 }
             } else {
-                if(CanvasContainingSelection != null && can != CanvasContainingSelection) CanvasContainingSelection.ClearSelected();
+                if(CanvasContainingSelection != null && can != CanvasContainingSelection) {
+                    CanvasContainingSelection.ClearSelected();
+                }
                 CanvasContainingSelection = can;
                 // 縦横10増やして返す
                 if(SelectedRectTracker.Mode == RectTracker.TrackMode.None) {
@@ -336,6 +338,7 @@ namespace ablib {
             }
         }
 
+        // 前回のRectTrackerのRectを保存しておく．Y座標は現在のCanvasのトップの分をひいておく．
         Rect SelectedRect;
         void SelectedRectTracker_TrackerEnd(object sender, RectTracker.TrackerEventArgs rect) {
             Rect hoseiRect = new Rect(rect.Rect.X - Canvas.GetLeft(CanvasContainingSelection), rect.Rect.Y - Canvas.GetTop(CanvasContainingSelection), rect.Rect.Width, rect.Rect.Height);
@@ -415,6 +418,7 @@ namespace ablib {
                     CanvasCollection[index].InkData.AddStroke(selstroke);
                     CanvasCollection[index].InkData.MoveSelected(new Rect(0, 0, 1, 1), new Rect(0, shifty, 1, 1));
                     CanvasCollection[index].InkData.BeginUndoGroup();
+                    SelectedRect = new Rect(SelectedRect.X, SelectedRect.Y + shifty, SelectedRect.Width, SelectedRect.Height);
                 }
             }
         }
