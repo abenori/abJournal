@@ -63,9 +63,9 @@ namespace abJournal.Properties {
         /// <summary>
         ///   型 System.Drawing.Bitmap のローカライズされたリソースを検索します。
         /// </summary>
-        public static System.Drawing.Bitmap Eraser_cursor {
+        public static System.Drawing.Bitmap eraser_cursor {
             get {
-                object obj = ResourceManager.GetObject("Eraser_cursor", resourceCulture);
+                object obj = ResourceManager.GetObject("eraser_cursor", resourceCulture);
                 return ((System.Drawing.Bitmap)(obj));
             }
         }

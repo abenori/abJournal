@@ -154,16 +154,6 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="icon\saveHS.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="icon\Edit_RedoHS.png" />
-    <Resource Include="icon\Edit_UndoHS.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="icon\AddMark_10580.png" />
-  </ItemGroup>
-  <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.5">
       <Visible>False</Visible>
       <ProductName>Microsoft .NET Framework 4.5 %28x86 および x64%29</ProductName>
@@ -181,20 +171,29 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="icon\FullScreenHS.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="icon\Eraser-icon.png" />
-    <Resource Include="icon\Pen-icon.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Resources\Eraser_cursor.bmp" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="icon\abJournal.png" />
   </ItemGroup>
   <ItemGroup>
     <Resource Include="abJournal.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\redo.png" />
+    <Resource Include="icon\save.png" />
+    <Resource Include="icon\undo.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\AddPage.png" />
+    <Resource Include="icon\eraser.png" />
+    <Resource Include="icon\pencil.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\eraser_cursor.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\FullScreen.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

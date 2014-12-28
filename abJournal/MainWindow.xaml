@@ -104,19 +104,19 @@
         </Menu>
             <ToolBar DockPanel.Dock="Top">
                 <Button Command="Save" ToolTip="保存">
-                <Image Height="18" Source="icon/saveHS.png"/>
-            </Button>
-            <Button Command="Undo" ToolTip="元に戻す">
-                <Image Height="18" Source="icon/Edit_UndoHS.png"/>
+                    <Image Height="18" Source="icon/save.png" />
+                </Button>
+                <Button Command="Undo" ToolTip="元に戻す">
+                <Image Height="18" Source="icon/undo.png" />
             </Button>
             <Button Command="Redo" ToolTip="やり直し">
-                <Image Height="18" Source="icon/Edit_RedoHS.png"/>
+                <Image Height="18" Source="icon/redo.png" />
             </Button>
             <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
-                <Image Height="18" Source="icon/Pen-icon.png"/>
-            </ToggleButton>
-            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
-                <Image Height="18" Source="icon/Eraser-icon.png"/>
+                    <Image Height="18" Source="icon/pencil.png" />
+                </ToggleButton>
+                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
+                <Image Height="18" Source="icon/eraser.png"/>
             </ToggleButton>
             <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
                 <ComboBoxItem>
@@ -177,10 +177,10 @@
                 <ComboBoxItem>200%</ComboBoxItem>
             </ComboBox>
             <Button Command="{x:Static local:MainWindow.AddPage}" ToolTip="新しいページ">
-                <Image Height="18" Source="icon/AddMark_10580.png"/>
+                <Image Height="18" Source="icon/AddPage.png"/>
             </Button>
             <ToggleButton Command="{x:Static local:MainWindow.FullScreen}" ToolTip="全画面切り替え" x:Name="FullScreenButton">
-                <Image Height="18" Source="icon/FullScreenHS.png"/>
+                <Image Height="18" Source="icon/FullScreen.png"/>
             </ToggleButton>
             <TextBlock Margin="5"><TextBlock Text="{Binding MainCanvas.CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding MainCanvas.Count,Mode=OneWay}"/>（ページ）</TextBlock>
         </ToolBar>

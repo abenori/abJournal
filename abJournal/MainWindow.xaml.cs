@@ -138,7 +138,6 @@ namespace abJournal {
                 } else return false;
             });
             FileOpen(files);
-
         }
 
         ~MainWindow() {

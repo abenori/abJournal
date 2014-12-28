@@ -148,7 +148,7 @@ namespace ablib {
             return c;
         }
         // 消しゴムカーソル
-        Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.Eraser_cursor, new Point(2, 31), new Point(0, 0));
+        Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
         void SetCursor() {
             switch(Mode) {
