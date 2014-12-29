@@ -6,6 +6,9 @@
 *.user
 *.sln.docstates
 
+icon/old/
+
+
 # Build results
 
 [Dd]ebug/
