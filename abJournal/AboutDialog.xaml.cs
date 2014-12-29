@@ -26,7 +26,7 @@ namespace abJournal {
         }
         public System.Diagnostics.FileVersionInfo fileVersion { get; set; }
         public System.IO.FileInfo fileInfo { get; set; }
-        public string createTime { get { return fileInfo.CreationTime.ToString(); } }
+        public string createTime { get { return fileInfo.LastWriteTime.ToString(); } }
 
 
         private void OK_Click(object sender, RoutedEventArgs e) {

@@ -14,7 +14,7 @@
                 <TextBlock Text="{Binding fileVersion.ProductName}"/>
                 Version: <TextBlock Text="{Binding fileVersion.ProductVersion}"/>
                     <LineBreak/>
-                Build
+                LastWrite: 
                     <TextBlock Text="{Binding createTime}"/>
                 </TextBlock.Inlines>
         </TextBlock>
