@@ -103,20 +103,46 @@
             </MenuItem>
         </Menu>
             <ToolBar DockPanel.Dock="Top">
-                <Button Command="Save" ToolTip="保存">
-                    <Image Height="18" Source="icon/save.png" />
-                </Button>
-                <Button Command="Undo" ToolTip="元に戻す">
-                <Image Height="18" Source="icon/undo.png" />
+                <ToolBar.Resources>
+                    <Style x:Key="UndoButtonStyle" TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Image x:Name="UndoImage" Height="18" Source="icon/undo.png"/>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter TargetName="UndoImage" Property="Source" Value="icon/undo_gray.png"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                    <Style x:Key="RedoButtonStyle" TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Image x:Name="RedoImage" Height="18" Source="icon/redo.png"/>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter TargetName="RedoImage" Property="Source" Value="icon/redo_gray.png"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ToolBar.Resources>
+            <Button Command="Save" ToolTip="保存">
+                <Image Height="18" Source="icon/save.png" />
             </Button>
-            <Button Command="Redo" ToolTip="やり直し">
-                <Image Height="18" Source="icon/redo.png" />
-            </Button>
+            <Button Command="Undo" ToolTip="元に戻す" Style="{StaticResource UndoButtonStyle}" Margin="0 0 3 0"/>
+            <Button Command="Redo" ToolTip="やり直し" Style="{StaticResource RedoButtonStyle}"/>
             <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
-                    <Image Height="18" Source="icon/pencil.png" />
-                </ToggleButton>
-                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
-                <Image Height="18" Source="icon/eraser.png"/>
+                <Image Height="18" Source="icon/pencil.png" />
+            </ToggleButton>
+            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
+            <Image Height="18" Source="icon/eraser.png"/>
             </ToggleButton>
             <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
                 <ComboBoxItem>
@@ -189,12 +215,5 @@
                                    AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop"
                                    Focusable="True"
                                    />
-        <!--
-            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="10" Content="Copy" Click="Button_Click"/>
-            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="30" Content="Paster" Click="Button_Click_1"/>
-            <Button Height="20" Width="100" HorizontalAlignment="Right" Canvas.Left="333" Canvas.Top="50" Content="Select" Click="Button_Click_2"/>
-            <InkCanvas Width="300" Height="300" x:Name="TestInkCanvas"></InkCanvas>
-        <InkPresenter Width="30" Height="30" StylusDown="InkPresenter_StylusDown" MouseLeftButtonDown="InkPresenter_MouseLeftButtonDown" Panel.ZIndex="100"></InkPresenter>
-            -->
     </DockPanel>
 </Window>

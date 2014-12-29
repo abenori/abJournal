@@ -13,6 +13,7 @@
     <FileAlignment>512</FileAlignment>
     <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
     <WarningLevel>4</WarningLevel>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
     <PublishUrl>publish\</PublishUrl>
     <Install>true</Install>
     <InstallFrom>Disk</InstallFrom>
@@ -25,7 +26,6 @@
     <MapFileExtensions>true</MapFileExtensions>
     <ApplicationRevision>0</ApplicationRevision>
     <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
     <UseApplicationTrust>false</UseApplicationTrust>
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
@@ -53,7 +53,7 @@
     </StartupObject>
   </PropertyGroup>
   <PropertyGroup>
-    <ApplicationIcon>abJournal.ico</ApplicationIcon>
+    <ApplicationIcon>abJournal32.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup>
     <NoWin32Manifest>true</NoWin32Manifest>
@@ -149,6 +149,7 @@
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
     </None>
     <AppDesigner Include="Properties\" />
+    <None Include="README.md" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -171,13 +172,8 @@
     </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
-    <Resource Include="icon\abJournal.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <Resource Include="abJournal.ico" />
-  </ItemGroup>
-  <ItemGroup>
     <Resource Include="icon\redo.png" />
+    <Resource Include="icon\save.bmp" />
     <Resource Include="icon\save.png" />
     <Resource Include="icon\undo.png" />
   </ItemGroup>
@@ -194,6 +190,31 @@
   </ItemGroup>
   <ItemGroup>
     <Resource Include="icon\FullScreen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="abJournal32.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\abJournal16.bmp" />
+    <Resource Include="icon\abJournal255.bmp" />
+    <Resource Include="icon\abJournal256.bmp" />
+    <Resource Include="icon\abJournal256.png" />
+    <Resource Include="icon\abJournal32.bmp" />
+    <Resource Include="icon\abJournal48.bmp" />
+    <Resource Include="icon\AddPage.bmp" />
+    <Resource Include="icon\eraser.bmp" />
+    <Resource Include="icon\FullScreen.bmp" />
+    <Resource Include="icon\pencil.bmp" />
+    <Resource Include="icon\redo.bmp" />
+    <Resource Include="icon\undo.bmp" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\redo_gray.bmp" />
+    <Resource Include="icon\redo_gray.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="icon\undo_gray.bmp" />
+    <Resource Include="icon\undo_gray.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

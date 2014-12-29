@@ -150,7 +150,7 @@ namespace ablib {
         // 消しゴムカーソル
         Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
-        void SetCursor() {
+        void SetCursor(){
             switch(Mode) {
             case InkManipulationMode.Inking:
                 Cursor = MakeInkingCursor(PenThickness, PenColor); break;
