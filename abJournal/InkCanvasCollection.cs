@@ -664,23 +664,24 @@ namespace ablib {
         }
 
         public void SavePDF(string file) {
-            var doc = new PdfSharp.Pdf.PdfDocument();
-            for(int i = 0 ; i < Count ; ++i) {
-                var page = doc.AddPage();
-                /*
-                page.Width = (int)((CanvasCollection[i].Width + 1) * 595 / 800);
-                page.Height = (int)((CanvasCollection[i].Height + 1)* 595 / 800);
-                 */
-                page.Size = PdfSharp.PageSize.A4;
-                var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                double scale = page.Width / CanvasCollection[i].Width;
-                if(scale != 1)g.ScaleTransform(scale);
-                //g.ScaleTransform((double) 595 / (double) 800);
-                if(i == 0) DrawNoteContents(g, CanvasCollection[i], Info);
-                DrawRules(g, CanvasCollection[i], (i == 0 && Info.ShowTitle));
-                CanvasCollection[i].InkData.AddPdfGraphic(g);
+            using(var doc = new PdfSharp.Pdf.PdfDocument()) {
+                for(int i = 0 ; i < Count ; ++i) {
+                    var page = doc.AddPage();
+                    /*
+                    page.Width = (int)((CanvasCollection[i].Width + 1) * 595 / 800);
+                    page.Height = (int)((CanvasCollection[i].Height + 1)* 595 / 800);
+                     */
+                    page.Size = PdfSharp.PageSize.A4;
+                    var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+                    double scale = page.Width / CanvasCollection[i].Width;
+                    if(scale != 1) g.ScaleTransform(scale);
+                    //g.ScaleTransform((double) 595 / (double) 800);
+                    if(i == 0) DrawNoteContents(g, CanvasCollection[i], Info);
+                    DrawRules(g, CanvasCollection[i], (i == 0 && Info.ShowTitle));
+                    CanvasCollection[i].InkData.AddPdfGraphic(g);
+                }
+                doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
             }
-            doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
         }
         /*
         public void SavePDFWithiText(string file) {

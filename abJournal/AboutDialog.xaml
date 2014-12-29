@@ -1,0 +1,30 @@
+﻿<Window x:Class="abJournal.AboutDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="AboutDialog" Height="150" Width="300">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="4*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Source="abJournal32.ico" Height="32" Margin="0 0 10 0"/>
+        <TextBlock Grid.Row="0" VerticalAlignment="Center" HorizontalAlignment="Center" FontSize="12">
+            <TextBlock.Inlines>
+                <TextBlock Text="{Binding fileVersion.ProductName}"/>
+                Version: <TextBlock Text="{Binding fileVersion.ProductVersion}"/>
+                    <LineBreak/>
+                Build
+                    <TextBlock Text="{Binding createTime}"/>
+                </TextBlock.Inlines>
+        </TextBlock>
+        </StackPanel>
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="3*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+        <Button Grid.Column="1" Content="OK" IsDefault="True" Click="OK_Click"/>
+        </Grid>
+    </Grid>
+</Window>

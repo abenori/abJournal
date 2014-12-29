@@ -205,9 +205,11 @@ namespace abJournal {
         }
         private void NewCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             string me = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            Process proc = new Process();
-            proc.StartInfo.FileName = me;
-            proc.Start();
+            using(var proc = new Process()) {
+                proc.StartInfo.FileName = me;
+                try { proc.Start(); }
+                catch { MessageBox.Show("新しいノートの作成に失敗しました．", "abJournal"); }
+            }
         }
         private void OpenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new OpenFileDialog();
@@ -418,6 +420,10 @@ namespace abJournal {
         private void OpenHistoryCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             string f = (string) e.Parameter;
             if(f != null) FileOpen(new List<string>() { f });
+        }
+        public static readonly RoutedCommand ShowAboutDialog = new RoutedCommand("ShowAboutDialog", typeof(MainWindow));
+        private void ShowAboutDialogCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
+            (new AboutDialog()).ShowDialog();
         }
 
 

@@ -44,6 +44,7 @@
         <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToSelection}" Executed="ModeChangeToSelectionCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.ClearSelection}" Executed="ClearSelectionCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.OpenHistory}" Executed="OpenHistoryCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ShowAboutDialog}" Executed="ShowAboutDialogCommandExecuted"/>
     </Window.CommandBindings>
     <Window.Resources>
         <local:ColorBrushConverter x:Key="ColorBrushConverter"/>
@@ -101,6 +102,9 @@
             <MenuItem Header="表示(_V)">
                 <MenuItem Header="全画面(_F)" Command="{x:Static local:MainWindow.FullScreen}"/>
             </MenuItem>
+                <MenuItem Header="ヘルプ(_H)">
+                    <MenuItem Header="バージョン情報(_V)" Command="{x:Static local:MainWindow.ShowAboutDialog}"/>
+                </MenuItem>
         </Menu>
             <ToolBar DockPanel.Dock="Top">
                 <ToolBar.Resources>
