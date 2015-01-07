@@ -95,7 +95,7 @@
                 <MenuItem Header="鉛筆(_P)" Command="{x:Static local:MainWindow.ModeChangeToPen}"/>
                 <MenuItem Header="消しゴム(_E)" Command="{x:Static local:MainWindow.ModeChangeToEraser}"/>
                 <MenuItem Header="選択" Command="{x:Static local:MainWindow.ModeChangeToSelection}"/>
-                <MenuItem Header="ペン設定" Command="{x:Static local:MainWindow.PenSetting}"/>
+                <MenuItem Header="鉛筆設定" Command="{x:Static local:MainWindow.PenSetting}"/>
                 <MenuItem Header="ページ設定" Command="{x:Static local:MainWindow.PageSetting}"/>
                     <MenuItem Header="システム設定" Command="{x:Static local:MainWindow.SystemSetting}"/>
                 </MenuItem>
@@ -198,15 +198,17 @@
                     </StackPanel>
                 </ComboBoxItem>
             </ComboBox>
-            <ComboBox Width="70" SelectedIndex="{Binding ScaleComboBoxIndex}">
-                <ComboBoxItem>ページ幅</ComboBoxItem>
-                <ComboBoxItem>50%</ComboBoxItem>
-                <ComboBoxItem>70%</ComboBoxItem>
-                <ComboBoxItem>100%</ComboBoxItem>
-                <ComboBoxItem>150%</ComboBoxItem>
-                <ComboBoxItem>200%</ComboBoxItem>
-            </ComboBox>
-            <Button Command="{x:Static local:MainWindow.AddPage}" ToolTip="新しいページ">
+                <ComboBox Width="70" SelectedIndex="{Binding ScaleComboBoxIndex}">
+                    <ComboBoxItem>ページ幅</ComboBoxItem>
+                    <ComboBoxItem>50%</ComboBoxItem>
+                    <ComboBoxItem>70%</ComboBoxItem>
+                    <ComboBoxItem>100%</ComboBoxItem>
+                    <ComboBoxItem>110%</ComboBoxItem>
+                    <ComboBoxItem>125%</ComboBoxItem>
+                    <ComboBoxItem>150%</ComboBoxItem>
+                    <ComboBoxItem>200%</ComboBoxItem>
+                </ComboBox>
+                <Button Command="{x:Static local:MainWindow.AddPage}" ToolTip="新しいページ">
                 <Image Height="18" Source="icon/AddPage.png"/>
             </Button>
             <ToggleButton Command="{x:Static local:MainWindow.FullScreen}" ToolTip="全画面切り替え" x:Name="FullScreenButton">

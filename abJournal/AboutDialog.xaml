@@ -1,7 +1,11 @@
 ﻿<Window x:Class="abJournal.AboutDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="AboutDialog" Height="150" Width="300">
+        xmlns:local="clr-namespace:abJournal" 
+        Title="バージョン情報" Height="150" Width="300">
+    <Window.Resources>
+        <local:ToStringConverter x:Key="ToStringConverter"/>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="4*"/>
@@ -15,7 +19,7 @@
                 Version: <TextBlock Text="{Binding fileVersion.ProductVersion}"/>
                     <LineBreak/>
                 LastWrite: 
-                    <TextBlock Text="{Binding createTime}"/>
+                    <TextBlock Text="{Binding fileInfo.LastWriteTime, Converter={StaticResource ToStringConverter}}"/>
                 </TextBlock.Inlines>
         </TextBlock>
         </StackPanel>

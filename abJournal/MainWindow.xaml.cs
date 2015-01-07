@@ -50,17 +50,13 @@ namespace abJournal {
             }
             set {
                 FitScaleToWidth = false;
-                switch(value) {
-                case 1: MainCanvas.Scale = 0.5; break;
-                case 2: MainCanvas.Scale = 0.7; break;
-                case 3: MainCanvas.Scale = 1; break;
-                case 4: MainCanvas.Scale = 1.5; break;
-                case 5: MainCanvas.Scale = 2; break;
-                default:
+                var scales = new double[] { 0.5, 0.7, 1, 1.1, 1.25, 1.5, 2 };
+                if(value >= 1 && value <= scales.Length) {
+                    MainCanvas.Scale = scales[value - 1];
+                } else {
                     FitScaleToWidth = true;
                     if(MainCanvas.Count == 0) return;
                     MainCanvas.Scale = MainPanel.ActualWidth / MainCanvas[0].Width;
-                    break;
                 }
                 OnPropertyChanged("MainCanvas");
             }

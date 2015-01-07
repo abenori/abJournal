@@ -407,7 +407,7 @@ namespace ablib {
         interface UndoCommandComibinable : UndoCommand {
             // UndoCommand.Undoの呼び出しがかなり遅いっぽいので，
             // undoGroupで使う場合に，くっつけられるUndoCommandはくっつけるようにする．
-            void Combine(UndoCommandComibinable c);
+            void Combine(UndoCommand c);
         }
 
         class UndoGroup : UndoCommand {
@@ -433,7 +433,7 @@ namespace ablib {
                         ++i;
                         for( ; i < cmds.Count ; ++i) {
                             if(type == cmds[i].GetType()) {
-                                cmd.Combine((UndoCommandComibinable) cmds[i]);
+                                cmd.Combine(cmds[i]);
                             } else break;
                         }
                         Commands.Add(cmd);
@@ -476,7 +476,7 @@ namespace ablib {
                 foreach(var s in stroke) data.Strokes.Remove(s);
                 data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
             }
-            public void Combine(UndoCommandComibinable del) {
+            public void Combine(UndoCommand del) {
                 stroke.AddRange((del as DeleteStrokeCommand).stroke);
             }
         }
@@ -498,7 +498,7 @@ namespace ablib {
                 }
                 data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
             }
-            public void Combine(UndoCommandComibinable add) {
+            public void Combine(UndoCommand add) {
                 stroke.AddRange((add as AddStrokeCommand).stroke);
             }
         }
@@ -556,7 +556,7 @@ namespace ablib {
                 data.StrokeChanged(data, new StrokeChangedEventArgs(sdc));
             }
             // this * moveを各行列に対して計算する
-            public void Combine(UndoCommandComibinable m) {
+            public void Combine(UndoCommand m) {
                 var move = m as MoveStrokeCommand;
                 foreach(var x in move.Matrices) {
                     if(!Matrices.ContainsKey(x.Key)) Matrices.Add(x.Key, x.Value);

@@ -136,21 +136,21 @@ namespace ablib {
             }
             thickness *= 2;
             const int cursorsize = 254;
-            System.Drawing.Bitmap img = new System.Drawing.Bitmap(cursorsize, cursorsize);
-            var g = System.Drawing.Graphics.FromImage(img);
-            g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
-            g.FillEllipse(
-                new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
-                new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
-            g.Dispose();
-            var c =  abJournal.Img2Cursor.MakeCursor(img, new Point(cursorsize/2, cursorsize/2), new Point(0, 0));
-            InkingCursors[color][thickness] = c;
-            return c;
+            using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
+            using(var g = System.Drawing.Graphics.FromImage(img)){
+	            g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
+	            g.FillEllipse(
+	                new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
+	                new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
+	            var c =  abJournal.Img2Cursor.MakeCursor(img, new Point(cursorsize/2, cursorsize/2), new Point(0, 0));
+	            InkingCursors[color][thickness] = c;
+	            return c;
+            }
         }
         // 消しゴムカーソル
         Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
-        void SetCursor(){
+        void SetCursor() {
             switch(Mode) {
             case InkManipulationMode.Inking:
                 Cursor = MakeInkingCursor(PenThickness, PenColor); break;
@@ -160,6 +160,7 @@ namespace ablib {
                 Cursor = Cursors.Cross; break;
             }
         }
+
 
         public InkCanvas(InkData d, double width, double height) {
             InkData = d;
