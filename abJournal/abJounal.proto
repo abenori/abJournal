@@ -1,0 +1,126 @@
+package ablib;
+import "bcl.proto"; // schema for protobuf-net's handling of core .NET types
+
+message CanvasCollectionInfo {
+   optional bcl.DateTime Date = 1;
+   optional bool ShowDate = 2 [default = false];
+   optional bool ShowTitle = 3 [default = false];
+   optional string Title = 4;
+   optional InkCanvasInfo InkCanvasInfo = 5;
+}
+message CanvasData {
+   optional InkData Data = 1;
+   optional InkCanvasInfo Info = 2;
+}
+message Color {
+   optional uint32 A = 1;
+   optional uint32 R = 2;
+   optional uint32 G = 3;
+   optional uint32 B = 4;
+}
+message DrawingAttributes {
+   optional Color Color = 1;
+   optional bool FitToCurve = 2;
+   optional double Height = 3;
+   optional bool IgnorePressure = 4;
+   optional bool IsHighlighter = 5;
+   optional StylusTip StylusTip = 6;
+   optional double Width = 7;
+}
+message DrawingAttributesPlus {
+   repeated double DashArray = 1;
+}
+message InkCanvasInfo {
+   optional Rule HorizontalRule = 1;
+   optional Rule VerticalRule = 2;
+   optional Size Size = 3;
+   optional Color BackGround = 4;
+}
+message InkData {
+   repeated Stroke Strokes = 1;
+   repeated TextData Texts = 2;
+}
+message ProtoFontFamily {
+   optional string name = 1;
+}
+message ProtoFontStyle {
+   optional Style style = 1 [default = 0];
+}
+message ProtoFontWeight {
+   optional Weight weight = 1 [default = 0];
+}
+message ProtoStylusPointCollection {
+   repeated StylusPoint Points = 1;
+}
+message Rect {
+   optional double X = 1;
+   optional double Y = 2;
+   optional double Width = 3;
+   optional double Height = 4;
+}
+message Rule {
+   optional Color Color = 1;
+   repeated double DashArray = 2;
+   optional double Interval = 3 [default = 0];
+   optional bool Show = 4 [default = false];
+   optional double Thickness = 5 [default = 0];
+}
+message Size {
+   optional double Height = 1;
+   optional double Width = 2;
+}
+message Stroke {
+   optional ProtoStylusPointCollection StylusPoints = 1;
+   optional DrawingAttributes DrawingAttributes = 2;
+   // the following represent sub-types; at most 1 should have a value
+   optional StrokeData StrokeData = 100;
+}
+message StrokeData {
+   optional DrawingAttributesPlus DrawingAttributesPlus = 1;
+}
+enum Style {
+   Normal = 1;
+   Italic = 2;
+   Oblique = 3;
+}
+message StylusPoint {
+   optional double X = 1;
+   optional double Y = 2;
+   optional float PressureFactor = 3;
+}
+enum StylusTip {
+   Rectangle = 0;
+   Ellipse = 1;
+}
+message TextData {
+   optional string Text = 1;
+   optional bool Selected = 2 [default = false];
+   optional Rect Rect = 3;
+   optional ProtoFontFamily FontFamily = 4;
+   optional double FontSize = 5 [default = 0];
+   optional ProtoFontStyle FontStyle = 6;
+   optional ProtoFontWeight FontWeight = 7;
+   optional Color Color = 8;
+}
+enum Weight {
+   Thin = 1;
+   ExtraLight = 2;
+   UltraLight = 3;
+   Light = 4;
+   Normal = 5;
+   Regular = 6;
+   Medium = 7;
+   DemiBold = 8;
+   SemiBold = 9;
+   Bold = 10;
+   ExtraBold = 11;
+   UltraBold = 12;
+   Black = 13;
+   Heavy = 14;
+   ExtraBlack = 15;
+   UltraBlack = 16;
+}
+message ablibInkCanvasCollectionSavingProtobufData {
+   repeated CanvasData Data = 1;
+   optional CanvasCollectionInfo Info = 2;
+}

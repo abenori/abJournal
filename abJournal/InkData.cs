@@ -7,6 +7,9 @@ using System.Windows;
 using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Runtime.Serialization;
+using System.Xml;
+using ProtoBuf;
 
 namespace ablib {
     /**
@@ -17,12 +20,14 @@ namespace ablib {
      */
     public enum InkManipulationMode { Inking = 0, Erasing = 1, Selecting = 2 };
     public enum DrawingAlgorithm { dotNet = 0, Type1 = 1, Type1WithHosei = 2 }
+    [ProtoContract]
     public class DrawingAttributesPlus : System.ComponentModel.INotifyPropertyChanged {
         public static DoubleCollection NormalDashArray = new DoubleCollection();
         public DrawingAttributesPlus() {
             DashArray = new DoubleCollection();
         }
         DoubleCollection dashArray;
+        [ProtoMember(1)]
         public DoubleCollection DashArray {
             get { return dashArray; }
             set { dashArray = value; OnPropertyChanged("DashArray"); }
@@ -44,6 +49,7 @@ namespace ablib {
             }
         }
     }
+    [ProtoContract]
     public partial class StrokeData : Stroke {
         public DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet;
         public DrawingAlgorithm Algorithm {
@@ -66,11 +72,16 @@ namespace ablib {
             set { base.DrawingAttributes = value; geometry = null; brush = null; }
         }
         DrawingAttributesPlus drawingAttributesPlus = new DrawingAttributesPlus();
+        [ProtoMember(1)]
         public DrawingAttributesPlus DrawingAttributesPlus {
             get { return drawingAttributesPlus; }
             set { drawingAttributesPlus = value; geometry = null; }
         }
 
+        // protobuf用．空っぽにしたりSkipConstructor=trueにしたりすると駄目みたい．
+        // よくわからない……．
+        StrokeData() : base(new StylusPointCollection(new Point[]{new Point(0,0)})){
+        }
         public StrokeData(StylusPointCollection spc, DrawingAttributes att, DrawingAttributesPlus attplus, DrawingAlgorithm algo, bool selecting = false)
             : base(spc, att.Clone()) {
             DrawingAttributes.AttributeChanged += ((s, e) => { geometry = null; brush = null; });
@@ -142,7 +153,7 @@ namespace ablib {
                     break;
                 default:
                     if(!dattrPlus.IsNormalDashArray) {
-                        if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(GetHoseiPoints(StylusPoints)));
+                        if(geometry == null) geometry = GetOriginalGeometryType1(StylusPointCollection2PointCollection(StylusPoints));
                         p.Fill = null;
                         p.Stroke = Brush;
                         p.StrokeThickness = dattr.Width;
@@ -162,30 +173,49 @@ namespace ablib {
         }
 
     }
+
+    [ProtoContract]
     public class StrokeDataCollection : List<StrokeData> {
         public StrokeDataCollection() { }
         public StrokeDataCollection(int capacity) : base(capacity) { }
         public StrokeDataCollection(IEnumerable<StrokeData> collection) : base(collection) { }
     }
 
+    [ProtoContract]
     public class TextData {
+        [ProtoMember(1)]
         public string Text { get; set; }
+        [ProtoMember(2)]
         public bool Selected { get; set; }
+        [ProtoMember(3)]
         public Rect Rect { get; set; }
-        public Typeface Font { get; set; }
+        [ProtoMember(4)]
+        public FontFamily FontFamily { get; set; }
+        [ProtoMember(5)]
+        public double FontSize { get; set; }
+        [ProtoMember(6)]
+        public FontStyle FontStyle { get; set; }
+        [ProtoMember(7)]
+        public FontWeight FontWeight { get; set; }
+        [ProtoMember(8)]
         public Color Color { get; set; }
         public TextData(string text) {
             Rect = new Rect();
-            Font = new Typeface("ＭＳ ゴシック");
+            FontFamily = new FontFamily("ＭＳ ゴシック");
             Text = text;
         }
-        public TextData(string text,Rect rect,Typeface font,Color color){
-			Text = text; Rect = rect; Font = font; Color = color;
+        public TextData(string text,Rect rect,FontFamily family,double size,FontStyle style,FontWeight weight,Color color){
+			Text = text; Rect = rect; FontFamily = family;
+            FontStyle = style; FontWeight = weight; Color = color;
 		}
     }
+    [ProtoContract]
     public class TextDataCollection : List<TextData> { }
+    [ProtoContract]
     public class InkData {
+        [ProtoMember(1)]
         public StrokeDataCollection Strokes { get; set; }
+        [ProtoMember(2)]
         public TextDataCollection Texts { get; set; }
 
         public InkData() {
@@ -677,6 +707,120 @@ namespace ablib {
         public void AddPdfGraphic(iTextSharp.text.pdf.PdfWriter writer,float height) {
             foreach(var s in Strokes) s.GetPDFPath(writer.DirectContent, height);
         }*/
+        [ProtoContract]
+        class ProtoStylusPointCollection {
+            [ProtoMember(1,OverwriteList=true)]
+            List<StylusPoint> Points = new List<StylusPoint>();
+            public ProtoStylusPointCollection(StylusPointCollection spc){
+                Points = spc == null ? null : new List<StylusPoint>(spc.ToList());
+                //Points = spc.ToList();
+            }
+            public static implicit operator StylusPointCollection(ProtoStylusPointCollection pspc) {
+                return new StylusPointCollection(pspc.Points);
+            }
+            public static implicit operator ProtoStylusPointCollection(StylusPointCollection spc) {
+                var rv = new ProtoStylusPointCollection(spc);
+                return rv;
+            }
+        }
+        [ProtoContract]
+        class ProtoFontFamily {
+            [ProtoMember(1)]
+            string name;
+            public ProtoFontFamily(FontFamily ff){
+                name = ff.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.ToString())];
+            }
+            public static implicit operator ProtoFontFamily(FontFamily ff) {
+                return new ProtoFontFamily(ff);
+            }
+            public static implicit operator FontFamily(ProtoFontFamily pff) {
+                return new FontFamily(pff.name);
+            }
+        }
+        [ProtoContract(SkipConstructor=true)]
+        class ProtoFontStyle {
+            enum Style { Normal = 1, Italic = 2, Oblique = 3 };
+            [ProtoMember(1)]
+            Style style;
+            ProtoFontStyle(Style s) { style = s; }
+            public static implicit operator FontStyle(ProtoFontStyle pfs){
+                switch(pfs.style) {
+                case Style.Italic: return FontStyles.Italic;
+                case Style.Oblique: return FontStyles.Oblique;
+                default: return FontStyles.Normal;
+                }
+            }
+            public static implicit operator ProtoFontStyle(FontStyle fs) {
+                if(fs == FontStyles.Italic) return new ProtoFontStyle(Style.Italic);
+                else if(fs == FontStyles.Oblique) return new ProtoFontStyle(Style.Oblique);
+                else return new ProtoFontStyle(Style.Normal);
+            }
+        }
+        [ProtoContract(SkipConstructor=true)]
+        class ProtoFontWeight {
+            enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16};
+            [ProtoMember(1)]
+            Weight weight;
+            ProtoFontWeight(Weight w){weight = w;}
+            public static implicit operator FontWeight(ProtoFontWeight pfw) {
+                switch(pfw.weight) {
+                case Weight.Thin: return FontWeights.Thin;
+                case Weight.ExtraLight: return FontWeights.ExtraLight;
+                case Weight.UltraLight: return FontWeights.UltraLight;
+                case Weight.Light: return FontWeights.Light;
+                case Weight.Regular: return FontWeights.Regular;
+                case Weight.Medium: return FontWeights.Medium;
+                case Weight.DemiBold: return FontWeights.DemiBold;
+                case Weight.SemiBold: return FontWeights.SemiBold;
+                case Weight.Bold: return FontWeights.Bold;
+                case Weight.ExtraBold: return FontWeights.ExtraBold;
+                case Weight.UltraBold: return FontWeights.UltraBold;
+                case Weight.Black: return FontWeights.Black;
+                case Weight.Heavy: return FontWeights.Heavy;
+                case Weight.ExtraBlack: return FontWeights.ExtraBlack;
+                case Weight.UltraBlack: return FontWeights.UltraBlack;
+                default: return FontWeights.Normal;
+                }
+            }
+            public static implicit operator ProtoFontWeight(FontWeight fw) {
+                if(fw == FontWeights.Thin) return new ProtoFontWeight(Weight.Thin);
+                else if(fw == FontWeights.ExtraLight) return new ProtoFontWeight(Weight.ExtraLight);
+                else if(fw == FontWeights.UltraLight) return new ProtoFontWeight(Weight.UltraLight);
+                else if(fw == FontWeights.Light) return new ProtoFontWeight(Weight.Light);
+                else if(fw == FontWeights.Regular) return new ProtoFontWeight(Weight.Regular);
+                else if(fw == FontWeights.Medium) return new ProtoFontWeight(Weight.Medium);
+                else if(fw == FontWeights.DemiBold) return new ProtoFontWeight(Weight.DemiBold);
+                else if(fw == FontWeights.SemiBold) return new ProtoFontWeight(Weight.SemiBold);
+                else if(fw == FontWeights.Bold) return new ProtoFontWeight(Weight.Bold);
+                else if(fw == FontWeights.ExtraBold) return new ProtoFontWeight(Weight.ExtraBold);
+                else if(fw == FontWeights.UltraBold) return new ProtoFontWeight(Weight.UltraBold);
+                else if(fw == FontWeights.Black) return new ProtoFontWeight(Weight.Black);
+                else if(fw == FontWeights.Heavy) return new ProtoFontWeight(Weight.Heavy);
+                else if(fw == FontWeights.ExtraBlack) return new ProtoFontWeight(Weight.ExtraBlack);
+                else if(fw == FontWeights.UltraBlack) return new ProtoFontWeight(Weight.UltraBlack);
+                else return new ProtoFontWeight(Weight.Normal);
+            }
+        }
+        public static ProtoBuf.Meta.RuntimeTypeModel SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel model) {
+            model.Add(typeof(Stroke), true);
+            model[typeof(Stroke)].Add("StylusPoints","DrawingAttributes");
+            model[typeof(Stroke)].AddSubType(100, typeof(StrokeData));
+            model.Add(typeof(StylusPoint), true);
+            model[typeof(StylusPoint)].Add("X","Y","PressureFactor");
+            model.Add(typeof(DrawingAttributes), true);
+            model[typeof(DrawingAttributes)].Add("Color","FitToCurve","Height","IgnorePressure","IsHighlighter","StylusTip","Width");
+            model.Add(typeof(Color), true);
+            model[typeof(Color)].Add("A", "R", "G", "B");
+            model.Add(typeof(StylusPointCollection), false).SetSurrogate(typeof(ProtoStylusPointCollection));
+            model.Add(typeof(Size), true);
+            model[typeof(Size)].Add("Height", "Width");
+            model.Add(typeof(Rect), true);
+            model[typeof(Rect)].Add("X", "Y", "Width", "Height");
+            model.Add(typeof(FontFamily), false).SetSurrogate(typeof(ProtoFontFamily));
+            model.Add(typeof(FontStyle), false).SetSurrogate(typeof(ProtoFontStyle));
+            model.Add(typeof(FontWeight), false).SetSurrogate(typeof(ProtoFontWeight));
+            return model;
+        }
     }
 
     namespace Saving {
@@ -740,29 +884,29 @@ namespace ablib {
                 return rv;
             }
         }
-	    public class TextData {
-	        public string Text { get; set; }
-	        public Rect Rect { get; set; }
+        public class TextData {
+            public string Text { get; set; }
+            public Rect Rect { get; set; }
             public string FontFamily { get; set; }
             FontStyle FontStyle { get; set; }
             FontWeight FontWeight { get; set; }
-            FontStretch FontStretch { get; set; }
-	        public Color Color { get; set; }
+            double FontSize { get; set; }
+            public Color Color { get; set; }
 	        public TextData(){}
 	        public TextData(ablib.TextData td){
 				Text = td.Text;
 				Rect = td.Rect;
-                FontFamily = td.Font.FontFamily.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.Name)];
-                FontStyle = td.Font.Style;
-                FontWeight = td.Font.Weight;
-                FontStretch = td.Font.Stretch;
+                FontFamily = td.FontFamily.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.Name)];
+                FontStyle = td.FontStyle;
+                FontWeight = td.FontWeight;
+                FontSize = td.FontSize;
 				Color = td.Color;
 			}
 			public ablib.TextData ToOriginalType(){
-				return new ablib.TextData(Text,Rect,new Typeface(new FontFamily(FontFamily),FontStyle,FontWeight,FontStretch),Color);
+                return new ablib.TextData(Text, Rect, new FontFamily(FontFamily), FontSize, FontStyle, FontWeight, Color);
 			}
 	    }
-	    public class TextDataCollection : List<TextData> { 
+        public class TextDataCollection : List<TextData> { 
 			public TextDataCollection(ablib.TextDataCollection tdc) : base(tdc.Count){
 				foreach(var td in tdc)base.Add(new TextData(td));
 			}
@@ -893,7 +1037,10 @@ namespace ablib {
 
 
         PointCollection StylusPointCollection2PointCollection(StylusPointCollection Points) {
-            return new PointCollection(Points.Select(p => p.ToPoint()));
+            //return new PointCollection(Points.Select(p => p.ToPoint()));
+            PointCollection rv = new PointCollection(Points.Count);
+            foreach(var pt in Points) rv.Add(pt.ToPoint());
+            return rv;
         }
 
         // Bezier曲線の制御点を計算する
@@ -922,7 +1069,6 @@ namespace ablib {
             PointCollection pts = MabikiPointsType1(StylusPoints);
             PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
             GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
-
             path.StartFigure();
             for(int i = 0 ; i < pts.Count - 1 ; ++i) {
                 path.AddBezier(pts[i].X, pts[i].Y, cpt1[i].X, cpt1[i].Y, cpt2[i].X, cpt2[i].Y, pts[i + 1].X, pts[i + 1].Y);

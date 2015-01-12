@@ -10,6 +10,8 @@ using System.Windows.Ink;
 using System.Windows.Shapes;
 using System.Windows.Media;
 using System.Diagnostics;
+using System.ComponentModel;
+using ProtoBuf;
 
 namespace ablib {
     public class InkCanvas : Canvas {
@@ -81,6 +83,7 @@ namespace ablib {
             get { return backGroundColor; }
             set { backGroundColor = value; Background = new SolidColorBrush(backGroundColor); }
         }
+        [ProtoContract]
         public class Rule {
             public Rule() {
                 DashArray = new DoubleCollection(new double[] { 1, 1 });
@@ -89,10 +92,15 @@ namespace ablib {
                 Thickness = 2;
                 Show = false;
             }
+            [ProtoMember(1)]
             public Color Color { get; set; }
+            [ProtoMember(2)]
             public DoubleCollection DashArray { get; set; }
+            [ProtoMember(3)]
             public double Interval { get; set; }
+            [ProtoMember(4)]
             public bool Show { get; set; }
+            [ProtoMember(5)]
             public double Thickness { get; set; }
             public Rule DeepCopy() {
                 Rule rv = new Rule();
@@ -105,21 +113,37 @@ namespace ablib {
                 return rv;
             }
         }
-        public class InkCanvasInfo {
+        [ProtoContract(SkipConstructor=true)]
+        public class InkCanvasInfo{
+            [ProtoMember(1)]
             public Rule HorizontalRule = new Rule();
+            [ProtoMember(2)]
             public Rule VerticalRule = new Rule();
+            [ProtoMember(3)]
             public Size Size = new Size();
+            [ProtoMember(4)]
+            public Color BackGround = Colors.White;
             public InkCanvasInfo DeepCopy() {
                 InkCanvasInfo rv = new InkCanvasInfo();
                 rv.HorizontalRule = HorizontalRule.DeepCopy();
                 rv.VerticalRule = VerticalRule.DeepCopy();
                 rv.Size = Size;
+                rv.BackGround = BackGround;
                 return rv;
+            }
+        }
+        public InkCanvasInfo Info {
+            get {
+                return new InkCanvasInfo() {
+                    HorizontalRule = HorizontalRule.DeepCopy(),
+                    VerticalRule = VerticalRule.DeepCopy(),
+                    Size = new Size(Width,Height),
+                    BackGround = BackGroundColor
+                };
             }
         }
         public Rule HorizontalRule = new Rule();
         public Rule VerticalRule = new Rule();
-
 
         // newしまくらないためだけ
         DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });

@@ -7,6 +7,9 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Runtime.Serialization;
+using System.Xml;
+using ProtoBuf;
 using ablib;
 
 namespace ablib {
@@ -22,25 +25,28 @@ namespace ablib {
         string filename = "";
         public string FileName { get { return filename; } }
 
+        [ProtoContract]
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
                 Date = DateTime.Now;
-                BackGround = Colors.White;
-                ShowDate = true;
-                ShowTitle = true;
+                //ShowDate = true;
+                //ShowTitle = true;
                 InkCanvasInfo.Size.Width = 800;
                 InkCanvasInfo.Size.Height = 800 * 297 / 210;
             }
+            [ProtoMember(1)]
             public DateTime Date { get; set; }
-            public Color BackGround { get; set; }
+            [ProtoMember(2)]
             public bool ShowDate { get; set; }
+            [ProtoMember(3)]
             public bool ShowTitle { get; set; }
+            [ProtoMember(4)]
             public string Title { get; set; }
-
+            [ProtoMember(5)]
             public InkCanvas.InkCanvasInfo InkCanvasInfo = new InkCanvas.InkCanvasInfo();
+
             public CanvasCollectionInfo DeepCopy() {
                 CanvasCollectionInfo rv = new CanvasCollectionInfo();
-                rv.BackGround = BackGround;
                 rv.Date = Date;
                 rv.ShowDate = ShowDate;
                 rv.ShowTitle = ShowTitle;
@@ -258,8 +264,9 @@ namespace ablib {
             InsertCanvas(new InkData(), Info.InkCanvasInfo, index);
         }
         public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo,int index) {
+            Stopwatch watch = new Stopwatch();
             ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);
-            canvas.BackGroundColor = Info.BackGround;
+            canvas.BackGroundColor = canvasinfo.BackGround;
             canvas.Mode = Mode;
             canvas.VerticalRule = canvasinfo.VerticalRule.DeepCopy();
             canvas.HorizontalRule = canvasinfo.HorizontalRule.DeepCopy();
@@ -270,15 +277,12 @@ namespace ablib {
             canvas.InkData.StrokeAdded += ((s, e) => { InkData_StrokeAdded(canvas, e); });
             canvas.InkData.StrokeChanged += ((s, e) => { InkData_StrokeChanged(canvas, e); });
             canvas.InkData.StrokeDeleted += ((s, e) => { InkData_StrokeDeleted(canvas, e); });
-            canvas.ReDraw();
+            canvas.ReDraw();// これが遅い
             AddUndoChain(new AddCanvasCommand(canvas, index));
-
             canvas.PenThickness = PenThickness;
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
             canvas.Mode = Mode;
-            canvas.InkData = d;
-
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             ReArrangeCanvas();
@@ -621,6 +625,29 @@ namespace ablib {
             }
         }
 
+        [ProtoContract]
+        public class ablibInkCanvasCollectionSavingProtobufData {
+            [ProtoContract(SkipConstructor=true)]
+            public class CanvasData {
+                public CanvasData(InkData d, InkCanvas.InkCanvasInfo i) {
+                    Data = d;
+                    Info = i.DeepCopy();
+                }
+                [ProtoMember(1)]
+                public InkData Data;
+                [ProtoMember(2)]
+                public InkCanvas.InkCanvasInfo Info;
+            }
+            [ProtoMember(1)]
+            public List<CanvasData> Data { get; set; }
+            [ProtoMember(2)]
+            public CanvasCollectionInfo Info { get; set; }
+            public ablibInkCanvasCollectionSavingProtobufData(){
+                Data = new List<CanvasData>();
+                Info = new CanvasCollectionInfo();
+            }
+        }
+
         public class ablibInkCanvasCollectionSavingData {
             public class CanvasData {
                 public CanvasData() {
@@ -644,7 +671,22 @@ namespace ablib {
 		public void Save(){
             Save(FileName);
 		}
+        public static string GetSchema() {
+            return InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
+        }
         public void Save(string file) {
+            ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
+            foreach(var c in CanvasCollection) {
+                data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkData, c.Info));
+            }
+            data.Info = Info;
+            var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+            //System.Diagnostics.Debug.WriteLine(model.GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData)));
+            using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)){
+            //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
+                model.Serialize(wfs, data);
+            }
+            /*
             ablibInkCanvasCollectionSavingData data = new ablibInkCanvasCollectionSavingData();
             foreach(var c in CanvasCollection) {
                 ablib.InkCanvas.InkCanvasInfo i = new InkCanvas.InkCanvasInfo();
@@ -654,12 +696,13 @@ namespace ablib {
                 data.Data.Add(new ablibInkCanvasCollectionSavingData.CanvasData(c.InkData.GetSavingData(),i));
             }
             data.Info = Info;
+
             var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
             using(System.IO.FileStream wfs = System.IO.File.Create(file)) {
                 using(var zipStream = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                     xml.Serialize(zipStream, data);
                 }
-            }
+            }*/
             filename = file;
         }
 
@@ -703,41 +746,93 @@ namespace ablib {
             }
         }
 
+        public class Stopwatch {
+            public System.Diagnostics.Stopwatch watch;
+            public Stopwatch() { watch = System.Diagnostics.Stopwatch.StartNew(); }
+            public void CheckTime(string str) {
+                watch.Stop();
+                System.Diagnostics.Debug.WriteLine(str + "： " + watch.Elapsed.ToString());
+                watch.Reset();
+                watch.Start();
+            }
+        }
+        /*
+         protobuf-net
+         abJournal: （解凍＋）デシリアライズにかかった時間： 00:00:00.3780755
+         abJournal: データ読み込みにかかった時間： 00:00:00.8423557
+
+         XML
+         abJournal: （解凍＋）デシリアライズにかかった時間： 00:00:01.0058480
+         abJournal: 読み込みにかかった時間： 00:00:00.8977666
+        */
         public void Open(string file) {
-            var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
-            ablibInkCanvasCollectionSavingData data = null;
-            // gzip解凍+XMLデシリアライズ
-            using(var rfs = System.IO.File.OpenRead(file)) {
+            Stopwatch watch = new Stopwatch();
+            var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+            ablibInkCanvasCollectionSavingProtobufData protodata = null;
+            using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
+                try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+            }
+            // zip解凍＋protobufデシリアライズ
+            if(protodata == null) {
+                using(var rfs = System.IO.File.OpenRead(file))
+                using(var zs = new System.IO.Compression.GZipStream(rfs, System.IO.Compression.CompressionMode.Decompress)) {
+                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(zs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                    catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                }
+            }
+            if(protodata != null) {
+                watch.CheckTime("abJournal: （解凍＋）デシリアライズにかかった時間");
+                foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
+                CanvasCollection.Clear();
+                foreach(var d in protodata.Data) {
+                    d.Data.DrawingAlgorithm = DrawingAlgorithm;
+                    AddCanvas(d.Data, d.Info);
+                }
+                Info = protodata.Info;
+                watch.CheckTime("abJournal: データ読み込みにかかった時間");
+            } else {
+                System.Diagnostics.Debug.WriteLine("Protobufデシリアライズでエラー");
+                watch.watch.Stop();
+                watch.watch.Reset();
+                watch.watch.Start();
+                var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
+                ablibInkCanvasCollectionSavingData data = null;
+                // gzip解凍+XMLデシリアライズ
+                using(var rfs = System.IO.File.OpenRead(file))
                 using(var zs = new System.IO.Compression.GZipStream(rfs, System.IO.Compression.CompressionMode.Decompress)) {
                     try { data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(zs); }
                     catch(System.IO.InvalidDataException) { }
+
                 }
-            }
-            // 単なるXMLデシリアライズ
-            if(data == null) {
-                using(var rfs = System.IO.File.OpenRead(file)) {
-                    data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(rfs);
+                // 単なるXMLデシリアライズ
+                if(data == null) {
+                    using(var rfs = System.IO.File.OpenRead(file)) {
+                        data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(rfs);
+                    }
                 }
+                watch.CheckTime("abJournal: （解凍＋）デシリアライズにかかった時間");
+
+                foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
+                CanvasCollection.Clear();
+                foreach(var d in data.Data) {
+                    InkData id = new InkData();
+                    id.LoadSavingData(d.Data);
+                    id.DrawingAlgorithm = DrawingAlgorithm;
+                    AddCanvas(id, d.Info);
+                }
+                Info = data.Info;
+                watch.CheckTime("abJournal: 読み込みにかかった時間");
             }
-            foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
-            CanvasCollection.Clear();
-            foreach(var d in data.Data) {
-                InkData id = new InkData();
-                id.LoadSavingData(d.Data);
-                id.DrawingAlgorithm = DrawingAlgorithm;
-                AddCanvas(id,d.Info);
-            }
-            Info = data.Info;
             if(Count == 0) AddCanvas();
             filename = file;
             ClearUpdated();
             ClearUndoChain();
             DrawNoteContents(CanvasCollection[0], Info);
 
-            
             //CanvasCollection[0].ReDraw();
             //foreach(var str in CanvasCollection[0].InkData.Strokes) {
-                //ForDebugPtsDrwaing(new PointCollection(str.StylusPoints.Where(s => true).Select(p => p.ToPoint())), Brushes.Red);
+            //ForDebugPtsDrwaing(new PointCollection(str.StylusPoints.Where(s => true).Select(p => p.ToPoint())), Brushes.Red);
             //}
             //ForDebugPtsDrwaing(new PointCollection(StrokeData.HoseiPts.Select(p => p.ToPoint())), Brushes.Blue);
             //ForDebugPtsDrwaing(StrokeData.CuspPts, Brushes.Green);

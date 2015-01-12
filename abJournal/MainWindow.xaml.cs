@@ -448,8 +448,10 @@ namespace abJournal {
                         break;
                     }
                     WindowTitle = null;
-                    AddHistory(files[0]);
-                    files.RemoveAt(0);
+                    if(files.Count > 0) {
+                        AddHistory(files[0]);
+                        files.RemoveAt(0);
+                    }
                 }
             }
             if(files.Count > 0) {

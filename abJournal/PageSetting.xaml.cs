@@ -39,10 +39,10 @@ namespace abJournal {
         }
         private void BackGroundButton_Click(object sender, RoutedEventArgs e) {
             ColorDialog diag = new ColorDialog();
-            Color col = Info.BackGround;
+            Color col = Info.InkCanvasInfo.BackGround;
             diag.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
             if(diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
-                Info.BackGround = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
+                Info.InkCanvasInfo.BackGround = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
                 OnPropertyChanged("Info");
             }
         }
