@@ -146,18 +146,15 @@ namespace ablib {
         public Rule VerticalRule = new Rule();
 
         // newしまくらないためだけ
-        DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
+        static DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
 
         // Cursors.Noneを指定してCanvasに書いて動かそうと思ったけど，
         // Cursors.Noneを指定しても変わらないことが多々あるので，
         // 直接造ることにした……Webからのコピペ（Img2Cursor.MakeCursor）に丸投げだけど．
-        Dictionary<Color, Dictionary<double, Cursor>> InkingCursors = new Dictionary<Color, Dictionary<double, Cursor>>();
+        static Dictionary<Tuple<Color, double>, Cursor> InkingCursors = new Dictionary<Tuple<Color, double>, Cursor>();
         Cursor MakeInkingCursor(double thickness, Color color) {
-            if(InkingCursors.ContainsKey(color)) {
-                if(InkingCursors[color].ContainsKey(thickness)) return InkingCursors[color][thickness];
-            } else {
-                InkingCursors[color] = new Dictionary<double, Cursor>();
-            }
+            var key = new Tuple<Color,double>(color, thickness);
+            if(InkingCursors.ContainsKey(key)) return InkingCursors[key];
             thickness *= 2;
             const int cursorsize = 254;
             using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
@@ -167,12 +164,12 @@ namespace ablib {
 	                new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
 	                new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
 	            var c =  abJournal.Img2Cursor.MakeCursor(img, new Point(cursorsize/2, cursorsize/2), new Point(0, 0));
-	            InkingCursors[color][thickness] = c;
+	            InkingCursors[key] = c;
 	            return c;
             }
         }
         // 消しゴムカーソル
-        Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+        static Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
         void SetCursor() {
             switch(Mode) {
@@ -188,6 +185,7 @@ namespace ablib {
 
         public InkCanvas(InkData d, double width, double height) {
             InkData = d;
+            Width = width; Height = height;
             PenThickness = 2;
             usePressure = false;
             PenColor = Colors.Black;
@@ -196,9 +194,6 @@ namespace ablib {
             StrokeDrawingAttributes.FitToCurve = true;
             StrokeDrawingAttributes.IgnorePressure = true;
             SetCursor();
-
-            Width = width; Height = height;
-            Mode = InkManipulationMode.Inking;
 
             InkData.StrokeAdded += InkData_StrokeAdded;
             InkData.StrokeDeleted += InkData_StrokeDeleted;
@@ -210,7 +205,7 @@ namespace ablib {
         // http://stackoverflow.com/questions/10362911/rendering-drawingvisuals-fast-in-wpf
         // にあった「おまじない」
         // Childrenに大量にAddしていても，描画が遅くならない
-        // いや，実際には遅くなるけど，だいぶ軽減される．
+        // いや，実際には遅くなるけど，だいぶ軽減される……ような気がする．
         List<Visual> visuals = new List<Visual>();
         public void AddVisual(Visual visual){
             if(visual != null) {

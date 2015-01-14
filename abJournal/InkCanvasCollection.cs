@@ -25,7 +25,7 @@ namespace ablib {
         string filename = "";
         public string FileName { get { return filename; } }
 
-        [ProtoContract]
+        [ProtoContract(SkipConstructor=true)]
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
                 Date = DateTime.Now;
@@ -141,7 +141,7 @@ namespace ablib {
         #endregion
 
         public InkCanvasCollection() {
-            Info = new CanvasCollectionInfo();
+            Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
             Mode = InkManipulationMode.Inking;
             PenThickness = 2;
             Background = Brushes.Gray;
@@ -263,9 +263,9 @@ namespace ablib {
         public void InsertCanvas(int index) {
             InsertCanvas(new InkData(), Info.InkCanvasInfo, index);
         }
+
         public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo,int index) {
-            Stopwatch watch = new Stopwatch();
-            ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);
+            ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);//0.06秒程度
             canvas.BackGroundColor = canvasinfo.BackGround;
             canvas.Mode = Mode;
             canvas.VerticalRule = canvasinfo.VerticalRule.DeepCopy();
@@ -277,12 +277,12 @@ namespace ablib {
             canvas.InkData.StrokeAdded += ((s, e) => { InkData_StrokeAdded(canvas, e); });
             canvas.InkData.StrokeChanged += ((s, e) => { InkData_StrokeChanged(canvas, e); });
             canvas.InkData.StrokeDeleted += ((s, e) => { InkData_StrokeDeleted(canvas, e); });
-            canvas.ReDraw();// これが遅い
-            AddUndoChain(new AddCanvasCommand(canvas, index));
             canvas.PenThickness = PenThickness;
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
             canvas.Mode = Mode;
+            canvas.ReDraw();// 0.08秒程度
+            AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             ReArrangeCanvas();
@@ -327,11 +327,10 @@ namespace ablib {
                     CanvasContainingSelection.ClearSelected();
                 }
                 CanvasContainingSelection = can;
-                // 縦横10増やして返す
                 if(SelectedRectTracker.Mode == RectTracker.TrackMode.None) {
-                    SelectedRectTracker.Move(new Rect(bound.Left + rect.X - 10, bound.Top + rect.Y - 10, rect.Width + 20, rect.Height + 20));
+                    SelectedRectTracker.Move(new Rect(bound.Left + rect.X, bound.Top + rect.Y, rect.Width, rect.Height));
                 } else if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move){
-                    SelectedRectTracker.Move(new Point(bound.Left + rect.X - 10, bound.Top + rect.Y - 10));
+                    SelectedRectTracker.Move(new Point(bound.Left + rect.X, bound.Top + rect.Y));
                 }
                 SelectedRectTracker.MaxSize = bound;
                 if(SelectedRectTracker.Visibility == Visibility.Hidden) {
@@ -567,13 +566,13 @@ namespace ablib {
             get {
                 if(EditCount == 0) return false;
                 else if(EditCount > 0) {
-                    for(int i = EditCount - 1; i >= 0 && i < UndoStack.Count ; --i) {
+					for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i){
                         if(!(UndoStack[i] is CanvasUndoCommand)) return true;
                         if(((CanvasUndoCommand) UndoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
                     return false;
                 } else {
-                    for(int i = -EditCount - 1; i >= 0 && i < RedoStack.Count ; --i) {
+					for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i){
                         if(!(RedoStack[i] is CanvasUndoCommand)) return true;
                         if(((CanvasUndoCommand) RedoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
@@ -746,90 +745,61 @@ namespace ablib {
             }
         }
 
-        public class Stopwatch {
-            public System.Diagnostics.Stopwatch watch;
-            public Stopwatch() { watch = System.Diagnostics.Stopwatch.StartNew(); }
-            public void CheckTime(string str) {
-                watch.Stop();
-                System.Diagnostics.Debug.WriteLine(str + "： " + watch.Elapsed.ToString());
-                watch.Reset();
-                watch.Start();
-            }
-        }
-        /*
-         protobuf-net
-         abJournal: （解凍＋）デシリアライズにかかった時間： 00:00:00.3780755
-         abJournal: データ読み込みにかかった時間： 00:00:00.8423557
-
-         XML
-         abJournal: （解凍＋）デシリアライズにかかった時間： 00:00:01.0058480
-         abJournal: 読み込みにかかった時間： 00:00:00.8977666
-        */
         public void Open(string file) {
-            Stopwatch watch = new Stopwatch();
-            var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
-            ablibInkCanvasCollectionSavingProtobufData protodata = null;
+            var watch = new Stopwatch();
             using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
+                var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+                ablibInkCanvasCollectionSavingProtobufData protodata = null;
+                // protobufデシリアライズ
                 try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
                 catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-            }
-            // zip解凍＋protobufデシリアライズ
-            if(protodata == null) {
-                using(var rfs = System.IO.File.OpenRead(file))
-                using(var zs = new System.IO.Compression.GZipStream(rfs, System.IO.Compression.CompressionMode.Decompress)) {
-                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(zs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                    catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                }
-            }
-            if(protodata != null) {
-                watch.CheckTime("abJournal: （解凍＋）デシリアライズにかかった時間");
-                foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
-                CanvasCollection.Clear();
-                foreach(var d in protodata.Data) {
-                    d.Data.DrawingAlgorithm = DrawingAlgorithm;
-                    AddCanvas(d.Data, d.Info);
-                }
-                Info = protodata.Info;
-                watch.CheckTime("abJournal: データ読み込みにかかった時間");
-            } else {
-                System.Diagnostics.Debug.WriteLine("Protobufデシリアライズでエラー");
-                watch.watch.Stop();
-                watch.watch.Reset();
-                watch.watch.Start();
-                var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
-                ablibInkCanvasCollectionSavingData data = null;
-                // gzip解凍+XMLデシリアライズ
-                using(var rfs = System.IO.File.OpenRead(file))
-                using(var zs = new System.IO.Compression.GZipStream(rfs, System.IO.Compression.CompressionMode.Decompress)) {
-                    try { data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(zs); }
-                    catch(System.IO.InvalidDataException) { }
-
-                }
-                // 単なるXMLデシリアライズ
-                if(data == null) {
-                    using(var rfs = System.IO.File.OpenRead(file)) {
-                        data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(rfs);
+                // zip解凍＋protobufデシリアライズ
+                if(protodata == null) {
+                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
+                        try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(zs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                        catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
                     }
                 }
-                watch.CheckTime("abJournal: （解凍＋）デシリアライズにかかった時間");
+                if(protodata != null) {
+                    foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
+                    CanvasCollection.Clear();
+                    foreach(var d in protodata.Data) {
+                        d.Data.DrawingAlgorithm = DrawingAlgorithm;
+                        AddCanvas(d.Data, d.Info);
+                    }
+                    Info = protodata.Info;
+                } else {
+                    System.Diagnostics.Debug.WriteLine("Protobufデシリアライズでエラー");
+                    var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
+                    ablibInkCanvasCollectionSavingData data = null;
+                    // gzip解凍+XMLデシリアライズ
+                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
+                        try { data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(zs); }
+                        catch(System.IO.InvalidDataException) { }
 
-                foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
-                CanvasCollection.Clear();
-                foreach(var d in data.Data) {
-                    InkData id = new InkData();
-                    id.LoadSavingData(d.Data);
-                    id.DrawingAlgorithm = DrawingAlgorithm;
-                    AddCanvas(id, d.Info);
+                    }
+                    // 単なるXMLデシリアライズ
+                    if(data == null) {
+                        data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(fs);
+                    }
+
+                    foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
+                    CanvasCollection.Clear();
+                    foreach(var d in data.Data) {
+                        InkData id = new InkData();
+                        id.LoadSavingData(d.Data);
+                        id.DrawingAlgorithm = DrawingAlgorithm;
+                        AddCanvas(id, d.Info);
+                    }
+                    Info = data.Info;
                 }
-                Info = data.Info;
-                watch.CheckTime("abJournal: 読み込みにかかった時間");
             }
             if(Count == 0) AddCanvas();
             filename = file;
             ClearUpdated();
             ClearUndoChain();
             DrawNoteContents(CanvasCollection[0], Info);
-
+            watch.CheckTime("Openにかかった時間");
             //CanvasCollection[0].ReDraw();
             //foreach(var str in CanvasCollection[0].InkData.Strokes) {
             //ForDebugPtsDrwaing(new PointCollection(str.StylusPoints.Where(s => true).Select(p => p.ToPoint())), Brushes.Red);
@@ -838,7 +808,6 @@ namespace ablib {
             //ForDebugPtsDrwaing(StrokeData.CuspPts, Brushes.Green);
             //Scale = 13;
         }
-
         
         void ForDebugPtsDrwaing(PointCollection stc, Brush brush) {
             int i = 0;
@@ -1161,4 +1130,15 @@ namespace ablib {
          }
         #endregion
     }
+    public class Stopwatch {
+        public System.Diagnostics.Stopwatch watch;
+        public Stopwatch() { watch = System.Diagnostics.Stopwatch.StartNew(); }
+        public void CheckTime(string str) {
+            watch.Stop();
+            System.Diagnostics.Debug.WriteLine(str + "： " + watch.Elapsed.ToString());
+            watch.Reset();
+            watch.Start();
+        }
+    }
+
 }

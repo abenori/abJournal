@@ -234,12 +234,12 @@ namespace ablib {
             get {
                 if(EditCount == 0) return false;
                 else if(EditCount > 0) {
-                    for(int i = EditCount - 1 ; i >= 0 && i < UndoStack.Count ; --i) {
+					for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i){
                         if(!(UndoStack[i] is SelectChangeCommand)) return true;
                     }
                     return false;
                 } else {
-                    for(int i = -EditCount - 1 ; i >= 0 && i < RedoStack.Count ; --i) {
+					for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i){
                         if(!(RedoStack[i] is SelectChangeCommand)) return true;
                     }
                     return false;
