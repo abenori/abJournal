@@ -110,6 +110,17 @@ namespace abJournal {
         }
 
         public MainWindow() {
+            var opt = new NDesk.Options.OptionSet() {
+                {"getprotoschema","保存用.protoを作成．",var => {
+                    using(var fs = new System.IO.StreamWriter(System.IO.Path.Combine(Environment.CurrentDirectory,"abJournal.proto"))){
+                        fs.WriteLine(InkCanvasCollection.GetSchema());
+                    }
+                    Environment.Exit(0);
+                }}
+            };
+            List<string> files = opt.Parse(Environment.GetCommandLineArgs());
+            files.RemoveAt(0);
+
             InitializeComponent();
 
             DataContext = this;
@@ -124,9 +135,6 @@ namespace abJournal {
             CurrentPen = 0;
             MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
 
-            var opt = new NDesk.Options.OptionSet() { };
-            List<string> files = opt.Parse(Environment.GetCommandLineArgs());
-            files.RemoveAt(0);// .exe本体
             files.RemoveAll(f => {
                 if(!System.IO.File.Exists(f)) {
                     MessageBox.Show("ファイル " + f + " は存在しません．");

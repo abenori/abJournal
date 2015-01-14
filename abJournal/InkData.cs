@@ -186,19 +186,18 @@ namespace ablib {
         [ProtoMember(1)]
         public string Text { get; set; }
         [ProtoMember(2)]
-        public bool Selected { get; set; }
-        [ProtoMember(3)]
         public Rect Rect { get; set; }
-        [ProtoMember(4)]
+        [ProtoMember(3)]
         public FontFamily FontFamily { get; set; }
-        [ProtoMember(5)]
+        [ProtoMember(4)]
         public double FontSize { get; set; }
-        [ProtoMember(6)]
+        [ProtoMember(5)]
         public FontStyle FontStyle { get; set; }
-        [ProtoMember(7)]
+        [ProtoMember(6)]
         public FontWeight FontWeight { get; set; }
-        [ProtoMember(8)]
+        [ProtoMember(7)]
         public Color Color { get; set; }
+        public bool Selected { get; set; }
         public TextData(string text) {
             Rect = new Rect();
             FontFamily = new FontFamily("ＭＳ ゴシック");
