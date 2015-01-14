@@ -16,7 +16,7 @@ namespace ablib {
     // InkCanvasたちからなる「文書用」
     // InkCanvasの適切な配置とかを担当．
     // 継承しているCanvasの中にもう一つCanvas（innerCanvas）を置き，その中にablib.InkCanvasを並べる．
-    public class InkCanvasCollection : Canvas{
+    public class InkCanvasCollection : Canvas, IEnumerable<ablib.InkCanvas> {
         List<ablib.InkCanvas> CanvasCollection = new List<ablib.InkCanvas>();
         Canvas innerCanvas = new Canvas();
         const double sukima = 100;
@@ -25,9 +25,10 @@ namespace ablib {
         string filename = "";
         public string FileName { get { return filename; } }
 
-        [ProtoContract(SkipConstructor=true)]
+        [ProtoContract(SkipConstructor = true)]
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
+                InkCanvasInfo = new InkCanvas.InkCanvasInfo();
                 Date = DateTime.Now;
                 //ShowDate = true;
                 //ShowTitle = true;
@@ -43,7 +44,7 @@ namespace ablib {
             [ProtoMember(4)]
             public string Title { get; set; }
             [ProtoMember(5)]
-            public InkCanvas.InkCanvasInfo InkCanvasInfo = new InkCanvas.InkCanvasInfo();
+            public InkCanvas.InkCanvasInfo InkCanvasInfo { get; set; }
 
             public CanvasCollectionInfo DeepCopy() {
                 CanvasCollectionInfo rv = new CanvasCollectionInfo();
@@ -177,7 +178,7 @@ namespace ablib {
         }
 
         #region スクロール系
-        public void Scroll(Vector scroll = new Vector()){
+        public void Scroll(Vector scroll = new Vector()) {
             Vector toadjust = GetAdjustedVector(scroll);
             ScrollWithoutAdjust(scroll - toadjust);
         }
@@ -252,11 +253,11 @@ namespace ablib {
             return rv;
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e) {
-            Scroll(new Vector(0, e.Delta/3));
+            Scroll(new Vector(0, e.Delta / 3));
         }
         #endregion
 
-        public void AddCanvas() { AddCanvas(new InkData(),Info.InkCanvasInfo); }
+        public void AddCanvas() { AddCanvas(new InkData(), Info.InkCanvasInfo); }
         public void AddCanvas(InkData d, InkCanvas.InkCanvasInfo info) {
             InsertCanvas(d, info, CanvasCollection.Count);
         }
@@ -264,7 +265,7 @@ namespace ablib {
             InsertCanvas(new InkData(), Info.InkCanvasInfo, index);
         }
 
-        public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo,int index) {
+        public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo, int index) {
             ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);//0.06秒程度
             canvas.BackGroundColor = canvasinfo.BackGround;
             canvas.Mode = Mode;
@@ -273,7 +274,7 @@ namespace ablib {
 
             CanvasCollection.Insert(index, canvas);
             canvas.UndoChainChanged += InkCanvasCollection_UndoChainChanged;
-            canvas.InkData.StrokeSelectedChanged += ((s,e) => {InkData_StrokeSelectedChanged(canvas,e);});
+            canvas.InkData.StrokeSelectedChanged += ((s, e) => { InkData_StrokeSelectedChanged(canvas, e); });
             canvas.InkData.StrokeAdded += ((s, e) => { InkData_StrokeAdded(canvas, e); });
             canvas.InkData.StrokeChanged += ((s, e) => { InkData_StrokeChanged(canvas, e); });
             canvas.InkData.StrokeDeleted += ((s, e) => { InkData_StrokeDeleted(canvas, e); });
@@ -281,7 +282,7 @@ namespace ablib {
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
             canvas.Mode = Mode;
-            canvas.ReDraw();// 0.08秒程度
+            canvas.ReDraw();// これが遅い
             AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
@@ -329,7 +330,7 @@ namespace ablib {
                 CanvasContainingSelection = can;
                 if(SelectedRectTracker.Mode == RectTracker.TrackMode.None) {
                     SelectedRectTracker.Move(new Rect(bound.Left + rect.X, bound.Top + rect.Y, rect.Width, rect.Height));
-                } else if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move){
+                } else if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
                     SelectedRectTracker.Move(new Point(bound.Left + rect.X, bound.Top + rect.Y));
                 }
                 SelectedRectTracker.MaxSize = bound;
@@ -521,7 +522,7 @@ namespace ablib {
             UndoStack.RemoveAt(UndoStack.Count - 1);
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
-        public void Redo(){
+        public void Redo() {
             if(RedoStack.Count == 0) return;
             ++EditCount;
             RedoStack.Last().Redo(this);
@@ -543,20 +544,20 @@ namespace ablib {
         }
         #endregion
 
-        public void Delete(){
+        public void Delete() {
             foreach(var c in CanvasCollection) c.InkData.DeleteSelected();
         }
 
-        public void SelectAll(){
+        public void SelectAll() {
             CanvasCollection[CurrentPage].InkData.SelectAll();
         }
-        public void Paste(){
+        public void Paste() {
             CanvasCollection[CurrentPage].Paste();
         }
-        public void Copy(){
-            if(CanvasContainingSelection != null)CanvasContainingSelection.Copy();
+        public void Copy() {
+            if(CanvasContainingSelection != null) CanvasContainingSelection.Copy();
         }
-        public void Cut(){
+        public void Cut() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.Cut();
         }
         public void ClearSelected() {
@@ -566,13 +567,13 @@ namespace ablib {
             get {
                 if(EditCount == 0) return false;
                 else if(EditCount > 0) {
-					for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i){
+                    for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i) {
                         if(!(UndoStack[i] is CanvasUndoCommand)) return true;
                         if(((CanvasUndoCommand) UndoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
                     return false;
                 } else {
-					for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i){
+                    for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i) {
                         if(!(RedoStack[i] is CanvasUndoCommand)) return true;
                         if(((CanvasUndoCommand) RedoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
@@ -610,7 +611,7 @@ namespace ablib {
             }
             set {
                 if(CurrentPage == value) return;
-                if(value < 0 || value >= CanvasCollection.Count)return;
+                if(value < 0 || value >= CanvasCollection.Count) return;
                 double y = 0;
                 for(int i = 0 ; i < value ; ++i) {
                     y += LengthBetweenCanvas + CanvasCollection[i].Height;
@@ -626,7 +627,7 @@ namespace ablib {
 
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData {
-            [ProtoContract(SkipConstructor=true)]
+            [ProtoContract(SkipConstructor = true)]
             public class CanvasData {
                 public CanvasData(InkData d, InkCanvas.InkCanvasInfo i) {
                     Data = d;
@@ -641,7 +642,7 @@ namespace ablib {
             public List<CanvasData> Data { get; set; }
             [ProtoMember(2)]
             public CanvasCollectionInfo Info { get; set; }
-            public ablibInkCanvasCollectionSavingProtobufData(){
+            public ablibInkCanvasCollectionSavingProtobufData() {
                 Data = new List<CanvasData>();
                 Info = new CanvasCollectionInfo();
             }
@@ -667,11 +668,11 @@ namespace ablib {
                 Info = new CanvasCollectionInfo();
             }
         }
-		public void Save(){
-            Save(FileName);
-		}
         public static string GetSchema() {
             return InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
+        }
+        public void Save() {
+            Save(FileName);
         }
         public void Save(string file) {
             ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
@@ -680,9 +681,8 @@ namespace ablib {
             }
             data.Info = Info;
             var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
-            //System.Diagnostics.Debug.WriteLine(model.GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData)));
-            using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)){
-            //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
+            using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
+                //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                 model.Serialize(wfs, data);
             }
             /*
@@ -808,7 +808,7 @@ namespace ablib {
             //ForDebugPtsDrwaing(StrokeData.CuspPts, Brushes.Green);
             //Scale = 13;
         }
-        
+
         void ForDebugPtsDrwaing(PointCollection stc, Brush brush) {
             int i = 0;
             foreach(var pt in stc) {
@@ -824,11 +824,11 @@ namespace ablib {
                 ++i;
             }
         }
-        
+
 
         #region タイトルとか描くやつ（PDF含）
-        static Dictionary<Canvas, List<UIElement>> NoteContentsElements = new Dictionary<Canvas,List<UIElement>>();
-        static void GetYohakuHankei(Canvas c,out double xyohaku, out double yyohaku, out double titleheight,out double hankei) {
+        static Dictionary<Canvas, List<UIElement>> NoteContentsElements = new Dictionary<Canvas, List<UIElement>>();
+        static void GetYohakuHankei(Canvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
             yyohaku = c.Width * 0.03;
             titleheight = c.Height * 0.06;
@@ -887,7 +887,7 @@ namespace ablib {
 
                     c.Children.Add(text);
                     Canvas.SetLeft(text, xyohaku + hankei);
-                    Canvas.SetTop(text, yyohaku + hankei/2);
+                    Canvas.SetTop(text, yyohaku + hankei / 2);
                     NoteContentsElements[c].Add(text);
                 }
 
@@ -898,7 +898,7 @@ namespace ablib {
                     text.FontSize = 12;
                     text.Background = Brushes.Transparent;
                     text.Foreground = Brushes.Gray;
-                    var textSize = GetStringSize(info.Date.ToLongDateString(),"游ゴシック", text.FontSize);
+                    var textSize = GetStringSize(info.Date.ToLongDateString(), "游ゴシック", text.FontSize);
                     c.Children.Add(text);
                     Canvas.SetTop(text, yyohaku + 2 * hankei + height - textSize.Height - 4);
                     Canvas.SetLeft(text, c.Width - xyohaku - textSize.Width - hankei);
@@ -920,7 +920,7 @@ namespace ablib {
 
         static Dictionary<Canvas, List<UIElement>> RuleElements = new Dictionary<Canvas, List<UIElement>>();
 
-        public static void DrawRules(Canvas c,InkCanvas.Rule Horizontal,InkCanvas.Rule Vertical,bool showTitle){
+        public static void DrawRules(Canvas c, InkCanvas.Rule Horizontal, InkCanvas.Rule Vertical, bool showTitle) {
             if(RuleElements.ContainsKey(c)) {
                 foreach(var shape in RuleElements[c]) {
                     c.Children.Remove(shape);
@@ -1040,13 +1040,13 @@ namespace ablib {
                 g.DrawPath(PdfSharp.Drawing.XPens.LightGray, titlePath);
 
                 if(info.Title != null && info.Title != "") {
-                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei,yyohaku + hankei/2,c.Width - 2 * xyohaku - 2 * hankei,height);
+                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei / 2, c.Width - 2 * xyohaku - 2 * hankei, height);
                     double fontsize = GuessFontSize(info.Title, "游ゴシック", rect.Width, rect.Height);
                     // 真ん中に配置するための座標計算
                     double textHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
-                    int n = (int)(rect.Height / textHeight);
+                    int n = (int) (rect.Height / textHeight);
                     rect.Y += (rect.Height - n * textHeight) / 2;
-                    rect.Height = n*textHeight;
+                    rect.Height = n * textHeight;
                     var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", fontsize, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
                     var tf = new PdfSharp.Drawing.Layout.XTextFormatter(g);
                     tf.DrawString(info.Title, pdf_ja_font, PdfSharp.Drawing.XBrushes.Black, rect, PdfSharp.Drawing.XStringFormats.TopLeft);
@@ -1074,7 +1074,7 @@ namespace ablib {
             }
         }
 
-         public static void DrawRules(PdfSharp.Drawing.XGraphics g, InkCanvas c, bool showTitle) {
+        public static void DrawRules(PdfSharp.Drawing.XGraphics g, InkCanvas c, bool showTitle) {
             double xyohaku, yyohaku, height, hankei;
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
             if(c.HorizontalRule.Show) {
@@ -1105,31 +1105,40 @@ namespace ablib {
                 for(double d = c.VerticalRule.Interval ; d < c.Width ; d += c.VerticalRule.Interval) {
                     if(showTitle && xyohaku < d && d < c.Width - xyohaku) {
                         g.DrawLine(pen, d, 0, d, yyohaku);
-                        g.DrawLine(pen,d,yyohaku + height + 2 * hankei,d,c.Height);
+                        g.DrawLine(pen, d, yyohaku + height + 2 * hankei, d, c.Height);
                     } else {
-                        g.DrawLine(pen,d, 0, d, c.Height);
+                        g.DrawLine(pen, d, 0, d, c.Height);
                     }
                 }
             }
         }
 
-         public static Size GetStringSize(string str, string fontname,double fontsize) {
-             var ft = new FormattedText(str, System.Globalization.CultureInfo.CurrentCulture,
-                 FlowDirection.LeftToRight,
-                 new Typeface(fontname),
-                 fontsize,
-                 Brushes.White);
-             return new Size(ft.Width, ft.Height);
-         }
+        public static Size GetStringSize(string str, string fontname, double fontsize) {
+            var ft = new FormattedText(str, System.Globalization.CultureInfo.CurrentCulture,
+                FlowDirection.LeftToRight,
+                new Typeface(fontname),
+                fontsize,
+                Brushes.White);
+            return new Size(ft.Width, ft.Height);
+        }
 
-         public static double GuessFontSize(string str, string fontname, double width, double height) {
-             var size = GetStringSize(str, fontname, 10);
-             int n = (int) Math.Sqrt(height * size.Width / (width * size.Height));
-             // はみ出ることがあったので1ひいておく．
-             return 10 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height)) - 1;
-         }
+        public static double GuessFontSize(string str, string fontname, double width, double height) {
+            var size = GetStringSize(str, fontname, 10);
+            int n = (int) Math.Sqrt(height * size.Width / (width * size.Height));
+            // はみ出ることがあったので1ひいておく．
+            return 10 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height)) - 1;
+        }
         #endregion
+
+        public IEnumerator<ablib.InkCanvas> GetEnumerator() {
+            return CanvasCollection.GetEnumerator();
+        }
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {
+            return CanvasCollection.GetEnumerator();
+        }
     }
+
+
     public class Stopwatch {
         public System.Diagnostics.Stopwatch watch;
         public Stopwatch() { watch = System.Diagnostics.Stopwatch.StartNew(); }

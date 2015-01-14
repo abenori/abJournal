@@ -94,13 +94,12 @@ enum StylusTip {
 }
 message TextData {
    optional string Text = 1;
-   optional bool Selected = 2 [default = false];
-   optional Rect Rect = 3;
-   optional ProtoFontFamily FontFamily = 4;
-   optional double FontSize = 5 [default = 0];
-   optional ProtoFontStyle FontStyle = 6;
-   optional ProtoFontWeight FontWeight = 7;
-   optional Color Color = 8;
+   optional Rect Rect = 2;
+   optional ProtoFontFamily FontFamily = 3;
+   optional double FontSize = 4 [default = 0];
+   optional ProtoFontStyle FontStyle = 5;
+   optional ProtoFontWeight FontWeight = 6;
+   optional Color Color = 7;
 }
 enum Weight {
    Thin = 1;
@@ -124,3 +123,4 @@ message ablibInkCanvasCollectionSavingProtobufData {
    repeated CanvasData Data = 1;
    optional CanvasCollectionInfo Info = 2;
 }
+

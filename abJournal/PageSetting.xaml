@@ -11,7 +11,7 @@
             <RowDefinition Height="4*"/>
             <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
-        
+
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="1*"/>
@@ -21,12 +21,12 @@
             </Grid.RowDefinitions>
             <StackPanel Grid.Row="0" Orientation="Horizontal">
                 <Label VerticalAlignment="Center">背景色</Label>
-                <Button Width="50" Height="20" Margin="20 0 0 0" VerticalAlignment="Center" x:Name="BackGroundButton" Click="BackGroundButton_Click" Background="{Binding Info.BackGround,Converter={StaticResource ColorBrushConverter}}"/>
+                <Button Width="50" Height="20" Margin="20 0 0 0" VerticalAlignment="Center" x:Name="BackGroundButton" Click="BackGroundButton_Click" Background="{Binding Info.InkCanvasInfo.BackGround,Converter={StaticResource ColorBrushConverter}}"/>
             </StackPanel>
             <CheckBox Grid.Row="1" Name="ShowTitleCheckBox" VerticalAlignment="Center" IsChecked="{Binding Info.ShowTitle}">タイトル枠を表示</CheckBox>
             <StackPanel Orientation="Horizontal" Grid.Row="2" Margin=" 10 0 0 0" Width="auto">
-            <Label>タイトル：</Label>
-                <TextBox Text="{Binding Info.Title,Mode=TwoWay}" Height="18" Width="210" IsEnabled="{Binding ElementName=ShowTitleCheckBox}"/>
+                <Label VerticalAlignment="Center" HorizontalAlignment="Right">タイトル：</Label>
+                <TextBox Text="{Binding Info.Title,Mode=TwoWay}" Height="18" Width="210"  IsEnabled="{Binding ElementName=ShowTitleCheckBox,Path=IsChecked}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
             </StackPanel>
             <CheckBox Grid.Row="3" IsEnabled="{Binding ElementName=ShowTitleCheckBox, Path=IsChecked}" VerticalAlignment="Center" IsChecked="{Binding Info.ShowDate}">日付を表示</CheckBox>
         </Grid>

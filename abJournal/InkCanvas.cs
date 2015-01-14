@@ -122,7 +122,10 @@ namespace ablib {
             [ProtoMember(3)]
             public Size Size = new Size();
             [ProtoMember(4)]
-            public Color BackGround = Colors.White;
+            public Color BackGround {get;set;}
+            public InkCanvasInfo(){
+				BackGround = Colors.White;
+			}
             public InkCanvasInfo DeepCopy() {
                 InkCanvasInfo rv = new InkCanvasInfo();
                 rv.HorizontalRule = HorizontalRule.DeepCopy();

@@ -417,6 +417,7 @@ namespace abJournal {
             var dialog = new PageSetting(MainCanvas.Info);
             if(dialog.ShowDialog() == true) {
                 MainCanvas.Info = dialog.Info;
+                foreach(var c in MainCanvas) c.BackGroundColor = dialog.Info.InkCanvasInfo.BackGround;
                 OnPropertyChanged("MainCanvas");
             }
         }
