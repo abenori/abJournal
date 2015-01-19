@@ -38,6 +38,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -96,6 +97,7 @@
     <Compile Include="Hotkey.cs" />
     <Compile Include="Img2Cursor.cs" />
     <Compile Include="InkCanvasCollection.cs" />
+    <Compile Include="LowLevelHook.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PageSetting.xaml.cs">
       <DependentUpon>PageSetting.xaml</DependentUpon>

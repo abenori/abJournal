@@ -109,6 +109,7 @@ namespace abJournal {
             get { return Properties.Settings.Default.History; }
         }
 
+        LowLevelKeyboardHook lowLevelKeyboardHook = null;
         public MainWindow() {
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
@@ -122,8 +123,8 @@ namespace abJournal {
             files.RemoveAt(0);
 
             InitializeComponent();
-
             DataContext = this;
+            SetLowLevelKeyboardHook();
             MainCanvas.ManipulationDelta += ((s, e) => { OnPropertyChanged("MainCanvas"); });
             MainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("MainCanvas"); });
             MainCanvas.MouseDown += ((s, e) => { MainCanvas.Focus(); });
@@ -146,6 +147,24 @@ namespace abJournal {
 
         ~MainWindow() {
             Properties.Settings.Default.Save();
+            if(lowLevelKeyboardHook != null) {
+                lowLevelKeyboardHook.Dispose();
+                lowLevelKeyboardHook = null;
+            }
+        }
+        void SetLowLevelKeyboardHook() {
+            if(Properties.Settings.Default.IsBlockWindowsKey && lowLevelKeyboardHook == null) {
+                lowLevelKeyboardHook = new LowLevelKeyboardHook();
+                lowLevelKeyboardHook.KeyDown += (s, e) => {
+                    if(e.Key == Key.LWin) e.Handled = true;
+                };
+                lowLevelKeyboardHook.Keyup += (s, e) => {
+                    if(e.Key == Key.LWin) e.Handled = true;
+                };
+            } else if(!Properties.Settings.Default.IsBlockWindowsKey && lowLevelKeyboardHook != null) {
+                lowLevelKeyboardHook.Dispose();
+                lowLevelKeyboardHook = null;
+            }
         }
 
         private void Window_Closing(object sender, CancelEventArgs e) {
@@ -347,6 +366,7 @@ namespace abJournal {
             SystemSetting dialog = new SystemSetting();
             if(dialog.ShowDialog() == true) {
                 MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
+                SetLowLevelKeyboardHook();
             }
         }
 

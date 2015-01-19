@@ -1145,6 +1145,7 @@ namespace ablib {
         public void CheckTime(string str) {
             watch.Stop();
             System.Diagnostics.Debug.WriteLine(str + "： " + watch.Elapsed.ToString());
+            //MessageBox.Show(str + "： " + watch.Elapsed.ToString());
             watch.Reset();
             watch.Start();
         }

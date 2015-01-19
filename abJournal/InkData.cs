@@ -718,8 +718,7 @@ namespace ablib {
                 return new StylusPointCollection(pspc.Points);
             }
             public static implicit operator ProtoStylusPointCollection(StylusPointCollection spc) {
-                var rv = new ProtoStylusPointCollection(spc);
-                return rv;
+                return new ProtoStylusPointCollection(spc);
             }
         }
         [ProtoContract]
@@ -944,12 +943,14 @@ namespace ablib {
             StylusPointCollection rv = new StylusPointCollection(Points.Count);
             // 手ぶれ？補正
             // 参考：http://www24.atwiki.jp/sigetch_2007/pages/18.html
-            // 単に周辺の点を重み付きで足しているだけです．
+            // 単に周辺の点（最大2N+1個）を重み付きで足しているだけです．
             // 重みはe^{-x^2}がよさげ（上のURLから）なのでそうしている．
+            const int N = 3;
             for(int i = 0 ; i < Points.Count ; ++i) {
                 var pt = new StylusPoint();
                 double wsum = 0;
-                for(int j = Math.Max(0, i - 3) ; j < Math.Min(Points.Count, i + 3) ; ++j) {
+                int first = Math.Max(0, i - N), last = Math.Min(Points.Count - 1, i + N);
+                for(int j = first ; j <= last ; ++j) {
                     double w = Weight[Math.Abs(j - i)];
                     wsum += w;
                     pt.X += Points[j].X * w;
@@ -962,7 +963,6 @@ namespace ablib {
                 //HoseiPts.Add(pt);
             }
             return rv;
-
         }
 
         Geometry GetOriginalGeometryType1(PointCollection Points) {
@@ -993,10 +993,9 @@ namespace ablib {
                 for(int j = i + 2 ; j < Points.Count - 1 ; ++j) {
                     // 間を結ぶ直線の法線
                     var hou = new Vector(Points[j].Y - Points[i].Y, -Points[j].X + Points[i].X);
-                    double c = -hou.X * Points[i].X - hou.Y * Points[i].Y;
-                    // 直線：(hou,x) + c = 0
-                    c = c / hou.Length;
                     hou.Normalize();
+                    // 直線：(hou,x) + c = 0
+                    double c = -hou.X * Points[i].X - hou.Y * Points[i].Y;
                     bool mabiku = false;
                     for(int k = i + 1 ; k < j ; ++k) {
                         double length = Math.Abs(hou.X * Points[k].X + hou.Y * Points[k].Y + c);

@@ -69,5 +69,17 @@ namespace abJournal.Properties {
                 this["History"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool IsBlockWindowsKey {
+            get {
+                return ((bool)(this["IsBlockWindowsKey"]));
+            }
+            set {
+                this["IsBlockWindowsKey"] = value;
+            }
+        }
     }
 }

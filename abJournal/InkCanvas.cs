@@ -155,9 +155,10 @@ namespace ablib {
         // Cursors.Noneを指定しても変わらないことが多々あるので，
         // 直接造ることにした……Webからのコピペ（Img2Cursor.MakeCursor）に丸投げだけど．
         static Dictionary<Tuple<Color, double>, Cursor> InkingCursors = new Dictionary<Tuple<Color, double>, Cursor>();
-        Cursor MakeInkingCursor(double thickness, Color color) {
+        static Cursor MakeInkingCursor(double thickness, Color color) {
             var key = new Tuple<Color,double>(color, thickness);
-            if(InkingCursors.ContainsKey(key)) return InkingCursors[key];
+            try { return InkingCursors[key]; }
+            catch(KeyNotFoundException) { }
             thickness *= 2;
             const int cursorsize = 254;
             using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
@@ -280,6 +281,8 @@ namespace ablib {
             //PrevPoint = new StylusPoint(e.GetPosition(this).X, e.GetPosition(this).Y, 0.5f);
             SaveMode();
 
+
+            // VAIO Duo 13の場合
             // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
             // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
             // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
