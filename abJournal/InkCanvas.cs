@@ -158,22 +158,23 @@ namespace ablib {
         static Cursor MakeInkingCursor(double thickness, Color color) {
             var key = new Tuple<Color,double>(color, thickness);
             try { return InkingCursors[key]; }
-            catch(KeyNotFoundException) { }
-            thickness *= 2;
-            const int cursorsize = 254;
-            using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
-            using(var g = System.Drawing.Graphics.FromImage(img)){
-	            g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
-	            g.FillEllipse(
-	                new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
-	                new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
-	            var c =  abJournal.Img2Cursor.MakeCursor(img, new Point(cursorsize/2, cursorsize/2), new Point(0, 0));
-	            InkingCursors[key] = c;
-	            return c;
+            catch(KeyNotFoundException) {
+                thickness *= 2;
+                const int cursorsize = 254;
+                using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
+                using(var g = System.Drawing.Graphics.FromImage(img)) {
+                    g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
+                    g.FillEllipse(
+                        new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
+                        new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
+                    var c = Img2Cursor.MakeCursor(img, new Point(cursorsize / 2, cursorsize / 2), new Point(0, 0));
+                    InkingCursors[key] = c;
+                    return c;
+                }
             }
         }
         // 消しゴムカーソル
-        static Cursor ErasingCursor =  abJournal.Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+        static Cursor ErasingCursor =  Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
         void SetCursor() {
             switch(Mode) {

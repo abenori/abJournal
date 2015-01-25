@@ -102,6 +102,7 @@
     <Compile Include="PageSetting.xaml.cs">
       <DependentUpon>PageSetting.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Paper.cs" />
     <Compile Include="PenSetting.xaml.cs" />
     <Compile Include="RectTracker.cs" />
     <Compile Include="Settings.cs" />

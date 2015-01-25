@@ -109,7 +109,7 @@ namespace abJournal {
             get { return Properties.Settings.Default.History; }
         }
 
-        LowLevelKeyboardHook lowLevelKeyboardHook = null;
+        BlockWndowsKey blockWindows = null;
         public MainWindow() {
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
@@ -147,25 +147,28 @@ namespace abJournal {
 
         ~MainWindow() {
             Properties.Settings.Default.Save();
-            if(lowLevelKeyboardHook != null) {
-                lowLevelKeyboardHook.Dispose();
-                lowLevelKeyboardHook = null;
+            if(blockWindows != null) {
+                blockWindows.Dispose();
+                blockWindows = null;
             }
         }
         void SetLowLevelKeyboardHook() {
-            if(Properties.Settings.Default.IsBlockWindowsKey && lowLevelKeyboardHook == null) {
-                lowLevelKeyboardHook = new LowLevelKeyboardHook();
-                lowLevelKeyboardHook.KeyDown += (s, e) => {
-                    if(e.Key == Key.LWin) e.Handled = true;
-                };
-                lowLevelKeyboardHook.Keyup += (s, e) => {
-                    if(e.Key == Key.LWin) e.Handled = true;
-                };
-            } else if(!Properties.Settings.Default.IsBlockWindowsKey && lowLevelKeyboardHook != null) {
-                lowLevelKeyboardHook.Dispose();
-                lowLevelKeyboardHook = null;
+            if(Properties.Settings.Default.IsBlockWindowsKey && blockWindows == null) {
+                blockWindows = new BlockWndowsKey();
+            } else if(!Properties.Settings.Default.IsBlockWindowsKey && blockWindows != null) {
+                blockWindows.Dispose();
+                blockWindows = null;
             }
         }
+		class BlockWndowsKey : LowLevelKeyboardHook {
+	        protected override void OnKeyDown(object sender, LowLevelKeyEventArgs e) {
+	            if(e.Key == Key.LWin) e.Handled = true;
+	        }
+	        protected override void OnKeyUp(object sender, LowLevelKeyEventArgs e) {
+	            if(e.Key == Key.LWin) e.Handled = true;
+	        }
+	    }
+
 
         private void Window_Closing(object sender, CancelEventArgs e) {
             if(!BeforeClose()) e.Cancel = true;
@@ -511,3 +514,4 @@ namespace abJournal {
         }
     }
 }
+

@@ -8,6 +8,14 @@ using System.Runtime.InteropServices;
 using System.Windows.Interop;
 
 namespace abJournal {
+    // ホットキーでWindowsキーを無効化しようと思って加えたコード
+    // がダメで低レベルフックに切り替えたので使われていません．
+    // 
+    // var hot = new Hotkey(Window);
+    // hot.Add(mod,key,event)
+    // とするとmod + keyを押されるとeventが発動．
+    // やめるときはClearかDispose
+    // Window.Closedで自動でClearが呼ばれる．
     public class Hotkey : IDisposable{
         const int WM_HOTKEY = 0x0312;
         [DllImport("user32.dll")]
@@ -49,12 +57,11 @@ namespace abJournal {
         }
         IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled) {
             if(msg == WM_HOTKEY) {
-                System.Diagnostics.Debug.WriteLine("Hotkey pressed, id = " + wParam.ToInt32().ToString());
                 try {
                     hotkeyEvents[wParam.ToInt32()].Item3(this, new EventArgs());
                     handled = true;
                 }
-                catch(KeyNotFoundException) { }
+                catch(KeyNotFoundException) { return IntPtr.Zero; }
                 return new IntPtr(1);
             } else return IntPtr.Zero;
         }
@@ -66,11 +73,12 @@ namespace abJournal {
                 RegisterWaitingList.Add(new Tuple<ModifierKeys, Key, EventHandler>(mod, key, ev));
             } else {
                 for( ; id < 0xc000 ; ++id) {
-                    var x = RegisterHotKey(hwnd, id, m, vk);
-                    if(x != 0) break;
+                    if(RegisterHotKey(hwnd, id, m, vk) != 0)break;
                 }
-                if(id < 0xc000) hotkeyEvents.Add(id, new Tuple<ModifierKeys, Key, EventHandler>(mod, key, ev));
-                ++id;
+                if(id < 0xc000){
+					hotkeyEvents.Add(id, new Tuple<ModifierKeys, Key, EventHandler>(mod, key, ev));
+	                ++id;
+	            }
             }
         }
         public void Clear() {

@@ -29,11 +29,10 @@ namespace ablib {
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
                 InkCanvasInfo = new InkCanvas.InkCanvasInfo();
+                InkCanvasInfo.Size = Paper.GetSize(Paper.PaperSize.A4);
                 Date = DateTime.Now;
                 //ShowDate = true;
                 //ShowTitle = true;
-                InkCanvasInfo.Size.Width = 800;
-                InkCanvasInfo.Size.Height = 800 * 297 / 210;
             }
             [ProtoMember(1)]
             public DateTime Date { get; set; }
@@ -136,12 +135,17 @@ namespace ablib {
         }
         #endregion
 
+        #region 紙サイズ
+        #endregion
+
         #region 選択
         RectTracker SelectedRectTracker = new RectTracker();
         InkCanvas CanvasContainingSelection = null;
         #endregion
 
         public InkCanvasCollection() {
+            SizeChanged += InkCanvasCollection_SizeChanged;
+
             Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
             Mode = InkManipulationMode.Inking;
             PenThickness = 2;
@@ -149,7 +153,7 @@ namespace ablib {
 
             IsManipulationEnabled = true;
 
-            innerCanvas.Width = Info.InkCanvasInfo.Size.Width;
+            innerCanvas.Width = 0;
             innerCanvas.Height = 0;
             innerCanvas.Background = Background;
             innerCanvas.RenderTransform = new MatrixTransform();
@@ -165,15 +169,17 @@ namespace ablib {
             Canvas.SetZIndex(SelectedRectTracker, 10);
         }
 
-        void ReArrangeCanvas() {
+        void VerticalArrangeCanvas() {
             double height = 0;
+            double width = 0;
             for(int i = 0 ; i < CanvasCollection.Count ; ++i) {
                 Canvas.SetTop(CanvasCollection[i], height);
-                Canvas.SetLeft(CanvasCollection[i], 0);
                 height += LengthBetweenCanvas + CanvasCollection[i].Height;
+                width = Math.Max(width,CanvasCollection[i].Width);
             }
             height -= LengthBetweenCanvas;
             innerCanvas.Height = height;
+            innerCanvas.Width = width;
             Scroll();
         }
 
@@ -220,30 +226,34 @@ namespace ablib {
             base.OnManipulationStarting(e);
         }
         Vector GetAdjustedVector(Vector scroll = new Vector()) {
+            return GetAdjustedVector(scroll, RenderSize);
+        }
+        Vector GetAdjustedVector(Vector scroll,Size windowSize) {
             Vector rv = new Vector();
             if(CanvasCollection.Count == 0) return rv;
             var canvas = CanvasCollection[0];
             Rect bounds;
             try {
-                bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(VisualTreeHelper.GetDrawing(innerCanvas).Bounds));
+                //bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(VisualTreeHelper.GetDrawing(innerCanvas).Bounds));
+                bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(new Rect(-innerCanvas.Width/2,0,innerCanvas.Width,innerCanvas.Height)));
             }
             catch(NullReferenceException) { return rv; }
 
             if(bounds.Width != 0) {
-                if(bounds.Width < ActualWidth + 2) {
-                    rv.X = bounds.Left - (ActualWidth - bounds.Width) / 2;
+                if(bounds.Width < windowSize.Width + 2) {
+                    rv.X = bounds.Left - (windowSize.Width - bounds.Width) / 2;
                 } else {
                     /*
                     if(bounds.Left > ActualWidth - sukima) rv.X = bounds.Left - (ActualWidth - sukima);
                     else if(bounds.Right < sukima) rv.X = bounds.Right - sukima;
-                    */
+                     */ 
                     if(bounds.Left > 0) rv.X = bounds.Left;
-                    else if(bounds.Right < ActualWidth) rv.X = bounds.Right - ActualWidth;
+                    else if(bounds.Right < windowSize.Width) rv.X = bounds.Right - windowSize.Width;
                 }
             }
 
             if(bounds.Height != 0) {
-                if(bounds.Top > ActualHeight - sukima) rv.Y = bounds.Top - (ActualHeight - sukima);
+                if(bounds.Top > windowSize.Height - sukima) rv.Y = bounds.Top - (windowSize.Height - sukima);
                 //if(bounds.Top > 0) rv.Y = bounds.Top;
                 else if(bounds.Bottom < sukima) rv.Y = bounds.Bottom - sukima;
             }
@@ -254,6 +264,10 @@ namespace ablib {
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e) {
             Scroll(new Vector(0, e.Delta / 3));
+        }
+
+        void InkCanvasCollection_SizeChanged(object sender, SizeChangedEventArgs e) {
+            Scroll(new Vector((e.NewSize.Width - e.PreviousSize.Width)/2,0));
         }
         #endregion
 
@@ -266,7 +280,7 @@ namespace ablib {
         }
 
         public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo, int index) {
-            ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);//0.06秒程度
+            ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);
             canvas.BackGroundColor = canvasinfo.BackGround;
             canvas.Mode = Mode;
             canvas.VerticalRule = canvasinfo.VerticalRule.DeepCopy();
@@ -286,7 +300,9 @@ namespace ablib {
             AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
-            ReArrangeCanvas();
+            VerticalArrangeCanvas();
+            //Canvas.SetLeft(canvas, -ActualWidth / 2);
+            Canvas.SetLeft(canvas, -canvasinfo.Size.Width/2);
             //Scale = 12;
             if(index == 0) DrawNoteContents(canvas, Info);
             DrawRules(canvas, canvasinfo.HorizontalRule, canvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
@@ -395,7 +411,7 @@ namespace ablib {
             CanvasCollection.RemoveAt(index);
             innerCanvas.Children.Remove(ic);
             AddUndoChain(new DeleteCanvasCommand(ic, index));
-            ReArrangeCanvas();
+            VerticalArrangeCanvas();
             return;
         }
 
@@ -467,12 +483,12 @@ namespace ablib {
             public void Undo(InkCanvasCollection icc) {
                 icc.CanvasCollection.RemoveAt(index);
                 icc.innerCanvas.Children.Remove(InkCanvas);
-                icc.ReArrangeCanvas();
+                icc.VerticalArrangeCanvas();
             }
             public void Redo(InkCanvasCollection icc) {
                 icc.CanvasCollection.Insert(index, InkCanvas);
                 icc.innerCanvas.Children.Add(InkCanvas);
-                icc.ReArrangeCanvas();
+                icc.VerticalArrangeCanvas();
             }
         }
         class DeleteCanvasCommand : UndoCommand {
@@ -482,12 +498,12 @@ namespace ablib {
             public void Undo(InkCanvasCollection icc) {
                 icc.CanvasCollection.Insert(index, InkCanvas);
                 icc.innerCanvas.Children.Add(InkCanvas);
-                icc.ReArrangeCanvas();
+                icc.VerticalArrangeCanvas();
             }
             public void Redo(InkCanvasCollection icc) {
                 icc.CanvasCollection.RemoveAt(index);
                 icc.innerCanvas.Children.Remove(InkCanvas);
-                icc.ReArrangeCanvas();
+                icc.VerticalArrangeCanvas();
             }
 
         }
@@ -713,18 +729,54 @@ namespace ablib {
                     page.Width = (int)((CanvasCollection[i].Width + 1) * 595 / 800);
                     page.Height = (int)((CanvasCollection[i].Height + 1)* 595 / 800);
                      */
-                    page.Size = PdfSharp.PageSize.A4;
+                    var ps = Paper.GetPaperSize(new Size(CanvasCollection[i].Width, CanvasCollection[i].Height));
+                    // 1 = 1/72インチ = 25.4/72 mm
+                    double scale = (double) 720 / (double) 254 / Paper.mmToSize;
+                    switch(ps) {
+                    case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
+                    case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
+                    case Paper.PaperSize.A2: page.Size = PdfSharp.PageSize.A2; break;
+                    case Paper.PaperSize.A3: page.Size = PdfSharp.PageSize.A3; break;
+                    case Paper.PaperSize.A4: page.Size = PdfSharp.PageSize.A4; break;
+                    case Paper.PaperSize.A5: page.Size = PdfSharp.PageSize.A5; break;
+                    case Paper.PaperSize.B0: page.Size = PdfSharp.PageSize.B0; break;
+                    case Paper.PaperSize.B1: page.Size = PdfSharp.PageSize.B1; break;
+                    case Paper.PaperSize.B2: page.Size = PdfSharp.PageSize.B2; break;
+                    case Paper.PaperSize.B3: page.Size = PdfSharp.PageSize.B3; break;
+                    case Paper.PaperSize.B4: page.Size = PdfSharp.PageSize.B4; break;
+                    case Paper.PaperSize.B5: page.Size = PdfSharp.PageSize.B5; break;
+                    case Paper.PaperSize.Letter: page.Size = PdfSharp.PageSize.Letter; break;
+                    case Paper.PaperSize.Tabloid: page.Size = PdfSharp.PageSize.Tabloid; break;
+                    case Paper.PaperSize.Ledger: page.Size = PdfSharp.PageSize.Ledger; break;
+                    case Paper.PaperSize.Legal: page.Size = PdfSharp.PageSize.Legal; break;
+                    case Paper.PaperSize.Folio: page.Size = PdfSharp.PageSize.Folio; break;
+                    case Paper.PaperSize.Quarto: page.Size = PdfSharp.PageSize.Quarto; break;
+                    case Paper.PaperSize.Executive: page.Size = PdfSharp.PageSize.Executive; break;
+                    case Paper.PaperSize.Statement: page.Size = PdfSharp.PageSize.Statement; break;
+                    case Paper.PaperSize.Other:
+                        page.Width = CanvasCollection[i].Width * scale;
+                        page.Height = CanvasCollection[i].Height * scale;
+                        break;
+                    default:
+                        var s = Paper.GetmmSize(ps);
+                        page.Width = s.Width * 720 / 254;
+                        page.Height = s.Height * 720 / 254;
+                        break;
+                    }
                     var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                    double scale = page.Width / CanvasCollection[i].Width;
-                    if(scale != 1) g.ScaleTransform(scale);
-                    //g.ScaleTransform((double) 595 / (double) 800);
+                    g.ScaleTransform(scale);
                     if(i == 0) DrawNoteContents(g, CanvasCollection[i], Info);
                     DrawRules(g, CanvasCollection[i], (i == 0 && Info.ShowTitle));
                     CanvasCollection[i].InkData.AddPdfGraphic(g);
                 }
+                doc.Info.Creator = "abJournal";
+                doc.Info.Title = Info.Title;
+                doc.Info.CreationDate = Info.Date;
+                doc.Info.ModificationDate = DateTime.Now;
                 doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
             }
         }
+
         /*
         public void SavePDFWithiText(string file) {
             var doc = new iTextSharp.text.Document();
