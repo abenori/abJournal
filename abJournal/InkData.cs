@@ -702,16 +702,7 @@ namespace ablib {
                 g.DrawPath(pen, s.GetPDFPath());                
             }
         }
-        public void DrawPDF(HPdf.HPdfPage page,double height) {
-            foreach(var s in Strokes) {
-                s.DrawPath(page,height);
-            }
-        }
 
-        /*
-        public void AddPdfGraphic(iTextSharp.text.pdf.PdfWriter writer,float height) {
-            foreach(var s in Strokes) s.GetPDFPath(writer.DirectContent, height);
-        }*/
         [ProtoContract]
         class ProtoStylusPointCollection {
             [ProtoMember(1,OverwriteList=true)]
@@ -1068,24 +1059,6 @@ namespace ablib {
             ctrlpt2.Add(Points.Last());
         }
 
-        public void DrawPath(HPdf.HPdfPage page,double height) {
-            PointCollection pts = MabikiPointsType1(StylusPoints);
-            PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
-            GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
-            page.SetRGBStroke((float) DrawingAttributes.Color.R / 256, (float) DrawingAttributes.Color.G / 256, (float) DrawingAttributes.Color.B / 256);
-            if(!DrawingAttributesPlus.IsNormalDashArray) {
-                page.SetDash(DrawingAttributesPlus.DashArray.Select(d => (ushort) d).ToArray(), 0);
-            }
-            page.SetLineCap(HPdf.HPdfLineCap.HPDF_ROUND_END);
-            page.SetLineWidth((float) DrawingAttributes.Width);
-            page.MoveTo((float) pts[0].X, (float) (height - pts[0].Y));
-            for(int i = 0 ; i < pts.Count - 1 ; ++i) {
-                page.CurveTo((float) cpt1[i].X, (float) (height - cpt1[i].Y), (float) cpt2[i].X, (float) (height - cpt2[i].Y), (float) pts[i + 1].X, (float)(height - pts[i + 1].Y));
-            }
-            page.Stroke();
-        }
-
-
         public PdfSharp.Drawing.XGraphicsPath GetPDFPath(){
             var path = new PdfSharp.Drawing.XGraphicsPath();
             PointCollection pts = MabikiPointsType1(StylusPoints);
@@ -1097,27 +1070,6 @@ namespace ablib {
             }
             return path;
         }
-
-        /*
-        public void GetPDFPath(iTextSharp.text.pdf.PdfContentByte cb,float height) {
-            cb.SetColorStroke(new iTextSharp.text.BaseColor(
-                DrawingAttributes.Color.R,
-                DrawingAttributes.Color.G,
-                DrawingAttributes.Color.B,
-                DrawingAttributes.Color.A
-                ));
-            cb.SetLineWidth((float) DrawingAttributes.Width);
-            PointCollection pts = new PointCollection(StylusPoints.Count / 3);
-            MabikiPoints(StylusPoints, ref pts);
-            PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
-            GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
-            cb.MoveTo((float) pts[0].X, height - (float) pts[0].Y);
-            for(int i = 0 ; i < pts.Count - 1 ; ++i) {
-                cb.CurveTo((float) cpt1[i].X, height - (float) cpt1[i].Y, (float) cpt2[i].X, height - (float) cpt2[i].Y, (float) pts[i + 1].X, height - (float) pts[i + 1].Y);
-            }
-            cb.Stroke();
-        }*/
-
     }
 
     /*
