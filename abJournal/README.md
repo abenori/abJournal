@@ -21,7 +21,7 @@
 ## 謝辞
 * PDFへの変換はPDFSharpを使っています．
   <http://pdfsharp.com/PDFsharp/>
-* Protocol Bufferへの（デ）シリアル化はProtobuf-netを使っています．
+* Protocol Buffersへの（デ）シリアル化はProtobuf-netを使っています．
   <http://code.google.com/p/protobuf-net/>
 * Option解析にはNDesk.Optionsを使っています．
   <http://www.ndesk.org/Options>

@@ -701,34 +701,14 @@ namespace ablib {
                 //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                 model.Serialize(wfs, data);
             }
-            /*
-            ablibInkCanvasCollectionSavingData data = new ablibInkCanvasCollectionSavingData();
-            foreach(var c in CanvasCollection) {
-                ablib.InkCanvas.InkCanvasInfo i = new InkCanvas.InkCanvasInfo();
-                i.HorizontalRule = c.HorizontalRule.DeepCopy();
-                i.VerticalRule = c.VerticalRule.DeepCopy();
-                i.Size = new Size(c.Width,c.Height);
-                data.Data.Add(new ablibInkCanvasCollectionSavingData.CanvasData(c.InkData.GetSavingData(),i));
-            }
-            data.Info = Info;
-
-            var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
-            using(System.IO.FileStream wfs = System.IO.File.Create(file)) {
-                using(var zipStream = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
-                    xml.Serialize(zipStream, data);
-                }
-            }*/
             filename = file;
         }
 
+        /*
         public void SavePDF(string file) {
             using(var doc = new PdfSharp.Pdf.PdfDocument()) {
                 for(int i = 0 ; i < Count ; ++i) {
                     var page = doc.AddPage();
-                    /*
-                    page.Width = (int)((CanvasCollection[i].Width + 1) * 595 / 800);
-                    page.Height = (int)((CanvasCollection[i].Height + 1)* 595 / 800);
-                     */
                     var ps = Paper.GetPaperSize(new Size(CanvasCollection[i].Width, CanvasCollection[i].Height));
                     // 1 = 1/72インチ = 25.4/72 mm
                     double scale = (double) 720 / (double) 254 / Paper.mmToSize;
@@ -775,19 +755,47 @@ namespace ablib {
                 doc.Info.ModificationDate = DateTime.Now;
                 doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
             }
-        }
-
-        /*
-        public void SavePDFWithiText(string file) {
-            var doc = new iTextSharp.text.Document();
-            var writer = iTextSharp.text.pdf.PdfWriter.GetInstance(doc, new System.IO.FileStream(file, System.IO.FileMode.Create));
-            doc.Open();
-            for(int i = 0 ; i < Count ; ++i) {
-                doc.NewPage();
-                CanvasCollection[i].InkData.AddPdfGraphic(writer, doc.Right - doc.Left);
-            }
-            doc.Close();
         }*/
+
+        public void SavePDF(string file) {
+            using(var doc = new HPdf.HPdfDoc()){
+                for(int i = 0 ; i < Count ; ++i) {
+                    var page = doc.AddPage();
+                    var ps = Paper.GetPaperSize(new Size(CanvasCollection[i].Width, CanvasCollection[i].Height));
+                    // 1 = 1/72インチ = 25.4/72 mm
+                    double scale = (double) 720 / (double) 254 / Paper.mmToSize;
+                    switch(ps) {
+                    case Paper.PaperSize.A3: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_A3, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.A4: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_A4, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.A5: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_A5, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.B4: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_B4, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.B5: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_B5, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.Letter: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_LETTER, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.Legal: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_LEGAL, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.Executive: page.SetSize(HPdf.HPdfPageSizes.HPDF_PAGE_SIZE_EXECUTIVE, HPdf.HPdfPageDirection.HPDF_PAGE_PORTRAIT); break;
+                    case Paper.PaperSize.Other:
+                        page.SetWidth((float)(CanvasCollection[i].Width * scale));
+                        page.SetHeight((float)(CanvasCollection[i].Height * scale));
+                        break;
+                    default:
+                        var s = Paper.GetmmSize(ps);
+                        page.SetWidth((float)(s.Width * 720 / 254));
+                        page.SetHeight((float)(s.Height * 720 / 254));
+                        break;
+                    }
+                    //if(i == 0) DrawNoteContents(g, CanvasCollection[i], Info);
+                    //DrawRules(g, CanvasCollection[i], (i == 0 && Info.ShowTitle));
+                    //page.SetHorizontalScalling((float)scale);
+                    CanvasCollection[i].InkData.DrawPDF(page, page.GetWidth());
+                }
+                doc.SetInfoAttr(HPdf.HPdfInfoType.HPDF_INFO_CREATOR, "abJournal");
+                doc.SetInfoAttr(HPdf.HPdfInfoType.HPDF_INFO_TITLE, Info.Title);
+                doc.SetInfoDateAttr(HPdf.HPdfInfoType.HPDF_INFO_MOD_DATE, new HPdf.HPdfDate(DateTime.Now));
+                doc.SetInfoDateAttr(HPdf.HPdfInfoType.HPDF_INFO_CREATION_DATE, new HPdf.HPdfDate(Info.Date));
+                doc.SaveToFile(file);
+            }
+        }
+        List<HPdf.HPdfDate> hpdfdates = new List<HPdf.HPdfDate>();
 
         public void ReDraw() {
             foreach(var c in CanvasCollection) c.ReDraw();

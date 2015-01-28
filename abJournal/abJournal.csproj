@@ -30,7 +30,7 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -95,6 +95,7 @@
     </Compile>
     <Compile Include="Converters.cs" />
     <Compile Include="Hotkey.cs" />
+    <Compile Include="hpdf.cs" />
     <Compile Include="Img2Cursor.cs" />
     <Compile Include="InkCanvasCollection.cs" />
     <Compile Include="LowLevelHook.cs" />
