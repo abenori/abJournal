@@ -869,7 +869,7 @@ public class HPdfDoc: IDisposable {
     public void SetEncryptionMode(HPdfEncryptMode mode, uint key_len) {
         HPDF_SetEncryptionMode(hpdf, mode, key_len);
     }
-
+    
     public void SetCompressionMode(uint mode) {
         HPDF_SetCompressionMode(hpdf, mode);
     }

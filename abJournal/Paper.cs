@@ -14,7 +14,7 @@ namespace ablib {
             Other
         };
 
-        static Dictionary<PaperSize, Size> mmsizes = new Dictionary<PaperSize, Size>(){
+        static readonly Dictionary<PaperSize, Size> mmSizes = new Dictionary<PaperSize, Size>(){
 			{PaperSize.A0,new Size(841,1189)},{PaperSize.A1,new Size(594, 841)},
 			{PaperSize.A2,new Size(420, 594)},{PaperSize.A3,new Size(297, 420)},
 			{PaperSize.A4,new Size(210,297)},{PaperSize.A5,new Size(148, 210)},
@@ -50,10 +50,6 @@ namespace ablib {
 			{PaperSize.Statement,new Size(140,216)},
         };
 
-        static Dictionary<PaperSize, Size> mmSizes {
-            get { return mmsizes; }
-        }
-
         // これをmmなサイズにかけると内部長さになる（ということにする）
         public const double mmToSize = (double) 800 / (double) 210;
 
@@ -68,11 +64,12 @@ namespace ablib {
             return GetPaperSizeFrommm(new Size(size.Width / mmToSize, size.Height / mmToSize));
         }
         public static Size GetSize(PaperSize ps) {
-            Size s = mmSizes[ps];
+            Size s = GetmmSize(ps);
             return new Size(s.Width * mmToSize, s.Height * mmToSize);
         }
         public static Size GetmmSize(PaperSize ps) {
-            return mmSizes[ps];
+            try { return mmSizes[ps]; }
+            catch(KeyNotFoundException) { throw new NotImplementedException(); }
         }
     }
 }

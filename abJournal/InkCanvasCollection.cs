@@ -323,7 +323,7 @@ namespace ablib {
 
         void SetSelectedRectTracker(InkCanvas can) {
             int count = 0;
-            Rect bound = new Rect(0, Canvas.GetTop(can), can.Width, can.Height);
+            Rect bound = new Rect(Canvas.GetLeft(can), Canvas.GetTop(can), can.Width, can.Height);
             bound = can.RenderTransform.TransformBounds(bound);
             StrokeDataCollection Strokes = can.InkData.Strokes;
             Rect rect = new Rect();
