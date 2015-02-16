@@ -26,7 +26,7 @@
             <CheckBox Grid.Row="1" Name="ShowTitleCheckBox" VerticalAlignment="Center" IsChecked="{Binding Info.ShowTitle}">タイトル枠を表示</CheckBox>
             <StackPanel Orientation="Horizontal" Grid.Row="2" Margin=" 10 0 0 0" Width="auto">
                 <Label VerticalAlignment="Center" HorizontalAlignment="Right">タイトル：</Label>
-                <TextBox Text="{Binding Info.Title,Mode=TwoWay}" Height="18" Width="210"  IsEnabled="{Binding ElementName=ShowTitleCheckBox,Path=IsChecked}" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                <TextBox Text="{Binding Info.Title,Mode=TwoWay}" Height="18" Width="210" VerticalAlignment="Center" HorizontalAlignment="Left"/>
             </StackPanel>
             <CheckBox Grid.Row="3" IsEnabled="{Binding ElementName=ShowTitleCheckBox, Path=IsChecked}" VerticalAlignment="Center" IsChecked="{Binding Info.ShowDate}">日付を表示</CheckBox>
         </Grid>

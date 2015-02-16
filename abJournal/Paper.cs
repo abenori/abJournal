@@ -14,7 +14,7 @@ namespace ablib {
             Other
         };
 
-        static readonly Dictionary<PaperSize, Size> mmSizes = new Dictionary<PaperSize, Size>(){
+        public static readonly Dictionary<PaperSize, Size> mmSizes = new Dictionary<PaperSize, Size>(){
 			{PaperSize.A0,new Size(841,1189)},{PaperSize.A1,new Size(594, 841)},
 			{PaperSize.A2,new Size(420, 594)},{PaperSize.A3,new Size(297, 420)},
 			{PaperSize.A4,new Size(210,297)},{PaperSize.A5,new Size(148, 210)},

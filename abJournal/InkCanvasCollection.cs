@@ -296,12 +296,11 @@ namespace ablib {
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
             canvas.Mode = Mode;
-            canvas.ReDraw();// これが遅い
+            canvas.ReDraw();
             AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             VerticalArrangeCanvas();
-            //Canvas.SetLeft(canvas, -ActualWidth / 2);
             Canvas.SetLeft(canvas, -canvasinfo.Size.Width/2);
             //Scale = 12;
             if(index == 0) DrawNoteContents(canvas, Info);
@@ -382,7 +381,10 @@ namespace ablib {
         void InkData_StrokeDeleted(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
             if(CanvasContainingSelection != null && CanvasContainingSelection.Equals(sender)) {
                 foreach(var s in e.Strokes) {
-                    if(s.Selected) SetSelectedRectTracker(sender);
+                    if(s.Selected){
+						SetSelectedRectTracker(sender);
+						return;
+					}
                 }
             }
         }
@@ -390,13 +392,19 @@ namespace ablib {
         void InkData_StrokeChanged(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
             //System.Diagnostics.Debug.WriteLine("StrokeChanged");
             foreach(var s in e.Strokes) {
-                if(s.Selected) SetSelectedRectTracker(sender);
+                if(s.Selected){
+					SetSelectedRectTracker(sender);
+					return;
+				}
             }
         }
 
         void InkData_StrokeAdded(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                if(s.Selected) SetSelectedRectTracker(sender);
+                if(s.Selected){
+					SetSelectedRectTracker(sender);
+					return;
+				}
             }
         }
 
@@ -705,12 +713,12 @@ namespace ablib {
         }
 
         public void SavePDF(string file) {
+			double scale = (double) 720 / (double) 254 / Paper.mmToSize;
             using(var doc = new PdfSharp.Pdf.PdfDocument()) {
                 for(int i = 0 ; i < Count ; ++i) {
                     var page = doc.AddPage();
                     var ps = Paper.GetPaperSize(new Size(CanvasCollection[i].Width, CanvasCollection[i].Height));
                     // 1 = 1/72インチ = 25.4/72 mm
-                    double scale = (double) 720 / (double) 254 / Paper.mmToSize;
                     switch(ps) {
                     case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
                     case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
