@@ -135,9 +135,6 @@ namespace ablib {
         }
         #endregion
 
-        #region 紙サイズ
-        #endregion
-
         #region 選択
         RectTracker SelectedRectTracker = new RectTracker();
         InkCanvas CanvasContainingSelection = null;

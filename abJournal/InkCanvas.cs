@@ -15,11 +15,9 @@ using ProtoBuf;
 
 namespace ablib {
     public class InkCanvas : Canvas {
+        #region 公開用プロパティ
         // データ
         public InkData InkData {get; set;}
-
-        // Strokeに対応する描画されているもの
-        Dictionary<StrokeData, Shape> Paths = new Dictionary<StrokeData, Shape>();
 
         // 設定用
         InkManipulationMode mode;
@@ -67,17 +65,6 @@ namespace ablib {
             get { return StrokeDrawingAttributesPlus.DashArray; }
             set { StrokeDrawingAttributesPlus.DashArray = value; }
         }
-
-        // 一時退避
-        InkManipulationMode SavedMode;
-        void SaveMode() {
-            SavedMode = Mode;
-        }
-
-        void RestoreMode() {
-            Mode = SavedMode;
-        }
-
         Color backGroundColor = Colors.White;
         public Color BackGroundColor {
             get { return backGroundColor; }
@@ -113,8 +100,8 @@ namespace ablib {
                 return rv;
             }
         }
-        [ProtoContract(SkipConstructor=true)]
-        public class InkCanvasInfo{
+        [ProtoContract(SkipConstructor = true)]
+        public class InkCanvasInfo {
             [ProtoMember(1)]
             public Rule HorizontalRule = new Rule();
             [ProtoMember(2)]
@@ -122,10 +109,10 @@ namespace ablib {
             [ProtoMember(3)]
             public Size Size = new Size();
             [ProtoMember(4)]
-            public Color BackGround {get;set;}
-            public InkCanvasInfo(){
-				BackGround = Colors.White;
-			}
+            public Color BackGround { get; set; }
+            public InkCanvasInfo() {
+                BackGround = Colors.White;
+            }
             public InkCanvasInfo DeepCopy() {
                 InkCanvasInfo rv = new InkCanvasInfo();
                 rv.HorizontalRule = HorizontalRule.DeepCopy();
@@ -140,13 +127,28 @@ namespace ablib {
                 return new InkCanvasInfo() {
                     HorizontalRule = HorizontalRule.DeepCopy(),
                     VerticalRule = VerticalRule.DeepCopy(),
-                    Size = new Size(Width,Height),
+                    Size = new Size(Width, Height),
                     BackGround = BackGroundColor
                 };
             }
         }
         public Rule HorizontalRule = new Rule();
         public Rule VerticalRule = new Rule();
+        #endregion
+
+        // Strokeに対応する描画されているもの
+        Dictionary<StrokeData, Shape> Paths = new Dictionary<StrokeData, Shape>();
+
+        // 一時退避
+        InkManipulationMode SavedMode;
+        void SaveMode() {
+            SavedMode = Mode;
+        }
+
+        void RestoreMode() {
+            Mode = SavedMode;
+        }
+
 
         // newしまくらないためだけ
         static DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
@@ -227,6 +229,7 @@ namespace ablib {
             }
         }
 
+        #region InkDataからの通知を受け取る
         public event InkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
 
         protected virtual void OnUndoChainChanged(InkData.UndoChainChangedEventArgs e) {
@@ -240,7 +243,6 @@ namespace ablib {
             }
         }
 
-        // Strokeの描画は，InkDataからの通知に応じて行う
         void InkData_StrokeChanged(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes){
                 Path p = (Path) Paths[s];
@@ -267,40 +269,22 @@ namespace ablib {
         void InkData_UndoChainChanged(object sender, InkData.UndoChainChangedEventArgs e) {
             OnUndoChainChanged(e);
         }
+        #endregion
 
-        #region イベントハンドラ
+        #region 描画
         // 内部状態保持用変数
-        int PenID = 0;
         int StartDrawingIndexOfChildren = -1;
         StylusPoint PrevPoint;
         PathFigure StrokePathFigure;
         Path StrokePathWhenDrawing;
-        protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
-            //base.OnStylusDown(e);
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
-            PrevPoint = e.GetStylusPoints(this)[0];
-            //PrevPoint = new StylusPoint(e.GetPosition(this).X, e.GetPosition(this).Y, 0.5f);
-            SaveMode();
 
-
-            // VAIO Duo 13の場合
-            // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
-            // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
-            // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
-            if(e.StylusDevice.Name == "Eraser") {
-                Mode = InkManipulationMode.Erasing;
-            } else if(
-                 e.StylusDevice.StylusButtons.Count > 1 &&
-                 e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
-             ) {
-                Mode = InkManipulationMode.Selecting;
-            }
+        void DrawingStart(StylusPoint pt) {
+            PrevPoint = pt;
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, PrevPoint);
-            PenID = e.StylusDevice.Id;
             StartDrawingIndexOfChildren = Children.Count;
-            if(Mode != InkManipulationMode.Erasing){
+            if(Mode != InkManipulationMode.Erasing) {
                 StrokePathFigure = new PathFigure() {
-                    StartPoint = PrevPoint.ToPoint()
+                    StartPoint = pt.ToPoint()
                 };
                 var geometry = new PathGeometry();
                 geometry.Figures.Add(StrokePathFigure);
@@ -322,19 +306,7 @@ namespace ablib {
                 Children.Add(StrokePathWhenDrawing);
             }
         }
-
-        protected override void OnStylusMove(System.Windows.Input.StylusEventArgs e) {
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
-                /*
-                System.Diagnostics.Debug.WriteLine("TouchMove");
-                System.Diagnostics.Debug.WriteLine(e.GetStylusPoints(this)[0].ToPoint());
-                System.Diagnostics.Debug.WriteLine(e.GetPosition(this));
-                 */ 
-                return;
-            }
-            if(PenID != e.StylusDevice.Id) return;
-            var pt = e.GetStylusPoints(this)[0];
-            //var pt = new StylusPoint(e.GetPosition(this).X,e.GetPosition(this).Y);
+        void Drawing(StylusPoint pt) {
             if(Mode == InkManipulationMode.Inking) {
                 StrokePathFigure.Segments.Add(new LineSegment() {
                     Point = pt.ToPoint(),
@@ -354,9 +326,7 @@ namespace ablib {
             } else InkData.ProcessPointerUpdate(pt);
         }
 
-        protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
-            if(PenID != e.StylusDevice.Id) return;
+        void DrawingEnd(StylusPoint pt) {
             if(Mode == InkManipulationMode.Inking) {
                 //Children.RemoveAt(Children.Count - 1);
                 //Children.RemoveRange(StartDrawingIndexOfChildren, Children.Count - StartDrawingIndexOfChildren);
@@ -372,8 +342,119 @@ namespace ablib {
                     if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
                 }
             }
-            PenID = 0;// 描画終了
             InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
+        }
+        #endregion
+
+        #region イベントハンドラ
+        int PenID = 0;
+        int TouchType = 0;
+        const int STYLUS = 1;
+        const int TOUCH = 2;
+        const int MOUSE = 3;
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            if(e.ClickCount != 1) return;
+            var pt = e.GetPosition(this);
+            DrawingStart(new StylusPoint(pt.X, pt.Y));
+            TouchType = MOUSE;
+            e.Handled = true;
+        }
+        protected override void OnMouseMove(MouseEventArgs e) {
+            if(TouchType != MOUSE) return;
+            if(e.LeftButton == MouseButtonState.Pressed) {
+                var pt = e.GetPosition(this);
+                Drawing(new StylusPoint(pt.X, pt.Y));
+                e.Handled = true;
+            }
+        }
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
+            if(TouchType != MOUSE) return;
+            var pt = e.GetPosition(this);
+            DrawingEnd(new StylusPoint(pt.X, pt.Y));
+            e.Handled = true;
+            TouchType = 0;
+        }
+
+        protected override void OnTouchDown(TouchEventArgs e) {
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            var pt = e.GetTouchPoint(this);
+            System.Diagnostics.Debug.WriteLine(pt.Size);
+            if(pt.Size.Width < 5 && pt.Size.Height < 5) {
+                DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
+                PenID = e.TouchDevice.Id;
+                TouchType = TOUCH;
+                e.Handled = true;
+            }
+        }
+        protected override void OnTouchMove(TouchEventArgs e) {
+            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
+                var pt = e.GetTouchPoint(this);
+                Drawing(new StylusPoint(pt.Position.X, pt.Position.Y));
+                e.Handled = true;
+            }
+        }
+        protected override void OnTouchUp(TouchEventArgs e) {
+            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
+                var pt = e.GetTouchPoint(this);
+                DrawingEnd(new StylusPoint(pt.Position.X, pt.Position.Y));
+                PenID = 0;
+                TouchType = 0;
+                e.Handled = true;
+            }
+        }
+        protected override void OnTouchLeave(TouchEventArgs e) {
+            OnTouchUp(e);
+        }
+        protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            //base.OnStylusDown(e);
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            SaveMode();
+
+            // VAIO Duo 13の場合
+            // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
+            // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
+            // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
+            if(e.StylusDevice.Name == "Eraser") {
+                Mode = InkManipulationMode.Erasing;
+            } else if(
+                 e.StylusDevice.StylusButtons.Count > 1 &&
+                 e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
+             ) {
+                Mode = InkManipulationMode.Selecting;
+            }
+            PenID = e.StylusDevice.Id;
+            TouchType = STYLUS;
+            DrawingStart(e.GetStylusPoints(this)[0]);
+        }
+
+        protected override void OnStylusMove(System.Windows.Input.StylusEventArgs e) {
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
+                /*
+                System.Diagnostics.Debug.WriteLine("TouchMove");
+                System.Diagnostics.Debug.WriteLine(e.GetStylusPoints(this)[0].ToPoint());
+                System.Diagnostics.Debug.WriteLine(e.GetPosition(this));
+                 */ 
+                return;
+            }
+            if(TouchType != STYLUS) return;
+            if(PenID != e.StylusDevice.Id) return;
+            var pt = e.GetStylusPoints(this)[0];
+            //var pt = new StylusPoint(e.GetPosition(this).X,e.GetPosition(this).Y);
+            Drawing(pt);
+        }
+
+        protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            if(PenID != e.StylusDevice.Id) return;
+            if(TouchType != STYLUS) return;
+            PenID = 0;// 描画終了
+            TouchType = 0;
+            DrawingEnd(e.GetStylusPoints(this)[0]);
             RestoreMode();
         }
         protected override void OnStylusLeave(System.Windows.Input.StylusEventArgs e) {

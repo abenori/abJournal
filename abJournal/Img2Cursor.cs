@@ -13,7 +13,7 @@ namespace ablib {
     // なのでここだけSystem.Drawing名前空間（WPFじゃない）
     // リソースから読んだりもするので，こっちの方が便利だったりもする．
     public class Img2Cursor {
-        // Type-safe stream handling
+        // TouchType-safe stream handling
         public class CursorStream : MemoryStream { }
         public static System.Windows.Input.Cursor MakeCursor(Image bmp, System.Windows.Point hotSpot, System.Windows.Point backGround) {
             return new System.Windows.Input.Cursor(Create(bmp, hotSpot, backGround));
@@ -45,7 +45,7 @@ namespace ablib {
             CursorStream ret = new CursorStream();
             BinaryWriter bw = new BinaryWriter(ret);
             bw.Write((short) 0);   // Reserved, must be zero
-            bw.Write((short) 2);   // Type, 2 = cursor
+            bw.Write((short) 2);   // TouchType, 2 = cursor
             bw.Write((short) 1);   // Number of images
             // Write the .cur image directory
             byte width = bmp.Width == 256 ? (byte) 0 : (byte) bmp.Width;

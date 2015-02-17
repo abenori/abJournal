@@ -341,11 +341,11 @@ namespace ablib {
                 StrokeDataCollection deleted = new StrokeDataCollection();
                 Strokes.RemoveAll(s => {
                     if(s.HitTest(point.ToPoint(), 3)) {
-                        ProcessUndoGroup.Add(new DeleteStrokeCommand(s));
                         deleted.Add(s);
                         return true;
                     } else return false;
                 });
+                ProcessUndoGroup.Add(new DeleteStrokeCommand(deleted));
                 OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
             } else if(ProcessMode == InkManipulationMode.Selecting) {
                 //if(ProcessStylusPointCollection.Count % 50 == 0) {
