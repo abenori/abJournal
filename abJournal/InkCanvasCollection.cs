@@ -121,6 +121,15 @@ namespace ablib {
                 scale = value;
             }
         }
+        bool ignorePressure = true;
+        public bool IgnorePressure {
+            get { return ignorePressure; }
+            set {
+                ignorePressure = value;
+                foreach(var c in CanvasCollection) c.IgnorePressure = value;
+                ReDraw();
+            }
+        }
 
         public new Brush Background {
             get { return base.Background; }
@@ -155,6 +164,7 @@ namespace ablib {
             innerCanvas.Background = Background;
             innerCanvas.RenderTransform = new MatrixTransform();
             innerCanvas.MouseDown += innerCanvas_MouseDown;
+            innerCanvas.TouchDown += innerCanvas_TouchDown;
             Children.Add(innerCanvas);
 
             SelectedRectTracker.MouseMove += SelectedRectTracker_MouseMove;
@@ -278,6 +288,7 @@ namespace ablib {
 
         public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo, int index) {
             ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);
+            canvas.IgnorePressure = ignorePressure;
             canvas.BackGroundColor = canvasinfo.BackGround;
             canvas.Mode = Mode;
             canvas.VerticalRule = canvasinfo.VerticalRule.DeepCopy();
@@ -304,18 +315,39 @@ namespace ablib {
             DrawRules(canvas, canvasinfo.HorizontalRule, canvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
 
+        public void DeleteCanvas(int index) {
+            if(index < 0 || index >= CanvasCollection.Count) return;
+            InkCanvas ic = CanvasCollection[index];
+            CanvasCollection.RemoveAt(index);
+            innerCanvas.Children.Remove(ic);
+            AddUndoChain(new DeleteCanvasCommand(ic, index));
+            VerticalArrangeCanvas();
+            return;
+        }
+
         #region 選択関係
+        void innerCanvas_TouchDown(object sender, TouchEventArgs e) {
+            if(SelectedRectTracker.Visibility == Visibility.Visible) {
+                var pt = e.GetTouchPoint(innerCanvas).Position;
+                CheckPointInSelection(pt.X, pt.Y);
+            }
+        }
+
         void innerCanvas_MouseDown(object sender, MouseButtonEventArgs e) {
             if(SelectedRectTracker.Visibility == Visibility.Visible) {
                 var pt = e.GetPosition(innerCanvas);
-                double x = Canvas.GetLeft(SelectedRectTracker);
-                double y = Canvas.GetTop(SelectedRectTracker);
-                if(pt.X < x || pt.X > x + SelectedRectTracker.Width || pt.Y < y || pt.Y > y + SelectedRectTracker.Height) {
-                    // RectTrackerから外れたら選択を解除する．
-                    if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
-                }
+                CheckPointInSelection(pt.X, pt.Y);
             }
         }
+        void CheckPointInSelection(double x,double y) {
+            double sx = Canvas.GetLeft(SelectedRectTracker);
+            double sy = Canvas.GetTop(SelectedRectTracker);
+            if(x < sx || x > sx + SelectedRectTracker.Width || y < sy || y > sy + SelectedRectTracker.Height) {
+                // RectTrackerから外れたら選択を解除する．
+                if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
+            }
+        }
+
 
         void SetSelectedRectTracker(InkCanvas can) {
             int count = 0;
@@ -408,17 +440,6 @@ namespace ablib {
         void InkData_StrokeSelectedChanged(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
             SetSelectedRectTracker(sender);
         }
-        #endregion
-
-        public void DeleteCanvas(int index) {
-            if(index < 0 || index >= CanvasCollection.Count) return;
-            InkCanvas ic = CanvasCollection[index];
-            CanvasCollection.RemoveAt(index);
-            innerCanvas.Children.Remove(ic);
-            AddUndoChain(new DeleteCanvasCommand(ic, index));
-            VerticalArrangeCanvas();
-            return;
-        }
 
         void SelectedRectTracker_MouseMove(object sender, MouseEventArgs e) {
             if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
@@ -447,7 +468,7 @@ namespace ablib {
                 }
             }
         }
-
+        #endregion
 
         #region Undo/Redo関係
         interface UndoCommand {

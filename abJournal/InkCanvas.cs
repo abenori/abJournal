@@ -31,14 +31,16 @@ namespace ablib {
             }
         }
 
-        // 筆圧情報を使うかどうか……なんだけど現状まともに実装されていないので，基本falseと同様です．
-        bool usePressure;
-        public bool UsePressure {
-            get { return usePressure; }
+        bool ignorePressure;
+        public bool IgnorePressure {
+            get { return ignorePressure; }
             set {
                 if(PenID == 0) {
-                    StrokeDrawingAttributes.IgnorePressure = !value;
-                    usePressure = value;
+                    if(ignorePressure != value) {
+                        ignorePressure = value;
+                        StrokeDrawingAttributes.IgnorePressure = value;
+                        foreach(var s in InkData.Strokes) s.DrawingAttributes.IgnorePressure = value;
+                    }
                 }
             }
         }
@@ -148,8 +150,6 @@ namespace ablib {
         void RestoreMode() {
             Mode = SavedMode;
         }
-
-
         // newしまくらないためだけ
         static DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
 
@@ -181,12 +181,15 @@ namespace ablib {
         void SetCursor() {
             switch(Mode) {
             case InkManipulationMode.Inking:
-                Cursor = MakeInkingCursor(PenThickness, PenColor); break;
+                SetCursor(MakeInkingCursor(PenThickness, PenColor)); break;
             case InkManipulationMode.Erasing:
-                Cursor = ErasingCursor; break;
+                SetCursor(ErasingCursor); break;
             default:
-                Cursor = Cursors.Cross; break;
+                SetCursor(Cursors.Cross); break;
             }
+        }
+        void SetCursor(Cursor c) {
+            if(c != Cursor) Cursor = c;
         }
 
 
@@ -194,7 +197,7 @@ namespace ablib {
             InkData = d;
             Width = width; Height = height;
             PenThickness = 2;
-            usePressure = false;
+            ignorePressure = true;
             PenColor = Colors.Black;
             Mode = InkManipulationMode.Inking;
             BackGroundColor = Colors.White;
@@ -283,35 +286,53 @@ namespace ablib {
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, PrevPoint);
             StartDrawingIndexOfChildren = Children.Count;
             if(Mode != InkManipulationMode.Erasing) {
-                StrokePathFigure = new PathFigure() {
-                    StartPoint = pt.ToPoint()
-                };
-                var geometry = new PathGeometry();
-                geometry.Figures.Add(StrokePathFigure);
-                if(Mode == InkManipulationMode.Inking) {
-                    StrokePathWhenDrawing = new Path() {
-                        Data = geometry,
-                        StrokeThickness = PenThickness,
-                        Stroke = StrokeBrush,
-                        StrokeDashArray = StrokeDrawingAttributesPlus.DashArray
+                if(Mode != InkManipulationMode.Inking || !StrokeDrawingAttributesPlus.IsNormalDashArray) {
+                    StrokePathFigure = new PathFigure() {
+                        StartPoint = pt.ToPoint()
                     };
-                } else {
-                    StrokePathWhenDrawing = new Path() {
-                        Data = geometry,
-                        StrokeThickness = 2,
-                        Stroke = Brushes.Orange,
-                        StrokeDashArray = DottedDoubleCollection
-                    };
+                    var geometry = new PathGeometry();
+                    geometry.Figures.Add(StrokePathFigure);
+                    if(Mode == InkManipulationMode.Inking) {
+                        StrokePathWhenDrawing = new Path() {
+                            Data = geometry,
+                            StrokeThickness = PenThickness,
+                            Stroke = StrokeBrush,
+                            StrokeDashArray = StrokeDrawingAttributesPlus.DashArray
+                        };
+                    } else {
+                        StrokePathWhenDrawing = new Path() {
+                            Data = geometry,
+                            StrokeThickness = 2,
+                            Stroke = Brushes.Orange,
+                            StrokeDashArray = DottedDoubleCollection
+                        };
+                    }
+                    Children.Add(StrokePathWhenDrawing);
                 }
-                Children.Add(StrokePathWhenDrawing);
             }
         }
         void Drawing(StylusPoint pt) {
             if(Mode == InkManipulationMode.Inking) {
-                StrokePathFigure.Segments.Add(new LineSegment() {
-                    Point = pt.ToPoint(),
-                    IsSmoothJoin = true
-                });
+                if(!StrokeDrawingAttributesPlus.IsNormalDashArray) {
+                    StrokePathFigure.Segments.Add(new LineSegment() {
+                        Point = pt.ToPoint(),
+                        IsSmoothJoin = true
+                    });
+                } else {
+                    double thickness = PenThickness;
+                    if(!StrokeDrawingAttributes.IgnorePressure) {
+                        thickness *= (pt.PressureFactor * 2);
+                    }
+                    Children.Add(new Line() {
+                        X1 = PrevPoint.X,
+                        Y1 = PrevPoint.Y,
+                        X2 = pt.X,
+                        Y2 = pt.Y,
+                        Stroke = StrokeBrush,
+                        StrokeDashArray = StrokeDrawingAttributesPlus.DashArray,
+                        StrokeThickness = thickness
+                    });
+                }
                 PrevPoint = pt;
                 InkData.ProcessPointerUpdate(pt);
             } else if(Mode == InkManipulationMode.Selecting) {
@@ -328,16 +349,17 @@ namespace ablib {
 
         void DrawingEnd(StylusPoint pt) {
             if(Mode == InkManipulationMode.Inking) {
-                //Children.RemoveAt(Children.Count - 1);
-                //Children.RemoveRange(StartDrawingIndexOfChildren, Children.Count - StartDrawingIndexOfChildren);
-                //StartDrawingIndexOfChildren = -1;
-                for(int i = Children.Count - 1 ; i >= 0 ; --i) {
-                    if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
+                if(!StrokeDrawingAttributesPlus.IsNormalDashArray) {
+                    for(int i = Children.Count - 1 ; i >= 0 ; --i) {
+                        if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
+                    }
+                } else {
+                    Children.RemoveAt(Children.Count - 1);
+                    Children.RemoveRange(StartDrawingIndexOfChildren, Children.Count - StartDrawingIndexOfChildren);
                 }
+                StartDrawingIndexOfChildren = -1;
             } else if(Mode == InkManipulationMode.Selecting) {
-                //Children.RemoveAt(Children.Count - 1);
-                //Children.RemoveRange(StartDrawingIndexOfChildren, Children.Count - StartDrawingIndexOfChildren);
-                //StartDrawingIndexOfChildren = -1;
+                StartDrawingIndexOfChildren = -1;
                 for(int i = Children.Count - 1 ; i >= 0 ; --i) {
                     if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
                 }
@@ -362,11 +384,12 @@ namespace ablib {
             e.Handled = true;
         }
         protected override void OnMouseMove(MouseEventArgs e) {
-            if(TouchType != MOUSE) return;
-            if(e.LeftButton == MouseButtonState.Pressed) {
+            if(TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
                 var pt = e.GetPosition(this);
                 Drawing(new StylusPoint(pt.X, pt.Y));
                 e.Handled = true;
+            } else {
+                if(e.StylusDevice == null) SetCursor(null);
             }
         }
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
@@ -376,12 +399,21 @@ namespace ablib {
             e.Handled = true;
             TouchType = 0;
         }
-
+        protected override void OnMouseLeave(MouseEventArgs e) {
+            if(e.LeftButton == MouseButtonState.Pressed) {
+                if(TouchType != MOUSE) return;
+                var pt = e.GetPosition(this);
+                DrawingEnd(new StylusPoint(pt.X, pt.Y));
+                e.Handled = true;
+                TouchType = 0;
+            }
+        }
         protected override void OnTouchDown(TouchEventArgs e) {
+            SetCursor();
             if(PenID != 0) return;
             if(TouchType != 0) return;
             var pt = e.GetTouchPoint(this);
-            System.Diagnostics.Debug.WriteLine(pt.Size);
+            //System.Diagnostics.Debug.WriteLine(pt.Size);
             if(pt.Size.Width < 5 && pt.Size.Height < 5) {
                 DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
                 PenID = e.TouchDevice.Id;
@@ -407,6 +439,9 @@ namespace ablib {
         }
         protected override void OnTouchLeave(TouchEventArgs e) {
             OnTouchUp(e);
+        }
+        protected override void OnStylusInAirMove(StylusEventArgs e) {
+            SetCursor();
         }
         protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
             if(PenID != 0) return;
@@ -468,7 +503,7 @@ namespace ablib {
             if(InkData.Strokes.Count == 0) return;
             foreach(var s in InkData.Strokes) {
                 var p = new Path();
-                s.GetPath(ref p);
+                s.GetPath(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, s.Selected, InkData.DrawingAlgorithm);
                 Children.Add(p);
                 Paths[s] = p;
                 /*
@@ -498,25 +533,6 @@ namespace ablib {
         public void Paste() {
             InkData.BeginUndoGroup();
             InkData.Paste();
-            // 大きすぎる場合は縮小する
-            /*
-            double x = Canvas.GetLeft(SelectedRectTracker);
-            double y = Canvas.GetTop(SelectedRectTracker);
-            double width = SelectedRectTracker.Width;
-            double height = SelectedRectTracker.Height;
-            if(x + width > Width) {
-                height = height * (Width - x) / width;
-                width = Width - x;
-            }
-            if(height > Height - y) {
-                width = width * (Height - y) / height;
-                height = Height - y;
-            }
-            if(width == Width - x || height == Height - y) {
-                InkData.MoveSelected(
-                    new Rect(x, y, SelectedRectTracker.Width, SelectedRectTracker.Height),
-                    new Rect(x, y, width, height));
-            }*/
             InkData.EndUndoGroup();
         }
 
@@ -531,16 +547,22 @@ namespace ablib {
             InkData.ClearSelected();
         }
 
-        public Canvas GetCanvas(DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet) {
+        public Canvas GetCanvas(DrawingAlgorithm algorithm,bool ignorepressure) {
             Canvas canvas = new Canvas();
             canvas.Height = Height; canvas.Width = Width;
             canvas.Background = Background;
             foreach(var s in InkData.Strokes) {
                 var p = new Path();
-                s.GetPath(ref p, s.DrawingAttributes,s.DrawingAttributesPlus, false,algorithm);
+                bool ignpres = s.DrawingAttributes.IgnorePressure;
+                s.DrawingAttributes.IgnorePressure = ignorepressure;
+                s.GetPath(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, false, algorithm);
+                s.DrawingAttributes.IgnorePressure = ignpres;
                 canvas.Children.Add(p);
             }
             return canvas;
+        }
+        public Canvas GetCanvas(DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet){
+            return GetCanvas(algorithm, ignorePressure);
         }
     }
 }

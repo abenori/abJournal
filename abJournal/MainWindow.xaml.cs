@@ -135,6 +135,7 @@ namespace abJournal {
             ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
             CurrentPen = 0;
             MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
+            MainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
 
             files.RemoveAll(f => {
                 if(!System.IO.File.Exists(f)) {
@@ -370,6 +371,7 @@ namespace abJournal {
             if(dialog.ShowDialog() == true) {
                 MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
                 SetLowLevelKeyboardHook();
+                MainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
             }
         }
 

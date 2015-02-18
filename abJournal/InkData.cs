@@ -121,10 +121,13 @@ namespace ablib {
         public void GetPath(ref System.Windows.Shapes.Path p) {
             GetPathImpl(ref p, DrawingAttributes, DrawingAttributesPlus, Selected,algorithm);
         }
-        // Strokg.GetGeometry = 厚みがある：「二重線」ができる．
+        // Strokg.GetGeometry = 厚みがある：「二重線」ができる，筆圧に反応できる
         // GetOriginalGeometryType1：線でひく：破線が引ける
         // これらの特徴のため，Algoithmが無視されることがある
         void GetPathImpl(ref System.Windows.Shapes.Path p, DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo) {
+            p.StrokeDashArray = dattrPlus.DashArray;
+            p.StrokeEndLineCap = PenLineCap.Round;
+            p.StrokeStartLineCap = PenLineCap.Round;
             if(geometry == null) matrixTransform = null;
             if(selecting) {
                 if(geometry == null) geometry = base.GetGeometry();
@@ -132,41 +135,30 @@ namespace ablib {
                 p.Stroke = Brush;
                 p.StrokeThickness = dattr.Width / 5;
             } else {
-                switch(algo) {
-                case DrawingAlgorithm.Type1:
+                // 点線 --> Original
+                // 筆圧 --> Stroke.GetGeometry()
+                if(drawingAttributesPlus.IsNormalDashArray && 
+                    (algo == DrawingAlgorithm.dotNet || !DrawingAttributes.IgnorePressure)
+                ) {
+                    if(geometry == null) geometry = base.GetGeometry();
+                    p.Fill = Brush;
+                    p.Stroke = null;
+                    p.StrokeThickness = 0;
+                } else {
+                    switch(algo) {
+                    case DrawingAlgorithm.Type1WithHosei:
+if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(GetHoseiPoints(StylusPoints)));
+                    p.Fill = null;
+                    p.Stroke = Brush;
+                    break;
+                    case DrawingAlgorithm.Type1:
+                    case DrawingAlgorithm.dotNet:
                     if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(StylusPoints));
                     p.Fill = null;
                     p.Stroke = Brush;
                     p.StrokeThickness = dattr.Width;
-                    p.StrokeDashArray = dattrPlus.DashArray;
-                    p.StrokeEndLineCap = PenLineCap.Round;
-                    p.StrokeStartLineCap = PenLineCap.Round;
-                    break;
-                case DrawingAlgorithm.Type1WithHosei:
-                    if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(GetHoseiPoints(StylusPoints)));
-                    p.Fill = null;
-                    p.Stroke = Brush;
-                    p.StrokeThickness = dattr.Width;
-                    p.StrokeDashArray = dattrPlus.DashArray;
-                    p.StrokeEndLineCap = PenLineCap.Round;
-                    p.StrokeStartLineCap = PenLineCap.Round;
-                    break;
-                default:
-                    if(!dattrPlus.IsNormalDashArray) {
-                        if(geometry == null) geometry = GetOriginalGeometryType1(StylusPointCollection2PointCollection(StylusPoints));
-                        p.Fill = null;
-                        p.Stroke = Brush;
-                        p.StrokeThickness = dattr.Width;
-                        p.StrokeDashArray = dattrPlus.DashArray;
-                        p.StrokeEndLineCap = PenLineCap.Round;
-                        p.StrokeStartLineCap = PenLineCap.Round;
-                    } else {
-                        if(geometry == null) geometry = base.GetGeometry();
-                        p.Fill = Brush;
-                        p.Stroke = null;
-                        p.StrokeThickness = 0;
+                        break;
                     }
-                    break;
                 }
             }
             p.Data = geometry;
@@ -962,17 +954,17 @@ namespace ablib {
             return rv;
         }
 
-        Geometry GetOriginalGeometryType1(PointCollection Points) {
+        Geometry GetOriginalGeometryType1(StylusPointCollection Points) {
             if(Points.Count <= 1) {
                 return new StreamGeometry();
             }
             StreamGeometry rv = new StreamGeometry();
             using(var ctx = rv.Open()) {
-                ctx.BeginFigure(Points[0], false, false);
+                ctx.BeginFigure(Points[0].ToPoint(), false, false);
                 PointCollection ctrl1 = new PointCollection(), ctrl2 = new PointCollection();
                 GenerateBezierControlPointsType1(Points, ref ctrl1, ref ctrl2);
                 for(int i = 1 ; i < Points.Count ; ++i) {
-                    ctx.BezierTo(ctrl1[i - 1], ctrl2[i - 1], Points[i], true, false);
+                    ctx.BezierTo(ctrl1[i - 1], ctrl2[i - 1], Points[i].ToPoint(), true, false);
                 }
             }
             rv.Freeze();
@@ -983,12 +975,15 @@ namespace ablib {
         // 点から点に線をひいて，どのくらいずれているか計測する．
         // ずれが大きくないならば，その間を間引く
         // i : 手元の点，j：先の点
-        PointCollection MabikiPointsType1(StylusPointCollection Points) {
-            var nokoriPoints = new PointCollection(Points.Count / 2);
-            nokoriPoints.Add(Points[0].ToPoint());
+        StylusPointCollection MabikiPointsType1(StylusPointCollection Points) {
+            var nokoriPoints = new StylusPointCollection(Points.Description,Points.Count / 2);
+            nokoriPoints.Add(Points[0]);
             for(int i = 0 ; i < Points.Count - 1 ; ++i) {
+                double pressuresum = 0;
                 for(int j = i + 2 ; j < Points.Count - 1 ; ++j) {
                     // 間を結ぶ直線の法線
+                    pressuresum += Points[j].PressureFactor;
+                    double pressuremean = pressuresum / (j - i - 1);
                     var hou = new Vector(Points[j].Y - Points[i].Y, -Points[j].X + Points[i].X);
                     hou.Normalize();
                     // 直線：(hou,x) + c = 0
@@ -1000,15 +995,19 @@ namespace ablib {
                             mabiku = true;
                             break;
                         }
+                        if(!DrawingAttributes.IgnorePressure && Math.Abs(Points[k].PressureFactor - pressuremean) > 0.1) {
+                            mabiku = true;
+                            break;
+                        }
                     }
                     if(mabiku) {
-                        nokoriPoints.Add(Points[j].ToPoint());
+                        nokoriPoints.Add(Points[j]);
                         i = j;
                         break;
                     }
                 }
             }
-            nokoriPoints.Add(Points.Last().ToPoint());
+            nokoriPoints.Add(Points.Last());
             return nokoriPoints;
         }
         /*
@@ -1042,26 +1041,26 @@ namespace ablib {
         // http://www.antigrain.com/research/bezier_interpolation/
         // から．
         // 端のところのcontrol pointは最初の点にする．
-        void GenerateBezierControlPointsType1(PointCollection Points, ref PointCollection ctrlpt1, ref PointCollection ctrlpt2) {
+        void GenerateBezierControlPointsType1(StylusPointCollection Points, ref PointCollection ctrlpt1, ref PointCollection ctrlpt2) {
             System.Diagnostics.Debug.Assert(Points.Count >= 2);
             ctrlpt1.Clear(); ctrlpt2.Clear();
-            Point firstCtrlPoint = Points[0];
-            double prevLength = (Points[1] - Points[0]).Length;
+            Point firstCtrlPoint = Points[0].ToPoint();
+            double prevLength = (Points[1].ToPoint() - Points[0].ToPoint()).Length;
             for(int i = 1 ; i < Points.Count - 1 ; ++i) {
-                double length = (Points[i + 1] - Points[i]).Length;
-                Vector vec = (Points[i + 1] - Points[i - 1]) / 2;
+                double length = (Points[i + 1].ToPoint() - Points[i].ToPoint()).Length;
+                Vector vec = (Points[i + 1].ToPoint() - Points[i - 1].ToPoint()) / 2;
                 ctrlpt1.Add(firstCtrlPoint);
-                ctrlpt2.Add(Points[i] - (vec * prevLength / (length + prevLength)));
-                firstCtrlPoint = Points[i] + (vec * length) / (length + prevLength);
+                ctrlpt2.Add(Points[i].ToPoint() - (vec * prevLength / (length + prevLength)));
+                firstCtrlPoint = Points[i].ToPoint() + (vec * length) / (length + prevLength);
                 prevLength = length;
             }
             ctrlpt1.Add(firstCtrlPoint);
-            ctrlpt2.Add(Points.Last());
+            ctrlpt2.Add(Points.Last().ToPoint());
         }
 
         public PdfSharp.Drawing.XGraphicsPath GetPDFPath(){
             var path = new PdfSharp.Drawing.XGraphicsPath();
-            PointCollection pts = MabikiPointsType1(StylusPoints);
+            StylusPointCollection pts = MabikiPointsType1(StylusPoints);
             PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
             GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
             path.StartFigure();

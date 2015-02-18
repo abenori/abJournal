@@ -81,5 +81,17 @@ namespace abJournal.Properties {
                 this["IsBlockWindowsKey"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool IgnorePressure {
+            get {
+                return ((bool)(this["IgnorePressure"]));
+            }
+            set {
+                this["IgnorePressure"] = value;
+            }
+        }
     }
 }
