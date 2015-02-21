@@ -14,7 +14,7 @@ using System.ComponentModel;
 using ProtoBuf;
 
 namespace ablib {
-    public class InkCanvas : Canvas {
+    public class InkCanvas : FrameworkElement {
         #region 公開用プロパティ
         // データ
         public InkData InkData {get; set;}
@@ -139,7 +139,7 @@ namespace ablib {
         #endregion
 
         // Strokeに対応する描画されているもの
-        Dictionary<StrokeData, Shape> Paths = new Dictionary<StrokeData, Shape>();
+        Dictionary<StrokeData, Visual> Paths = new Dictionary<StrokeData, Visual>();
 
         // 一時退避
         InkManipulationMode SavedMode;
@@ -212,6 +212,7 @@ namespace ablib {
             InkData.UndoChainChanged += InkData_UndoChainChanged;
         }
 
+        /*
         // http://stackoverflow.com/questions/10362911/rendering-drawingvisuals-fast-in-wpf
         // にあった「おまじない」
         // Childrenに大量にAddしていても，描画が遅くならない
@@ -230,7 +231,7 @@ namespace ablib {
                 base.RemoveVisualChild(visual);
                 base.RemoveLogicalChild(visual);
             }
-        }
+        }*/
 
         #region InkDataからの通知を受け取る
         public event InkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
@@ -564,6 +565,36 @@ namespace ablib {
         public Canvas GetCanvas(DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet){
             return GetCanvas(algorithm, ignorePressure);
         }
+
+
+        #region FrameworkElementでの描画のため
+        public VisualCollection Children;
+        public Brush Background;
+        protected override int VisualChildrenCount {
+            get {
+                return Children.Count;
+            }
+        }
+        protected override Visual GetVisualChild(int index) {
+            if(index < 0 || index >= Children.Count) {
+                throw new ArgumentOutOfRangeException();
+            }
+            return Children[index];
+        }
+        protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) {
+            return new PointHitTestResult(this, hitTestParameters.HitPoint);
+        }
+        protected override void OnRender(DrawingContext drawingContext) {
+            if(Background != null) {
+                drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
+            }
+            base.OnRender(drawingContext);
+        }
+
+
+        #endregion
     }
+
+
 }
 

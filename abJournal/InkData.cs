@@ -103,17 +103,17 @@ namespace ablib {
             }
             base.Transform(transformMatrix, applyToStylusTip);
         }
-        Geometry geometry = null;
+        DrawingVisual geometry = null;
         MatrixTransform matrixTransform = null;
 
         public void GetPath(ref System.Windows.Shapes.Path p, DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting,DrawingAlgorithm algo) {
-            Geometry geom = geometry;
+            DrawingVisual geom = geometry;
             geometry = null;
             GetPathImpl(ref p, dattr, dattrPlus, selecting,algo);
             geometry = geom;
         }
         public void GetPath(ref System.Windows.Shapes.Path p, bool selecting) {
-            Geometry geom = geometry;
+            DrawingVisual geom = geometry;
             if(Selected != selecting) geometry = null;
             GetPathImpl(ref p, DrawingAttributes, DrawingAttributesPlus, selecting, algorithm);
             geometry = geom;
@@ -124,13 +124,18 @@ namespace ablib {
         // Strokg.GetGeometry = 厚みがある：「二重線」ができる，筆圧に反応できる
         // GetOriginalGeometryType1：線でひく：破線が引ける
         // これらの特徴のため，Algoithmが無視されることがある
-        void GetPathImpl(ref System.Windows.Shapes.Path p, DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo) {
+        DrawingVisual GetPathImpl(DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo) {
             p.StrokeDashArray = dattrPlus.DashArray;
             p.StrokeEndLineCap = PenLineCap.Round;
             p.StrokeStartLineCap = PenLineCap.Round;
-            if(geometry == null) matrixTransform = null;
+            DrawingContext dc = null;
+            if(geometry == null){
+                matrixTransform = null;
+                geometry = new DrawingVisual();
+                dc = geometry.RenderOpen();
+            }
             if(selecting) {
-                if(geometry == null) geometry = base.GetGeometry();
+                if(geometry == null) base.Draw(dc,dattr);
                 p.Fill = null;
                 p.Stroke = Brush;
                 p.StrokeThickness = dattr.Width / 5;
@@ -140,20 +145,20 @@ namespace ablib {
                 if(drawingAttributesPlus.IsNormalDashArray && 
                     (algo == DrawingAlgorithm.dotNet || !DrawingAttributes.IgnorePressure)
                 ) {
-                    if(geometry == null) geometry = base.GetGeometry();
+                    if(geometry == null) base.Draw(dc,dattr);
                     p.Fill = Brush;
                     p.Stroke = null;
                     p.StrokeThickness = 0;
                 } else {
                     switch(algo) {
                     case DrawingAlgorithm.Type1WithHosei:
-if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(GetHoseiPoints(StylusPoints)));
+                    if(dc != null) geometry = GetOriginalGeometryType1(MabikiPointsType1(GetHoseiPoints(StylusPoints)));
                     p.Fill = null;
                     p.Stroke = Brush;
                     break;
                     case DrawingAlgorithm.Type1:
                     case DrawingAlgorithm.dotNet:
-                    if(geometry == null) geometry = GetOriginalGeometryType1(MabikiPointsType1(StylusPoints));
+                    if(dc != null) geometry = GetOriginalGeometryType1(MabikiPointsType1(StylusPoints));
                     p.Fill = null;
                     p.Stroke = Brush;
                     p.StrokeThickness = dattr.Width;

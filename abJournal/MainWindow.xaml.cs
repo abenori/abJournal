@@ -306,9 +306,9 @@ namespace abJournal {
                     FixedPage page = new FixedPage();
                     page.Width = MainCanvas[i].Width;
                     page.Height = MainCanvas[i].Height;
-                    Canvas c = MainCanvas[i].GetCanvas(Properties.Settings.Default.PrintDrawingAlgorithm);
+                    var c = MainCanvas[i].GetCanvas(Properties.Settings.Default.PrintDrawingAlgorithm);
                     if(i == 0) {
-                        InkCanvasCollection.DrawNoteContents(c,MainCanvas.Info);
+                        //InkCanvasCollection.DrawNoteContents(c,MainCanvas.Info);
                     }
                     page.Children.Add(c);
                     PageContent content = new PageContent();

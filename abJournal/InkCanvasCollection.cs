@@ -872,15 +872,15 @@ namespace ablib {
 
 
         #region タイトルとか描くやつ（PDF含）
-        static Dictionary<Canvas, List<UIElement>> NoteContentsElements = new Dictionary<Canvas, List<UIElement>>();
-        static void GetYohakuHankei(Canvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
+        static Dictionary<InkCanvas, List<UIElement>> NoteContentsElements = new Dictionary<InkCanvas, List<UIElement>>();
+        static void GetYohakuHankei(InkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
             yyohaku = c.Width * 0.03;
             titleheight = c.Height * 0.06;
             hankei = c.Width * 0.02;
         }
 
-        public static void DrawNoteContents(Canvas c, CanvasCollectionInfo info) {
+        public static void DrawNoteContents(InkCanvas c, CanvasCollectionInfo info) {
             if(NoteContentsElements.ContainsKey(c)) {
                 foreach(var shape in NoteContentsElements[c]) {
                     c.Children.Remove(shape);
@@ -963,9 +963,9 @@ namespace ablib {
             }
         }
 
-        static Dictionary<Canvas, List<UIElement>> RuleElements = new Dictionary<Canvas, List<UIElement>>();
+        static Dictionary<InkCanvas, List<UIElement>> RuleElements = new Dictionary<InkCanvas, List<UIElement>>();
 
-        public static void DrawRules(Canvas c, InkCanvas.Rule Horizontal, InkCanvas.Rule Vertical, bool showTitle) {
+        public static void DrawRules(InkCanvas c, InkCanvas.Rule Horizontal, InkCanvas.Rule Vertical, bool showTitle) {
             if(RuleElements.ContainsKey(c)) {
                 foreach(var shape in RuleElements[c]) {
                     c.Children.Remove(shape);
