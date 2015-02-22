@@ -138,9 +138,6 @@ namespace ablib {
         public Rule VerticalRule = new Rule();
         #endregion
 
-        // Strokeに対応する描画されているもの
-        Dictionary<StrokeData, Visual> Paths = new Dictionary<StrokeData, Visual>();
-
         // 一時退避
         InkManipulationMode SavedMode;
         void SaveMode() {
@@ -194,6 +191,7 @@ namespace ablib {
 
 
         public InkCanvas(InkData d, double width, double height) {
+            Children = new VisualCollection(this);
             InkData = d;
             Width = width; Height = height;
             PenThickness = 2;
@@ -212,27 +210,6 @@ namespace ablib {
             InkData.UndoChainChanged += InkData_UndoChainChanged;
         }
 
-        /*
-        // http://stackoverflow.com/questions/10362911/rendering-drawingvisuals-fast-in-wpf
-        // にあった「おまじない」
-        // Childrenに大量にAddしていても，描画が遅くならない
-        // いや，実際には遅くなるけど，だいぶ軽減される……ような気がする．
-        List<Visual> visuals = new List<Visual>();
-        public void AddVisual(Visual visual){
-            if(visual != null) {
-                visuals.Add(visual);
-                base.AddVisualChild(visual);
-                base.AddLogicalChild(visual);
-            }
-        }
-        public void RemoveVisual(Visual visual) {
-            if(visual != null) {
-                visuals.Remove(visual);
-                base.RemoveVisualChild(visual);
-                base.RemoveLogicalChild(visual);
-            }
-        }*/
-
         #region InkDataからの通知を受け取る
         public event InkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
 
@@ -242,31 +219,25 @@ namespace ablib {
         
         void InkData_StrokeSelectedChanged(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Path p = (Path) Paths[s];
-                s.GetPath(ref p);
+                s.GetVisual();
             }
         }
 
         void InkData_StrokeChanged(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes){
-                Path p = (Path) Paths[s];
-                s.GetPath(ref p);
+                s.GetVisual();
             }
         }
 
         void InkData_StrokeDeleted(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Children.Remove(Paths[s]);
-                Paths.Remove(s);
+                Children.Remove(s.GetVisual());
             }
         }
 
         void InkData_StrokeAdded(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Path p = new Path();
-                s.GetPath(ref p);
-                Paths[s] = p;
-                Children.Add(p);
+                Children.Add(s.GetVisual());
             }
         }
 
@@ -277,97 +248,97 @@ namespace ablib {
 
         #region 描画
         // 内部状態保持用変数
-        int StartDrawingIndexOfChildren = -1;
-        StylusPoint PrevPoint;
-        PathFigure StrokePathFigure;
-        Path StrokePathWhenDrawing;
+        DrawingVisualLine StrokeDrawingVisual = null;
 
         void DrawingStart(StylusPoint pt) {
-            PrevPoint = pt;
-            InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, PrevPoint);
-            StartDrawingIndexOfChildren = Children.Count;
+            InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
+            if(Mode == InkManipulationMode.Selecting) {
+                StrokeDrawingVisual = new DrawingVisualLine(2, Brushes.Orange, DottedDoubleCollection, false);
+            } else if(Mode == InkManipulationMode.Inking){
+                StrokeDrawingVisual = new DrawingVisualLine(PenThickness, StrokeBrush, StrokeDrawingAttributesPlus.DashArray, StrokeDrawingAttributes.IgnorePressure);
+            }
             if(Mode != InkManipulationMode.Erasing) {
-                if(Mode != InkManipulationMode.Inking || !StrokeDrawingAttributesPlus.IsNormalDashArray) {
-                    StrokePathFigure = new PathFigure() {
-                        StartPoint = pt.ToPoint()
-                    };
-                    var geometry = new PathGeometry();
-                    geometry.Figures.Add(StrokePathFigure);
-                    if(Mode == InkManipulationMode.Inking) {
-                        StrokePathWhenDrawing = new Path() {
-                            Data = geometry,
-                            StrokeThickness = PenThickness,
-                            Stroke = StrokeBrush,
-                            StrokeDashArray = StrokeDrawingAttributesPlus.DashArray
-                        };
-                    } else {
-                        StrokePathWhenDrawing = new Path() {
-                            Data = geometry,
-                            StrokeThickness = 2,
-                            Stroke = Brushes.Orange,
-                            StrokeDashArray = DottedDoubleCollection
-                        };
-                    }
-                    Children.Add(StrokePathWhenDrawing);
-                }
+                StrokeDrawingVisual.StartPoint(pt);
+                Children.Add(StrokeDrawingVisual);
             }
         }
         void Drawing(StylusPoint pt) {
-            if(Mode == InkManipulationMode.Inking) {
-                if(!StrokeDrawingAttributesPlus.IsNormalDashArray) {
-                    StrokePathFigure.Segments.Add(new LineSegment() {
-                        Point = pt.ToPoint(),
-                        IsSmoothJoin = true
-                    });
-                } else {
-                    double thickness = PenThickness;
-                    if(!StrokeDrawingAttributes.IgnorePressure) {
-                        thickness *= (pt.PressureFactor * 2);
-                    }
-                    Children.Add(new Line() {
-                        X1 = PrevPoint.X,
-                        Y1 = PrevPoint.Y,
-                        X2 = pt.X,
-                        Y2 = pt.Y,
-                        Stroke = StrokeBrush,
-                        StrokeDashArray = StrokeDrawingAttributesPlus.DashArray,
-                        StrokeThickness = thickness
-                    });
-                }
-                PrevPoint = pt;
-                InkData.ProcessPointerUpdate(pt);
-            } else if(Mode == InkManipulationMode.Selecting) {
-                if((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y) > 16) {
-                    StrokePathFigure.Segments.Add(new LineSegment() {
-                        Point = pt.ToPoint(),
-                        IsSmoothJoin = true
-                    });
-                    PrevPoint = pt;
-                    InkData.ProcessPointerUpdate(pt);
-                }
-            } else InkData.ProcessPointerUpdate(pt);
+            InkData.ProcessPointerUpdate(pt);
+            if(Mode != InkManipulationMode.Erasing) {
+                StrokeDrawingVisual.AddPoint(pt);
+            }
         }
 
         void DrawingEnd(StylusPoint pt) {
-            if(Mode == InkManipulationMode.Inking) {
-                if(!StrokeDrawingAttributesPlus.IsNormalDashArray) {
-                    for(int i = Children.Count - 1 ; i >= 0 ; --i) {
-                        if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
-                    }
-                } else {
-                    Children.RemoveAt(Children.Count - 1);
-                    Children.RemoveRange(StartDrawingIndexOfChildren, Children.Count - StartDrawingIndexOfChildren);
-                }
-                StartDrawingIndexOfChildren = -1;
-            } else if(Mode == InkManipulationMode.Selecting) {
-                StartDrawingIndexOfChildren = -1;
+            if(Mode != InkManipulationMode.Erasing) {
                 for(int i = Children.Count - 1 ; i >= 0 ; --i) {
-                    if(Children[i] == StrokePathWhenDrawing) Children.RemoveAt(i);
+                    if(Children[i] == StrokeDrawingVisual) {
+                        Children.RemoveAt(i);
+                        break;
+                    }
                 }
             }
+            StrokeDrawingVisual = null;
             InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
         }
+
+        class DrawingVisualLine : DrawingVisual {
+            double thickness;
+            Brush color;
+            DoubleCollection dasharray;
+            bool ignorePressure;
+            StylusPoint prevPoint;
+
+            double dashOffset = 0;
+
+            DrawingGroup drawingGroup = null;
+            PathFigure pathFigure = null;
+
+            public DrawingVisualLine(double thick,Brush c,DoubleCollection dash,bool ignpres){
+                thickness = thick;
+                color = c;
+                dasharray = dash;
+                ignorePressure = ignpres;
+                if(ignorePressure) {
+                    var geometry = new PathGeometry();
+                    pathFigure = new PathFigure();
+                    geometry.Figures.Add(pathFigure);
+                    var pen = new Pen(color, thickness);
+                    if(dash.Count > 0) {
+                        pen.DashStyle = new DashStyle(dash, 0);
+                        pen.DashCap = PenLineCap.Flat;
+                    }
+                    using(var dc = RenderOpen()) {
+                        dc.DrawGeometry(null,pen,geometry);
+                    }
+                } else {
+                    drawingGroup = new DrawingGroup();
+                    using(var dc = RenderOpen()){
+                        dc.DrawDrawing(drawingGroup);
+                    }
+                }
+            }
+            public void StartPoint(StylusPoint pt) {
+                if(ignorePressure) pathFigure.StartPoint = pt.ToPoint();
+                prevPoint = pt;
+            }
+            public void AddPoint(StylusPoint pt) {
+                if(ignorePressure) pathFigure.Segments.Add(new LineSegment(pt.ToPoint(), true) { IsSmoothJoin = true });
+                else {
+                    var pen = new Pen(color, thickness * pt.PressureFactor * 2);
+                    if(dasharray.Count > 0) {
+                        pen.DashStyle = new DashStyle(dasharray, dashOffset);
+                        pen.DashCap = PenLineCap.Flat;
+                        dashOffset += (Math.Sqrt((prevPoint.X - pt.X)*(prevPoint.X - pt.X) + (prevPoint.Y - pt.Y)*(prevPoint.Y - pt.Y)))/pen.Thickness;
+                    }
+                    var l = new LineGeometry(prevPoint.ToPoint(),pt.ToPoint());
+                    drawingGroup.Children.Add(new GeometryDrawing(null, pen, l));
+                }
+                prevPoint = pt;
+            }
+        }
         #endregion
+
 
         #region イベントハンドラ
         int PenID = 0;
@@ -499,14 +470,11 @@ namespace ablib {
         #endregion
 
         public void ReDraw() {
-            Paths.Clear();
             Children.Clear();
             if(InkData.Strokes.Count == 0) return;
             foreach(var s in InkData.Strokes) {
-                var p = new Path();
-                s.GetPath(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, s.Selected, InkData.DrawingAlgorithm);
-                Children.Add(p);
-                Paths[s] = p;
+                s.ReDraw();
+                Children.Add(s.GetVisual());
                 /*
                 foreach(var spt in s.StylusPoints) {
                     var pt = spt.ToPoint();
@@ -556,7 +524,7 @@ namespace ablib {
                 var p = new Path();
                 bool ignpres = s.DrawingAttributes.IgnorePressure;
                 s.DrawingAttributes.IgnorePressure = ignorepressure;
-                s.GetPath(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, false, algorithm);
+                //s.GetVisual(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, false, algorithm);
                 s.DrawingAttributes.IgnorePressure = ignpres;
                 canvas.Children.Add(p);
             }
@@ -564,6 +532,19 @@ namespace ablib {
         }
         public Canvas GetCanvas(DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet){
             return GetCanvas(algorithm, ignorePressure);
+        }
+
+        public InkCanvas Clone(){
+            var rv = new InkCanvas(InkData.Clone(), Width, Height);
+            rv.mode = mode;
+            rv.ignorePressure = ignorePressure;
+            rv.PenColor = PenColor;
+            rv.PenThickness = PenThickness;
+            rv.PenDashArray = PenDashArray.Clone();
+            rv.BackGroundColor = BackGroundColor;
+            rv.HorizontalRule = HorizontalRule.DeepCopy();
+            rv.VerticalRule = VerticalRule.DeepCopy();
+            return rv;
         }
 
 
@@ -590,8 +571,6 @@ namespace ablib {
             }
             base.OnRender(drawingContext);
         }
-
-
         #endregion
     }
 

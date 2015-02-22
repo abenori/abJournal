@@ -304,6 +304,7 @@ namespace ablib {
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
             canvas.Mode = Mode;
+            canvas.InkData.DrawingAlgorithm = DrawingAlgorithm;
             canvas.ReDraw();
             AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
@@ -872,7 +873,7 @@ namespace ablib {
 
 
         #region タイトルとか描くやつ（PDF含）
-        static Dictionary<InkCanvas, List<UIElement>> NoteContentsElements = new Dictionary<InkCanvas, List<UIElement>>();
+        static Dictionary<InkCanvas, List<Visual>> NoteContentsElements = new Dictionary<InkCanvas, List<Visual>>();
         static void GetYohakuHankei(InkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
             yyohaku = c.Width * 0.03;
@@ -887,80 +888,42 @@ namespace ablib {
                 }
                 NoteContentsElements.Remove(c);
             }
-            NoteContentsElements.Add(c, new List<UIElement>());
-            double xyohaku, yyohaku, height, hankei;
-            GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            System.Windows.Shapes.Path titlePath = null;
-            if(info.ShowTitle) {
-                var figure = new PathFigure();
-                var geometry = new PathGeometry();
-                geometry.Figures = new PathFigureCollection();
-                geometry.Figures.Add(figure);
-                figure.StartPoint = new Point(xyohaku + hankei, yyohaku);
-                figure.Segments.Add(new LineSegment(new Point(c.Width - xyohaku - hankei, yyohaku), true));
-                figure.Segments.Add(new ArcSegment(new Point(c.Width - xyohaku, yyohaku + hankei), new Size(hankei, hankei), 0, false, SweepDirection.Clockwise, true));
-                figure.Segments.Add(new LineSegment(new Point(c.Width - xyohaku, yyohaku + hankei + height), true));
-                figure.Segments.Add(new ArcSegment(new Point(c.Width - xyohaku - hankei, yyohaku + 2 * hankei + height), new Size(hankei, hankei), 0, false, SweepDirection.Clockwise, true));
-                figure.Segments.Add(new LineSegment(new Point(xyohaku + hankei, yyohaku + 2 * hankei + height), true));
-                figure.Segments.Add(new ArcSegment(new Point(xyohaku, yyohaku + hankei + height), new Size(hankei, hankei), 0, false, SweepDirection.Clockwise, true));
-                figure.Segments.Add(new LineSegment(new Point(xyohaku, yyohaku + hankei), true));
-                figure.Segments.Add(new ArcSegment(figure.StartPoint, new Size(hankei, hankei), 0, false, SweepDirection.Clockwise, true));
+            NoteContentsElements.Add(c, new List<Visual>());
+            var rv = new DrawingVisual();
+            using(var dc = rv.RenderOpen()) {
+                double xyohaku, yyohaku, height, hankei;
+                GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
+                if(info.ShowTitle) {
+                    dc.DrawRoundedRectangle(null, new Pen(Brushes.LightGray, 1), new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2*hankei), hankei, hankei);
 
-                titlePath = new System.Windows.Shapes.Path() {
-                    Data = geometry,
-                    Fill = null,
-                    Stroke = Brushes.LightGray,
-                    StrokeThickness = 1
-                };
-                c.Children.Add(titlePath);
-                NoteContentsElements[c].Add(titlePath);
+                    if(info.Title != null && info.Title != "") {
+                        double width = c.Width - 2 * xyohaku - 2 * hankei;
+                        var pt = new Point(xyohaku + hankei, yyohaku + hankei / 2);
+                        double fontsize = GuessFontSize(info.Title, "游ゴシック", width,height);
+                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
+                        text.MaxTextWidth = width;
+                        text.MaxTextHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
+                        int n = (int) (height / text.MaxTextHeight);
+                        pt.Y += (height - n * text.MaxTextHeight) / 2;
+                        text.MaxTextHeight += n;
+                        dc.DrawText(text, pt);
+                    }
 
-                if(info.Title != null && info.Title != "") {
-                    var text = new TextBox();
-                    text.Width = c.Width - 2 * xyohaku - 2 * hankei;
-                    text.Height = height;
-                    text.Text = info.Title;
-                    text.TextWrapping = TextWrapping.Wrap;
-                    text.FontFamily = new FontFamily("游ゴシック");
-                    text.Background = Brushes.Transparent;
-                    text.Foreground = Brushes.Black;
-                    text.VerticalContentAlignment = VerticalAlignment.Center;
-                    text.BorderBrush = null;
-                    text.BorderThickness = new Thickness(0);
-                    text.IsReadOnly = true;
-                    text.FontSize = GuessFontSize(info.Title, "游ゴシック", text.Width, text.Height);
+                    if(info.ShowDate) {
+                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), 12, Brushes.Gray);
+                        dc.DrawText(text, new Point(c.Width - xyohaku - text.Width - hankei,yyohaku + 2 * hankei + height - text.Height - 4));
 
-                    c.Children.Add(text);
-                    Canvas.SetLeft(text, xyohaku + hankei);
-                    Canvas.SetTop(text, yyohaku + hankei / 2);
-                    NoteContentsElements[c].Add(text);
-                }
-
-                if(info.ShowDate) {
-                    TextBlock text = new TextBlock();
-                    text.Text = info.Date.ToLongDateString();
-                    text.FontFamily = new FontFamily("游ゴシック");
-                    text.FontSize = 12;
-                    text.Background = Brushes.Transparent;
-                    text.Foreground = Brushes.Gray;
-                    var textSize = GetStringSize(info.Date.ToLongDateString(), "游ゴシック", text.FontSize);
-                    c.Children.Add(text);
-                    Canvas.SetTop(text, yyohaku + 2 * hankei + height - textSize.Height - 4);
-                    Canvas.SetLeft(text, c.Width - xyohaku - textSize.Width - hankei);
-                    NoteContentsElements[c].Add(text);
-
-                    var line = new System.Windows.Shapes.Line() {
-                        X1 = xyohaku + hankei,
-                        Y1 = yyohaku + 2 * hankei + height - textSize.Height - 8,
-                        X2 = c.Width - xyohaku - hankei,
-                        Y2 = yyohaku + 2 * hankei + height - textSize.Height - 8,
-                        StrokeDashArray = new DoubleCollection(new double[] { 3, 3 }),
-                        Stroke = Brushes.LightGray
-                    };
-                    c.Children.Add(line);
-                    NoteContentsElements[c].Add(line);
+                        var pen = new Pen(Brushes.LightGray,1);
+                        pen.DashStyle = new DashStyle(new double[]{3,3},0);
+                        dc.DrawLine(pen,
+                            new Point(xyohaku + hankei, yyohaku + 2 * hankei + height - text.Height - 8),
+                            new Point(c.Width - xyohaku - hankei, yyohaku + 2 * hankei + height - text.Height - 8)
+                            );
+                    }
                 }
             }
+            NoteContentsElements[c].Add(rv);
+            c.Children.Insert(0, rv);
         }
 
         static Dictionary<InkCanvas, List<UIElement>> RuleElements = new Dictionary<InkCanvas, List<UIElement>>();

@@ -21,7 +21,8 @@ namespace abJournal {
         KeyValuePair<string, ablib.DrawingAlgorithm>[] ComboList = new KeyValuePair<string, ablib.DrawingAlgorithm>[]{
                 new KeyValuePair<string,ablib.DrawingAlgorithm>("Stroke.GetGeometry",ablib.DrawingAlgorithm.dotNet),
                 new KeyValuePair<string,ablib.DrawingAlgorithm>("独自型その1",ablib.DrawingAlgorithm.Type1),
-                new KeyValuePair<string,ablib.DrawingAlgorithm>("独自型その1 + 点補正",ablib.DrawingAlgorithm.Type1WithHosei)
+                new KeyValuePair<string,ablib.DrawingAlgorithm>("独自型その1 + 点補正",ablib.DrawingAlgorithm.Type1WithHosei),
+                new KeyValuePair<string,ablib.DrawingAlgorithm>("直線で結ぶだけ",ablib.DrawingAlgorithm.Line),
         };
         public SystemSetting() {
             InitializeComponent();
