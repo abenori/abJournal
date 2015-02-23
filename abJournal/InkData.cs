@@ -238,7 +238,6 @@ namespace ablib {
         }
         public void ClearUpdated() { EditCount = 0; }
 
-
         public void AddStroke(StrokeDataCollection sc) {
             Strokes.AddRange(sc);
             AddUndoList(new AddStrokeCommand(sc));
@@ -308,7 +307,7 @@ namespace ablib {
             OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
             AddUndoList(new SelectChangeCommand(changed));
         }
-        public StrokeDataCollection GetSelectedStrkes() {
+        public StrokeDataCollection GetSelectedStrokes() {
             return new StrokeDataCollection(Strokes.Where(s => s.Selected));
         }
 
@@ -607,6 +606,7 @@ namespace ablib {
             public StrokeDataCollection Strokes { get; set; }
             public StrokeChangedEventArgs(StrokeData stroke) { Strokes = new StrokeDataCollection(); Strokes.Add(stroke); }
             public StrokeChangedEventArgs(StrokeDataCollection sdc) { Strokes = new StrokeDataCollection(sdc); }
+            public StrokeChangedEventArgs(IEnumerable<StrokeData> sdc) { Strokes = new StrokeDataCollection(sdc); }
         }
         public delegate void StrokeChangedEventHandler(object sender, StrokeChangedEventArgs e);
         public event StrokeChangedEventHandler StrokeDeleted = ((sender, s) => { });
@@ -970,8 +970,8 @@ namespace ablib {
                 return;
             }
             if(dattr.IgnorePressure){
-                StreamGeometry rv = new StreamGeometry();
-                using(var ctx = rv.Open()) {
+                StreamGeometry geom = new StreamGeometry();
+                using(var ctx = geom.Open()) {
                     ctx.BeginFigure(Points[0].ToPoint(), false, false);
                     PointCollection ctrl1 = new PointCollection(), ctrl2 = new PointCollection();
                     GenerateBezierControlPointsType1(Points, ref ctrl1, ref ctrl2);
@@ -979,11 +979,13 @@ namespace ablib {
                         ctx.BezierTo(ctrl1[i - 1], ctrl2[i - 1], Points[i].ToPoint(), true, false);
                     }
                 }
+                geom.Freeze();
                 var pen = new Pen(Brush, dattr.Width);
                 pen.DashStyle = new DashStyle(dattrplus.DashArray, 0);
                 pen.DashCap = PenLineCap.Flat;
                 pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
-                dc.DrawGeometry(null,pen,rv);
+                pen.Freeze();
+                dc.DrawGeometry(null,pen,geom);
             } else {
                 PointCollection ctrl1 = new PointCollection(), ctrl2 = new PointCollection();
                 GenerateBezierControlPointsType1(Points, ref ctrl1, ref ctrl2);
@@ -995,6 +997,7 @@ namespace ablib {
                         ctx.BeginFigure(Points[i - 1].ToPoint(), false, false);
                         ctx.BezierTo(ctrl1[i - 1], ctrl2[i - 1], Points[i].ToPoint(), true, false);
                     }
+                    geom.Freeze();
                     var pen = new Pen(Brush, dattr.Width * Points[i - 1].PressureFactor * 2);
                     if(!dattrplus.IsNormalDashArray){
                         pen.DashStyle = new DashStyle(dattrplus.DashArray,dashOffset);
@@ -1003,8 +1006,10 @@ namespace ablib {
                         dashOffset +=Math.Sqrt(dx*dx+dy*dy)/pen.Thickness;
                     }
                     pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
+                    pen.Freeze();
                     group.Children.Add(new GeometryDrawing(null, pen, geom));
                 }
+                group.Freeze();
                 dc.DrawDrawing(group);
             }
         }

@@ -460,7 +460,7 @@ namespace ablib {
                     CanvasContainingSelection.InkData.EndUndoGroup();
                     double shifty = Canvas.GetTop(CanvasContainingSelection) - Canvas.GetTop(CanvasCollection[index]);
                     var currentcanvas = CanvasContainingSelection;
-                    var selstroke = currentcanvas.InkData.GetSelectedStrkes();
+                    var selstroke = currentcanvas.InkData.GetSelectedStrokes();
                     currentcanvas.InkData.DeleteSelected();
                     CanvasCollection[index].InkData.AddStroke(selstroke);
                     CanvasCollection[index].InkData.MoveSelected(new Rect(0, 0, 1, 1), new Rect(0, shifty, 1, 1));

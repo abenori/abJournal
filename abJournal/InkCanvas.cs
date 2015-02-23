@@ -150,6 +150,7 @@ namespace ablib {
         // newしまくらないためだけ
         static DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
 
+        #region カーソル
         // Cursors.Noneを指定してCanvasに書いて動かそうと思ったけど，
         // Cursors.Noneを指定しても変わらないことが多々あるので，
         // 直接造ることにした……Webからのコピペ（Img2Cursor.MakeCursor）に丸投げだけど．
@@ -188,7 +189,7 @@ namespace ablib {
         void SetCursor(Cursor c) {
             if(c != Cursor) Cursor = c;
         }
-
+        #endregion
 
         public InkCanvas(InkData d, double width, double height) {
             Children = new VisualCollection(this);
@@ -262,6 +263,7 @@ namespace ablib {
                 Children.Add(StrokeDrawingVisual);
             }
         }
+        
         void Drawing(StylusPoint pt) {
             InkData.ProcessPointerUpdate(pt);
             if(Mode != InkManipulationMode.Erasing) {
@@ -290,55 +292,36 @@ namespace ablib {
             StylusPoint prevPoint;
 
             double dashOffset = 0;
-
             DrawingGroup drawingGroup = null;
-            PathFigure pathFigure = null;
-
-            public DrawingVisualLine(double thick,Brush c,DoubleCollection dash,bool ignpres){
+            public DrawingVisualLine(double thick, Brush c, DoubleCollection dash, bool ignpres) {
                 thickness = thick;
                 color = c;
                 dasharray = dash;
                 ignorePressure = ignpres;
-                if(ignorePressure) {
-                    var geometry = new PathGeometry();
-                    pathFigure = new PathFigure();
-                    geometry.Figures.Add(pathFigure);
-                    var pen = new Pen(color, thickness);
-                    if(dash.Count > 0) {
-                        pen.DashStyle = new DashStyle(dash, 0);
-                        pen.DashCap = PenLineCap.Flat;
-                    }
-                    using(var dc = RenderOpen()) {
-                        dc.DrawGeometry(null,pen,geometry);
-                    }
-                } else {
-                    drawingGroup = new DrawingGroup();
-                    using(var dc = RenderOpen()){
-                        dc.DrawDrawing(drawingGroup);
-                    }
+                drawingGroup = new DrawingGroup();
+                using(var dc = RenderOpen()) {
+                    dc.DrawDrawing(drawingGroup);
                 }
             }
             public void StartPoint(StylusPoint pt) {
-                if(ignorePressure) pathFigure.StartPoint = pt.ToPoint();
                 prevPoint = pt;
             }
             public void AddPoint(StylusPoint pt) {
-                if(ignorePressure) pathFigure.Segments.Add(new LineSegment(pt.ToPoint(), true) { IsSmoothJoin = true });
-                else {
-                    var pen = new Pen(color, thickness * pt.PressureFactor * 2);
-                    if(dasharray.Count > 0) {
-                        pen.DashStyle = new DashStyle(dasharray, dashOffset);
-                        pen.DashCap = PenLineCap.Flat;
-                        dashOffset += (Math.Sqrt((prevPoint.X - pt.X)*(prevPoint.X - pt.X) + (prevPoint.Y - pt.Y)*(prevPoint.Y - pt.Y)))/pen.Thickness;
-                    }
-                    var l = new LineGeometry(prevPoint.ToPoint(),pt.ToPoint());
-                    drawingGroup.Children.Add(new GeometryDrawing(null, pen, l));
+                double thick = thickness;
+                if(!ignorePressure) thick *= pt.PressureFactor * 2;
+                var pen = new Pen(color, thick);
+                if(dasharray.Count > 0) {
+                    pen.DashStyle = new DashStyle(dasharray, dashOffset);
+                    pen.DashCap = PenLineCap.Flat;
+                    dashOffset += (Math.Sqrt((prevPoint.X - pt.X) * (prevPoint.X - pt.X) + (prevPoint.Y - pt.Y) * (prevPoint.Y - pt.Y))) / pen.Thickness;
+                }
+                using(var dc = drawingGroup.Append()) {
+                    dc.DrawLine(pen, prevPoint.ToPoint(), pt.ToPoint());
                 }
                 prevPoint = pt;
             }
         }
         #endregion
-
 
         #region イベントハンドラ
         int PenID = 0;
@@ -451,7 +434,6 @@ namespace ablib {
             if(TouchType != STYLUS) return;
             if(PenID != e.StylusDevice.Id) return;
             var pt = e.GetStylusPoints(this)[0];
-            //var pt = new StylusPoint(e.GetPosition(this).X,e.GetPosition(this).Y);
             Drawing(pt);
         }
 
@@ -496,9 +478,11 @@ namespace ablib {
         public void Copy() {
             InkData.Copy();
         }
+        
         public void Cut() {
             InkData.Cut();
         }
+        
         public void Paste() {
             InkData.BeginUndoGroup();
             InkData.Paste();
@@ -514,24 +498,6 @@ namespace ablib {
         }
         public void ClearSelected() {
             InkData.ClearSelected();
-        }
-
-        public Canvas GetCanvas(DrawingAlgorithm algorithm,bool ignorepressure) {
-            Canvas canvas = new Canvas();
-            canvas.Height = Height; canvas.Width = Width;
-            canvas.Background = Background;
-            foreach(var s in InkData.Strokes) {
-                var p = new Path();
-                bool ignpres = s.DrawingAttributes.IgnorePressure;
-                s.DrawingAttributes.IgnorePressure = ignorepressure;
-                //s.GetVisual(ref p, s.DrawingAttributes, s.DrawingAttributesPlus, false, algorithm);
-                s.DrawingAttributes.IgnorePressure = ignpres;
-                canvas.Children.Add(p);
-            }
-            return canvas;
-        }
-        public Canvas GetCanvas(DrawingAlgorithm algorithm = DrawingAlgorithm.dotNet){
-            return GetCanvas(algorithm, ignorePressure);
         }
 
         public InkCanvas Clone(){
@@ -550,16 +516,17 @@ namespace ablib {
 
         #region FrameworkElementでの描画のため
         public VisualCollection Children;
-        public Brush Background;
+        Brush background;
+        public Brush Background {
+            get { return background; }
+            set { background = value; InvalidateVisual(); }
+        }
         protected override int VisualChildrenCount {
             get {
                 return Children.Count;
             }
         }
         protected override Visual GetVisualChild(int index) {
-            if(index < 0 || index >= Children.Count) {
-                throw new ArgumentOutOfRangeException();
-            }
             return Children[index];
         }
         protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) {
@@ -573,7 +540,5 @@ namespace ablib {
         }
         #endregion
     }
-
-
 }
 
