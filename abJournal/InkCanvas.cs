@@ -72,70 +72,6 @@ namespace ablib {
             get { return backGroundColor; }
             set { backGroundColor = value; Background = new SolidColorBrush(backGroundColor); }
         }
-        [ProtoContract]
-        public class Rule {
-            public Rule() {
-                DashArray = new DoubleCollection(new double[] { 1, 1 });
-                Color = Colors.LightBlue;
-                Interval = 80;
-                Thickness = 2;
-                Show = false;
-            }
-            [ProtoMember(1)]
-            public Color Color { get; set; }
-            [ProtoMember(2)]
-            public DoubleCollection DashArray { get; set; }
-            [ProtoMember(3)]
-            public double Interval { get; set; }
-            [ProtoMember(4)]
-            public bool Show { get; set; }
-            [ProtoMember(5)]
-            public double Thickness { get; set; }
-            public Rule DeepCopy() {
-                Rule rv = new Rule();
-                rv.Color = Color;
-                rv.DashArray.Clear();
-                for(int i = 0 ; i < DashArray.Count ; ++i) rv.DashArray.Add(DashArray[i]);
-                rv.Interval = Interval;
-                rv.Show = Show;
-                rv.Thickness = Thickness;
-                return rv;
-            }
-        }
-        [ProtoContract(SkipConstructor = true)]
-        public class InkCanvasInfo {
-            [ProtoMember(1)]
-            public Rule HorizontalRule = new Rule();
-            [ProtoMember(2)]
-            public Rule VerticalRule = new Rule();
-            [ProtoMember(3)]
-            public Size Size = new Size();
-            [ProtoMember(4)]
-            public Color BackGround { get; set; }
-            public InkCanvasInfo() {
-                BackGround = Colors.White;
-            }
-            public InkCanvasInfo DeepCopy() {
-                InkCanvasInfo rv = new InkCanvasInfo();
-                rv.HorizontalRule = HorizontalRule.DeepCopy();
-                rv.VerticalRule = VerticalRule.DeepCopy();
-                rv.Size = Size;
-                rv.BackGround = BackGround;
-                return rv;
-            }
-        }
-        public InkCanvasInfo Info {
-            get {
-                return new InkCanvasInfo() {
-                    HorizontalRule = HorizontalRule.DeepCopy(),
-                    VerticalRule = VerticalRule.DeepCopy(),
-                    Size = new Size(Width, Height),
-                    BackGround = BackGroundColor
-                };
-            }
-        }
-        public Rule HorizontalRule = new Rule();
-        public Rule VerticalRule = new Rule();
         #endregion
 
         // 一時退避
@@ -220,25 +156,25 @@ namespace ablib {
         
         void InkData_StrokeSelectedChanged(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                s.GetVisual();
+                s.UpdateVisual();
             }
         }
 
         void InkData_StrokeChanged(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes){
-                s.GetVisual();
+                s.UpdateVisual();
             }
         }
 
         void InkData_StrokeDeleted(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Children.Remove(s.GetVisual());
+                Children.Remove(s.Visual);
             }
         }
 
         void InkData_StrokeAdded(object sender, InkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Children.Add(s.GetVisual());
+                Children.Add(s.Visual);
             }
         }
 
@@ -254,7 +190,7 @@ namespace ablib {
         void DrawingStart(StylusPoint pt) {
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
             if(Mode == InkManipulationMode.Selecting) {
-                StrokeDrawingVisual = new DrawingVisualLine(2, Brushes.Orange, DottedDoubleCollection, false);
+                StrokeDrawingVisual = new DrawingVisualLine(2, Brushes.Orange, DottedDoubleCollection, true);
             } else if(Mode == InkManipulationMode.Inking){
                 StrokeDrawingVisual = new DrawingVisualLine(PenThickness, StrokeBrush, StrokeDrawingAttributesPlus.DashArray, StrokeDrawingAttributes.IgnorePressure);
             }
@@ -285,38 +221,52 @@ namespace ablib {
         }
 
         class DrawingVisualLine : DrawingVisual {
-            double thickness;
-            Brush color;
-            DoubleCollection dasharray;
             bool ignorePressure;
             StylusPoint prevPoint;
 
             double dashOffset = 0;
             DrawingGroup drawingGroup = null;
-            public DrawingVisualLine(double thick, Brush c, DoubleCollection dash, bool ignpres) {
-                thickness = thick;
-                color = c;
-                dasharray = dash;
+            Pen pen = null;
+
+            PathFigure pathFigure = null;
+            public DrawingVisualLine(double thickness, Brush brush, DoubleCollection dash, bool ignpres) {
+                pen = new Pen(brush, thickness);
+                pen.DashStyle = new DashStyle(dash, 0);
+                pen.DashCap = PenLineCap.Flat;
+                pen.Freeze();
                 ignorePressure = ignpres;
-                drawingGroup = new DrawingGroup();
-                using(var dc = RenderOpen()) {
-                    dc.DrawDrawing(drawingGroup);
+                if(ignorePressure) {
+                    var geom = new PathGeometry();
+                    pathFigure = new PathFigure();
+                    geom.Figures.Add(pathFigure);
+                    using(var dc = RenderOpen()) {
+                        dc.DrawGeometry(null, pen, geom);
+                    }
+                } else {
+                    drawingGroup = new DrawingGroup();
+                    using(var dc = RenderOpen()) {
+                        dc.DrawDrawing(drawingGroup);
+                    }
                 }
             }
             public void StartPoint(StylusPoint pt) {
+                if(ignorePressure) pathFigure.StartPoint = pt.ToPoint();
                 prevPoint = pt;
             }
             public void AddPoint(StylusPoint pt) {
-                double thick = thickness;
-                if(!ignorePressure) thick *= pt.PressureFactor * 2;
-                var pen = new Pen(color, thick);
-                if(dasharray.Count > 0) {
-                    pen.DashStyle = new DashStyle(dasharray, dashOffset);
-                    pen.DashCap = PenLineCap.Flat;
-                    dashOffset += (Math.Sqrt((prevPoint.X - pt.X) * (prevPoint.X - pt.X) + (prevPoint.Y - pt.Y) * (prevPoint.Y - pt.Y))) / pen.Thickness;
-                }
-                using(var dc = drawingGroup.Append()) {
-                    dc.DrawLine(pen, prevPoint.ToPoint(), pt.ToPoint());
+                if(ignorePressure) {
+                    pathFigure.Segments.Add(new LineSegment() { Point = pt.ToPoint(), IsSmoothJoin = true });
+                } else {
+                    var p = pen.Clone();
+                    p.Thickness *= pt.PressureFactor * 2;
+                    if(p.DashStyle.Dashes.Count > 0) {
+                        p.DashStyle.Offset = dashOffset;
+                        dashOffset += (Math.Sqrt((prevPoint.X - pt.X) * (prevPoint.X - pt.X) + (prevPoint.Y - pt.Y) * (prevPoint.Y - pt.Y))) / pen.Thickness;
+                    }
+                    p.Freeze();
+                    using(var dc = drawingGroup.Append()) {
+                        dc.DrawLine(p, prevPoint.ToPoint(), pt.ToPoint());
+                    }
                 }
                 prevPoint = pt;
             }
@@ -332,8 +282,8 @@ namespace ablib {
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
             if(PenID != 0) return;
             if(TouchType != 0) return;
-            if(e.ClickCount != 1) return;
             var pt = e.GetPosition(this);
+            SetCursor();
             DrawingStart(new StylusPoint(pt.X, pt.Y));
             TouchType = MOUSE;
             e.Handled = true;
@@ -353,6 +303,7 @@ namespace ablib {
             DrawingEnd(new StylusPoint(pt.X, pt.Y));
             e.Handled = true;
             TouchType = 0;
+            SetCursor(null);
         }
         protected override void OnMouseLeave(MouseEventArgs e) {
             if(e.LeftButton == MouseButtonState.Pressed) {
@@ -453,7 +404,6 @@ namespace ablib {
 
         public void ReDraw() {
             Children.Clear();
-            if(InkData.Strokes.Count == 0) return;
             foreach(var s in InkData.Strokes) {
                 s.ReDraw();
                 Children.Add(s.GetVisual());
@@ -471,7 +421,7 @@ namespace ablib {
                     SetZIndex(ell, 10);
                 }*/
             }
-
+            InvalidateVisual();
             return;
         }
 
@@ -502,14 +452,13 @@ namespace ablib {
 
         public InkCanvas Clone(){
             var rv = new InkCanvas(InkData.Clone(), Width, Height);
+            rv.FixedDrawingGroup = FixedDrawingGroup.Clone();
             rv.mode = mode;
             rv.ignorePressure = ignorePressure;
             rv.PenColor = PenColor;
             rv.PenThickness = PenThickness;
             rv.PenDashArray = PenDashArray.Clone();
             rv.BackGroundColor = BackGroundColor;
-            rv.HorizontalRule = HorizontalRule.DeepCopy();
-            rv.VerticalRule = VerticalRule.DeepCopy();
             return rv;
         }
 
@@ -536,8 +485,13 @@ namespace ablib {
             if(Background != null) {
                 drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
             }
+            drawingContext.DrawDrawing(FixedDrawingGroup);
             base.OnRender(drawingContext);
         }
+        DrawingGroup FixedDrawingGroup = new DrawingGroup();
+        // 追加で何か書き込みたいときに使う．Childrenに入っているものよりも前に描画される（はず）
+        public void FixedRenderClear() { FixedDrawingGroup.Children.Clear(); }
+        public DrawingContext FixedRenderAppend() { return FixedDrawingGroup.Append(); }
         #endregion
     }
 }

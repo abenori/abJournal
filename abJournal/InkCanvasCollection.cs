@@ -22,55 +22,15 @@ namespace ablib {
         const double sukima = 100;
         const double LengthBetweenCanvas = 10;
         #region 公開用のプロパティ
-        string filename = "";
-        public string FileName { get { return filename; } }
 
-        [ProtoContract(SkipConstructor = true)]
-        public class CanvasCollectionInfo {
-            public CanvasCollectionInfo() {
-                InkCanvasInfo = new InkCanvas.InkCanvasInfo();
-                InkCanvasInfo.Size = Paper.GetSize(Paper.PaperSize.A4);
-                Date = DateTime.Now;
-                //ShowDate = true;
-                //ShowTitle = true;
-            }
-            [ProtoMember(1)]
-            public DateTime Date { get; set; }
-            [ProtoMember(2)]
-            public bool ShowDate { get; set; }
-            [ProtoMember(3)]
-            public bool ShowTitle { get; set; }
-            [ProtoMember(4)]
-            public string Title { get; set; }
-            [ProtoMember(5)]
-            public InkCanvas.InkCanvasInfo InkCanvasInfo { get; set; }
-
-            public CanvasCollectionInfo DeepCopy() {
-                CanvasCollectionInfo rv = new CanvasCollectionInfo();
-                rv.Date = Date;
-                rv.ShowDate = ShowDate;
-                rv.ShowTitle = ShowTitle;
-                rv.InkCanvasInfo = InkCanvasInfo.DeepCopy();
-                if(Title != null) rv.Title = (string) Title.Clone();
-                return rv;
-            }
-        }
         DrawingAlgorithm drawingAlgorithm = DrawingAlgorithm.dotNet;
         public DrawingAlgorithm DrawingAlgorithm {
             get { return drawingAlgorithm; }
             set {
                 drawingAlgorithm = value;
-                foreach(var c in CanvasCollection) c.InkData.DrawingAlgorithm = value;
-                ReDraw();
-            }
-        }
-        public CanvasCollectionInfo info;
-        public CanvasCollectionInfo Info {
-            get { return info; }
-            set {
-                info = value;
-                if(Count > 0) {
-                    DrawNoteContents(CanvasCollection[0], info);
+                foreach(var c in CanvasCollection) {
+                    c.InkData.DrawingAlgorithm = value;
+                    c.ReDraw();
                 }
             }
         }
@@ -126,8 +86,10 @@ namespace ablib {
             get { return ignorePressure; }
             set {
                 ignorePressure = value;
-                foreach(var c in CanvasCollection) c.IgnorePressure = value;
-                ReDraw();
+                foreach(var c in CanvasCollection) {
+                    c.IgnorePressure = value;
+                    c.ReDraw();
+                }
             }
         }
 
@@ -152,7 +114,6 @@ namespace ablib {
         public InkCanvasCollection() {
             SizeChanged += InkCanvasCollection_SizeChanged;
 
-            Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
             Mode = InkManipulationMode.Inking;
             PenThickness = 2;
             Background = Brushes.Gray;
@@ -278,21 +239,15 @@ namespace ablib {
         }
         #endregion
 
-        public void AddCanvas() { AddCanvas(new InkData(), Info.InkCanvasInfo); }
-        public void AddCanvas(InkData d, InkCanvas.InkCanvasInfo info) {
-            InsertCanvas(d, info, CanvasCollection.Count);
+        public void AddCanvas(InkData d,Size size,Color background) {
+            InsertCanvas(d, size,background,CanvasCollection.Count);
         }
-        public void InsertCanvas(int index) {
-            InsertCanvas(new InkData(), Info.InkCanvasInfo, index);
-        }
-
-        public void InsertCanvas(InkData d, InkCanvas.InkCanvasInfo canvasinfo, int index) {
-            ablib.InkCanvas canvas = new ablib.InkCanvas(d, canvasinfo.Size.Width, canvasinfo.Size.Height);
+        public void InsertCanvas(InkData d, Size size,Color background,int index) {
+            d.DrawingAlgorithm = DrawingAlgorithm;
+            ablib.InkCanvas canvas = new ablib.InkCanvas(d, size.Width, size.Height);
             canvas.IgnorePressure = ignorePressure;
-            canvas.BackGroundColor = canvasinfo.BackGround;
+            canvas.BackGroundColor = background;
             canvas.Mode = Mode;
-            canvas.VerticalRule = canvasinfo.VerticalRule.DeepCopy();
-            canvas.HorizontalRule = canvasinfo.HorizontalRule.DeepCopy();
 
             CanvasCollection.Insert(index, canvas);
             canvas.UndoChainChanged += InkCanvasCollection_UndoChainChanged;
@@ -310,10 +265,8 @@ namespace ablib {
             innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             VerticalArrangeCanvas();
-            Canvas.SetLeft(canvas, -canvasinfo.Size.Width/2);
+            Canvas.SetLeft(canvas, -size.Width/2);
             //Scale = 12;
-            if(index == 0) DrawNoteContents(canvas, Info);
-            DrawRules(canvas, canvasinfo.HorizontalRule, canvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
 
         public void DeleteCanvas(int index) {
@@ -628,6 +581,10 @@ namespace ablib {
             foreach(var c in CanvasCollection) c.InkData.ClearUpdated();
             EditCount = 0;
         }
+        public void Clear() {
+            innerCanvas.Children.Clear();
+            CanvasCollection.Clear();
+        }
 
         public int CurrentPage {
             get {
@@ -668,193 +625,7 @@ namespace ablib {
             }
         }
 
-        [ProtoContract]
-        public class ablibInkCanvasCollectionSavingProtobufData {
-            [ProtoContract(SkipConstructor = true)]
-            public class CanvasData {
-                public CanvasData(InkData d, InkCanvas.InkCanvasInfo i) {
-                    Data = d;
-                    Info = i.DeepCopy();
-                }
-                [ProtoMember(1)]
-                public InkData Data;
-                [ProtoMember(2)]
-                public InkCanvas.InkCanvasInfo Info;
-            }
-            [ProtoMember(1)]
-            public List<CanvasData> Data { get; set; }
-            [ProtoMember(2)]
-            public CanvasCollectionInfo Info { get; set; }
-            public ablibInkCanvasCollectionSavingProtobufData() {
-                Data = new List<CanvasData>();
-                Info = new CanvasCollectionInfo();
-            }
-        }
-
-        public class ablibInkCanvasCollectionSavingData {
-            public class CanvasData {
-                public CanvasData() {
-                    Data = new ablib.Saving.InkData();
-                    Info = new InkCanvas.InkCanvasInfo();
-                }
-                public CanvasData(ablib.Saving.InkData d, InkCanvas.InkCanvasInfo i) {
-                    Data = d;
-                    Info = i.DeepCopy();
-                }
-                public ablib.Saving.InkData Data;
-                public InkCanvas.InkCanvasInfo Info;
-            }
-            public List<CanvasData> Data { get; set; }
-            public CanvasCollectionInfo Info { get; set; }
-            public ablibInkCanvasCollectionSavingData() {
-                Data = new List<CanvasData>();
-                Info = new CanvasCollectionInfo();
-            }
-        }
-        public static string GetSchema() {
-            return InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
-        }
-        public void Save() {
-            Save(FileName);
-        }
-        public void Save(string file) {
-            ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
-            foreach(var c in CanvasCollection) {
-                data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkData, c.Info));
-            }
-            data.Info = Info;
-            var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
-            using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
-                //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
-                model.Serialize(wfs, data);
-            }
-            filename = file;
-        }
-
-        public void SavePDF(string file) {
-			double scale = (double) 720 / (double) 254 / Paper.mmToSize;
-            using(var doc = new PdfSharp.Pdf.PdfDocument()) {
-                for(int i = 0 ; i < Count ; ++i) {
-                    var page = doc.AddPage();
-                    var ps = Paper.GetPaperSize(new Size(CanvasCollection[i].Width, CanvasCollection[i].Height));
-                    // 1 = 1/72インチ = 25.4/72 mm
-                    switch(ps) {
-                    case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
-                    case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
-                    case Paper.PaperSize.A2: page.Size = PdfSharp.PageSize.A2; break;
-                    case Paper.PaperSize.A3: page.Size = PdfSharp.PageSize.A3; break;
-                    case Paper.PaperSize.A4: page.Size = PdfSharp.PageSize.A4; break;
-                    case Paper.PaperSize.A5: page.Size = PdfSharp.PageSize.A5; break;
-                    case Paper.PaperSize.B0: page.Size = PdfSharp.PageSize.B0; break;
-                    case Paper.PaperSize.B1: page.Size = PdfSharp.PageSize.B1; break;
-                    case Paper.PaperSize.B2: page.Size = PdfSharp.PageSize.B2; break;
-                    case Paper.PaperSize.B3: page.Size = PdfSharp.PageSize.B3; break;
-                    case Paper.PaperSize.B4: page.Size = PdfSharp.PageSize.B4; break;
-                    case Paper.PaperSize.B5: page.Size = PdfSharp.PageSize.B5; break;
-                    case Paper.PaperSize.Letter: page.Size = PdfSharp.PageSize.Letter; break;
-                    case Paper.PaperSize.Tabloid: page.Size = PdfSharp.PageSize.Tabloid; break;
-                    case Paper.PaperSize.Ledger: page.Size = PdfSharp.PageSize.Ledger; break;
-                    case Paper.PaperSize.Legal: page.Size = PdfSharp.PageSize.Legal; break;
-                    case Paper.PaperSize.Folio: page.Size = PdfSharp.PageSize.Folio; break;
-                    case Paper.PaperSize.Quarto: page.Size = PdfSharp.PageSize.Quarto; break;
-                    case Paper.PaperSize.Executive: page.Size = PdfSharp.PageSize.Executive; break;
-                    case Paper.PaperSize.Statement: page.Size = PdfSharp.PageSize.Statement; break;
-                    case Paper.PaperSize.Other:
-                        page.Width = CanvasCollection[i].Width * scale;
-                        page.Height = CanvasCollection[i].Height * scale;
-                        break;
-                    default:
-                        var s = Paper.GetmmSize(ps);
-                        page.Width = s.Width * 720 / 254;
-                        page.Height = s.Height * 720 / 254;
-                        break;
-                    }
-                    var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                    g.ScaleTransform(scale);
-                    if(i == 0) DrawNoteContents(g, CanvasCollection[i], Info);
-                    DrawRules(g, CanvasCollection[i], (i == 0 && Info.ShowTitle));
-                    CanvasCollection[i].InkData.AddPdfGraphic(g);
-                }
-                doc.Info.Creator = "abJournal";
-                doc.Info.Title = Info.Title;
-                doc.Info.CreationDate = Info.Date;
-                doc.Info.ModificationDate = DateTime.Now;
-                doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
-            }
-        }
-
-        public void ReDraw() {
-            foreach(var c in CanvasCollection) c.ReDraw();
-            if(CanvasCollection.Count > 0) DrawNoteContents(CanvasCollection[0], Info);
-            for(int i = 0 ; i < Count ; ++i) {
-                DrawRules(CanvasCollection[i], CanvasCollection[i].HorizontalRule, CanvasCollection[i].VerticalRule, (i == 0 && Info.ShowTitle));
-            }
-        }
-
-        public void Open(string file) {
-            var watch = new Stopwatch();
-            using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
-                var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
-                ablibInkCanvasCollectionSavingProtobufData protodata = null;
-                // protobufデシリアライズ
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                // zip解凍＋protobufデシリアライズ
-                if(protodata == null) {
-                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
-                        try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(zs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                        catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                    }
-                }
-                if(protodata != null) {
-                    foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
-                    CanvasCollection.Clear();
-                    foreach(var d in protodata.Data) {
-                        d.Data.DrawingAlgorithm = DrawingAlgorithm;
-                        AddCanvas(d.Data, d.Info);
-                    }
-                    Info = protodata.Info;
-                } else {
-                    System.Diagnostics.Debug.WriteLine("Protobufデシリアライズでエラー");
-                    var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
-                    ablibInkCanvasCollectionSavingData data = null;
-                    // gzip解凍+XMLデシリアライズ
-                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
-                        try { data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(zs); }
-                        catch(System.IO.InvalidDataException) { }
-
-                    }
-                    // 単なるXMLデシリアライズ
-                    if(data == null) {
-                        data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(fs);
-                    }
-
-                    foreach(var c in CanvasCollection) innerCanvas.Children.Remove(c);
-                    CanvasCollection.Clear();
-                    foreach(var d in data.Data) {
-                        InkData id = new InkData();
-                        id.LoadSavingData(d.Data);
-                        id.DrawingAlgorithm = DrawingAlgorithm;
-                        AddCanvas(id, d.Info);
-                    }
-                    Info = data.Info;
-                }
-            }
-            if(Count == 0) AddCanvas();
-            filename = file;
-            ClearUpdated();
-            ClearUndoChain();
-            DrawNoteContents(CanvasCollection[0], Info);
-            watch.CheckTime("Openにかかった時間");
-            //CanvasCollection[0].ReDraw();
-            //foreach(var str in CanvasCollection[0].InkData.Strokes) {
-            //ForDebugPtsDrwaing(new PointCollection(str.StylusPoints.Where(s => true).Select(p => p.ToPoint())), Brushes.Red);
-            //}
-            //ForDebugPtsDrwaing(new PointCollection(StrokeData.HoseiPts.Select(p => p.ToPoint())), Brushes.Blue);
-            //ForDebugPtsDrwaing(StrokeData.CuspPts, Brushes.Green);
-            //Scale = 13;
-        }
-
+        /*
         void ForDebugPtsDrwaing(PointCollection stc, Brush brush) {
             int i = 0;
             foreach(var pt in stc) {
@@ -869,274 +640,16 @@ namespace ablib {
                 if(i == 2000) break;
                 ++i;
             }
-        }
+        }*/
 
-
-        #region タイトルとか描くやつ（PDF含）
-        static Dictionary<InkCanvas, List<Visual>> NoteContentsElements = new Dictionary<InkCanvas, List<Visual>>();
-        static void GetYohakuHankei(InkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
-            xyohaku = c.Width * 0.03;
-            yyohaku = c.Width * 0.03;
-            titleheight = c.Height * 0.06;
-            hankei = c.Width * 0.02;
-        }
-
-        public static void DrawNoteContents(InkCanvas c, CanvasCollectionInfo info) {
-            if(NoteContentsElements.ContainsKey(c)) {
-                foreach(var shape in NoteContentsElements[c]) {
-                    c.Children.Remove(shape);
-                }
-                NoteContentsElements.Remove(c);
-            }
-            NoteContentsElements.Add(c, new List<Visual>());
-            var rv = new DrawingVisual();
-            using(var dc = rv.RenderOpen()) {
-                double xyohaku, yyohaku, height, hankei;
-                GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-                if(info.ShowTitle) {
-                    dc.DrawRoundedRectangle(null, new Pen(Brushes.LightGray, 1), new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2*hankei), hankei, hankei);
-
-                    if(info.Title != null && info.Title != "") {
-                        double width = c.Width - 2 * xyohaku - 2 * hankei;
-                        var pt = new Point(xyohaku + hankei, yyohaku + hankei / 2);
-                        double fontsize = GuessFontSize(info.Title, "游ゴシック", width,height);
-                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
-                        text.MaxTextWidth = width;
-                        text.MaxTextHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
-                        int n = (int) (height / text.MaxTextHeight);
-                        pt.Y += (height - n * text.MaxTextHeight) / 2;
-                        text.MaxTextHeight += n;
-                        dc.DrawText(text, pt);
-                    }
-
-                    if(info.ShowDate) {
-                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), 12, Brushes.Gray);
-                        dc.DrawText(text, new Point(c.Width - xyohaku - text.Width - hankei,yyohaku + 2 * hankei + height - text.Height - 4));
-
-                        var pen = new Pen(Brushes.LightGray,1);
-                        pen.DashStyle = new DashStyle(new double[]{3,3},0);
-                        dc.DrawLine(pen,
-                            new Point(xyohaku + hankei, yyohaku + 2 * hankei + height - text.Height - 8),
-                            new Point(c.Width - xyohaku - hankei, yyohaku + 2 * hankei + height - text.Height - 8)
-                            );
-                    }
-                }
-            }
-            NoteContentsElements[c].Add(rv);
-            c.Children.Insert(0, rv);
-        }
-
-        static Dictionary<InkCanvas, List<UIElement>> RuleElements = new Dictionary<InkCanvas, List<UIElement>>();
-
-        public static void DrawRules(InkCanvas c, InkCanvas.Rule Horizontal, InkCanvas.Rule Vertical, bool showTitle) {
-            if(RuleElements.ContainsKey(c)) {
-                foreach(var shape in RuleElements[c]) {
-                    c.Children.Remove(shape);
-                }
-                RuleElements.Remove(c);
-            }
-            double xyohaku, yyohaku, height, hankei;
-            GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            if(Horizontal.Show) {
-                double d = Horizontal.Interval;
-                if(showTitle && !Horizontal.Show) d += yyohaku + height + 2 * hankei;
-                for( ; d < c.Height ; d += Horizontal.Interval) {
-                    var brush = new SolidColorBrush(Horizontal.Color);
-                    if(showTitle && yyohaku < d && d < yyohaku + height) {
-                        var l = new System.Windows.Shapes.Line() {
-                            X1 = 0,
-                            Y1 = d,
-                            X2 = xyohaku,
-                            Y2 = d,
-                            Stroke = brush,
-                            StrokeThickness = Horizontal.Thickness,
-                            StrokeDashArray = Horizontal.DashArray
-                        };
-                        c.Children.Add(l);
-                        NoteContentsElements[c].Add(l);
-                        l = new System.Windows.Shapes.Line() {
-                            X1 = c.Width - xyohaku,
-                            Y1 = d,
-                            X2 = c.Width,
-                            Y2 = d,
-                            Stroke = brush,
-                            StrokeThickness = Horizontal.Thickness,
-                            StrokeDashArray = Horizontal.DashArray
-                        };
-                        c.Children.Add(l);
-                        RuleElements[c].Add(l);
-                    } else {
-                        var l = new System.Windows.Shapes.Line() {
-                            X1 = 0,
-                            Y1 = d,
-                            X2 = c.Width,
-                            Y2 = d,
-                            Stroke = brush,
-                            StrokeThickness = Horizontal.Thickness,
-                            StrokeDashArray = Horizontal.DashArray
-                        };
-                        c.Children.Add(l);
-                        RuleElements[c].Add(l);
-                    }
-                }
-            }
-            if(Vertical.Show) {
-                var brush = new SolidColorBrush(Vertical.Color);
-                for(double d = Vertical.Interval ; d < c.Width ; d += Vertical.Interval) {
-                    if(showTitle && xyohaku < d && d < c.Width - xyohaku) {
-                        var l = new System.Windows.Shapes.Line() {
-                            X1 = d,
-                            Y1 = 0,
-                            X2 = d,
-                            Y2 = yyohaku,
-                            Stroke = brush,
-                            StrokeThickness = Vertical.Thickness,
-                            StrokeDashArray = Vertical.DashArray
-                        };
-                        c.Children.Add(l);
-                        RuleElements[c].Add(l);
-                        l = new System.Windows.Shapes.Line() {
-                            X1 = d,
-                            Y1 = yyohaku + height + 2 * hankei,
-                            X2 = d,
-                            Y2 = c.Height,
-                            Stroke = brush,
-                            StrokeThickness = Vertical.Thickness,
-                            StrokeDashArray = Vertical.DashArray
-                        };
-                        c.Children.Add(l);
-                        RuleElements[c].Add(l);
-                    } else {
-                        var l = new System.Windows.Shapes.Line() {
-                            X1 = d,
-                            Y1 = 0,
-                            X2 = d,
-                            Y2 = c.Height,
-                            Stroke = brush,
-                            StrokeThickness = Vertical.Thickness,
-                            StrokeDashArray = Vertical.DashArray
-                        };
-                        c.Children.Add(l);
-                        RuleElements[c].Add(l);
-                    }
-                }
-            }
-            if(RuleElements.ContainsKey(c)) {
-                foreach(var s in RuleElements[c]) {
-                    SetZIndex(s, -1);
-                }
+        public IEnumerable<InkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
+            for(int i = 0 ; i < Count ; ++i) {
+                var c = CanvasCollection[i].Clone();
+                c.InkData.DrawingAlgorithm = algo;
+                c.ReDraw();
+                yield return c;
             }
         }
-
-        public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, InkCanvas c, CanvasCollectionInfo info) {
-            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
-
-            double xyohaku, yyohaku, height, hankei;
-            GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            var titlePath = new PdfSharp.Drawing.XGraphicsPath();
-            if(info.ShowTitle) {
-                titlePath.StartFigure();
-                //titlePath.AddLine(xyohaku + hankei,yyohaku,c.Width - xyohaku - hankei, yyohaku);
-                titlePath.AddArc(c.Width - xyohaku - hankei, yyohaku, hankei, hankei, 270, 90);
-                titlePath.AddLine(c.Width - xyohaku, yyohaku + hankei, c.Width - xyohaku, yyohaku + hankei + height);
-                titlePath.AddArc(c.Width - xyohaku - hankei, yyohaku + hankei + height, hankei, hankei, 0, 90);
-                titlePath.AddLine(c.Width - xyohaku - hankei, yyohaku + 2 * hankei + height, xyohaku + hankei, yyohaku + 2 * hankei + height);
-                titlePath.AddArc(xyohaku, yyohaku + height + hankei, hankei, hankei, 90, 90);
-                titlePath.AddLine(xyohaku, yyohaku + hankei + height, xyohaku, yyohaku + hankei);
-                titlePath.AddArc(xyohaku, yyohaku, hankei, hankei, 180, 90);
-                titlePath.CloseFigure();
-                g.DrawPath(PdfSharp.Drawing.XPens.LightGray, titlePath);
-
-                if(info.Title != null && info.Title != "") {
-                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei / 2, c.Width - 2 * xyohaku - 2 * hankei, height);
-                    double fontsize = GuessFontSize(info.Title, "游ゴシック", rect.Width, rect.Height);
-                    // 真ん中に配置するための座標計算
-                    double textHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
-                    int n = (int) (rect.Height / textHeight);
-                    rect.Y += (rect.Height - n * textHeight) / 2;
-                    rect.Height = n * textHeight;
-                    var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", fontsize, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
-                    var tf = new PdfSharp.Drawing.Layout.XTextFormatter(g);
-                    tf.DrawString(info.Title, pdf_ja_font, PdfSharp.Drawing.XBrushes.Black, rect, PdfSharp.Drawing.XStringFormats.TopLeft);
-                }
-
-                if(info.ShowDate) {
-                    var textSize = GetStringSize(info.Date.ToLongDateString(), "游ゴシック", 12);
-                    var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", 12, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
-                    g.DrawString(
-                        info.Date.ToLongDateString(),
-                        pdf_ja_font,
-                        PdfSharp.Drawing.XBrushes.Gray,
-                        c.Width - xyohaku - textSize.Width - hankei,
-                        yyohaku + 2 * hankei + height - textSize.Height - 4,
-                        PdfSharp.Drawing.XStringFormats.TopLeft);
-
-                    var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColors.LightGray, 1);
-                    pen.DashPattern = new double[] { 3, 3 };
-                    g.DrawLine(pen,
-                        xyohaku + hankei,
-                        yyohaku + 2 * hankei + height - textSize.Height - 8,
-                        c.Width - xyohaku - hankei - 1,// 破線がかっこ悪いので調整
-                        yyohaku + 2 * hankei + height - textSize.Height - 8);
-                }
-            }
-        }
-
-        public static void DrawRules(PdfSharp.Drawing.XGraphics g, InkCanvas c, bool showTitle) {
-            double xyohaku, yyohaku, height, hankei;
-            GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            if(c.HorizontalRule.Show) {
-                double d = c.HorizontalRule.Interval;
-                if(showTitle && !c.HorizontalRule.Show) d += yyohaku + height + 2 * hankei;
-                var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColor.FromArgb(
-                    c.HorizontalRule.Color.A,
-                    c.HorizontalRule.Color.R,
-                    c.HorizontalRule.Color.G,
-                    c.HorizontalRule.Color.B), c.HorizontalRule.Thickness);
-                pen.DashPattern = c.HorizontalRule.DashArray.ToArray();
-                for( ; d < c.Height ; d += c.HorizontalRule.Interval) {
-                    if(showTitle && yyohaku < d && d < yyohaku + height) {
-                        g.DrawLine(pen, 0, d, xyohaku, d);
-                        g.DrawLine(pen, c.Width - xyohaku, d, c.Width, d);
-                    } else {
-                        g.DrawLine(pen, 0, d, c.Width, d);
-                    }
-                }
-            }
-            if(c.VerticalRule.Show) {
-                var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColor.FromArgb(
-                    c.VerticalRule.Color.A,
-                    c.VerticalRule.Color.R,
-                    c.VerticalRule.Color.G,
-                    c.VerticalRule.Color.B), c.VerticalRule.Thickness);
-                pen.DashPattern = c.VerticalRule.DashArray.ToArray();
-                for(double d = c.VerticalRule.Interval ; d < c.Width ; d += c.VerticalRule.Interval) {
-                    if(showTitle && xyohaku < d && d < c.Width - xyohaku) {
-                        g.DrawLine(pen, d, 0, d, yyohaku);
-                        g.DrawLine(pen, d, yyohaku + height + 2 * hankei, d, c.Height);
-                    } else {
-                        g.DrawLine(pen, d, 0, d, c.Height);
-                    }
-                }
-            }
-        }
-
-        public static Size GetStringSize(string str, string fontname, double fontsize) {
-            var ft = new FormattedText(str, System.Globalization.CultureInfo.CurrentCulture,
-                FlowDirection.LeftToRight,
-                new Typeface(fontname),
-                fontsize,
-                Brushes.White);
-            return new Size(ft.Width, ft.Height);
-        }
-
-        public static double GuessFontSize(string str, string fontname, double width, double height) {
-            var size = GetStringSize(str, fontname, 10);
-            int n = (int) Math.Sqrt(height * size.Width / (width * size.Height));
-            // はみ出ることがあったので1ひいておく．
-            return 10 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height)) - 1;
-        }
-        #endregion
 
         public IEnumerator<ablib.InkCanvas> GetEnumerator() {
             return CanvasCollection.GetEnumerator();

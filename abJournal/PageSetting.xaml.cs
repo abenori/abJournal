@@ -19,13 +19,13 @@ namespace abJournal {
     /// PageSetting.xaml の相互作用ロジック
     /// </summary>
     public partial class PageSetting : Window, INotifyPropertyChanged {
-        public ablib.InkCanvasCollection.CanvasCollectionInfo info;
-        public ablib.InkCanvasCollection.CanvasCollectionInfo Info {
+        public InkCanvasManager.CanvasCollectionInfo info;
+        public InkCanvasManager.CanvasCollectionInfo Info {
             get { return info; }
             set { info = value; OnPropertyChanged("Info"); }
         }
 
-        public PageSetting(ablib.InkCanvasCollection.CanvasCollectionInfo i) {
+        public PageSetting(InkCanvasManager.CanvasCollectionInfo i) {
             Info = i.DeepCopy();
             DataContext = this;
             InitializeComponent();

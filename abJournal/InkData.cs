@@ -60,16 +60,24 @@ namespace ablib {
             get { return selected; }
             set { if(selected != value)redraw = true; selected = value; }
         }
-        Brush brush = null;
-        public Brush Brush {
+        Pen pen = null;
+        Pen Pen{
             get {
-                if(brush == null)brush = new SolidColorBrush(DrawingAttributes.Color);
-                return brush; 
+                if(pen == null) {
+                    pen = new Pen(new SolidColorBrush(DrawingAttributes.Color), DrawingAttributes.Width);
+                    pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
+                    if(!DrawingAttributesPlus.IsNormalDashArray) {
+                        pen.DashStyle = new DashStyle(DrawingAttributesPlus.DashArray, 0);
+                        pen.DashCap = PenLineCap.Flat;
+                    }
+                    pen.Freeze();
+                }
+                return pen; 
             }
         }
         public new DrawingAttributes DrawingAttributes {
             get { return base.DrawingAttributes; }
-            set { base.DrawingAttributes = value; redraw = true; brush = null; }
+            set { base.DrawingAttributes = value; redraw = true; pen = null; }
         }
         DrawingAttributesPlus drawingAttributesPlus = new DrawingAttributesPlus();
         [ProtoMember(1)]
@@ -81,13 +89,13 @@ namespace ablib {
         // protobuf用．空っぽにしたりSkipConstructor=trueにしたりすると駄目みたい．
         // よくわからない……．
         StrokeData() : base(new StylusPointCollection(new Point[]{new Point(0,0)})){
-            DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; brush = null; });
+            DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
             DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
             visual = new DrawingVisual();
         }
         public StrokeData(StylusPointCollection spc, DrawingAttributes att, DrawingAttributesPlus attplus, DrawingAlgorithm algo, bool selecting = false)
             : base(spc, att.Clone()) {
-            DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; brush = null; });
+            DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
             DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
             visual = new DrawingVisual();
             Selected = selecting;
@@ -105,28 +113,23 @@ namespace ablib {
             base.Transform(transformMatrix, applyToStylusTip);
         }
         DrawingVisual visual;
+        public DrawingVisual Visual{
+			get {return GetVisual();}
+		}
         bool redraw = true;
         MatrixTransform matrixTransform = null;
 
-        public void ReDraw() { redraw = true; }
-        public DrawingVisual GetVisual(bool selecting) {
-            if(Selected != selecting) {
-                redraw = true;
-                var save = visual;
-                visual = new DrawingVisual();
-                GetVisual(DrawingAttributes, DrawingAttributesPlus, selecting, algorithm);
-                var rv = visual;
-                visual = save;
-                return rv;
-            } else return visual;
-        }
+        public void ReDraw() { redraw = true; GetVisual(); }
+        
+        // GetVisualで得られるVisualはこのStrokeDataが生きている間有効
+        // 各種データの変更により描画の結果は変わりうる．
         public DrawingVisual GetVisual() {
-            return GetVisual(DrawingAttributes, DrawingAttributesPlus, Selected,algorithm);
+            return GetVisual(DrawingAttributes, DrawingAttributesPlus, Selected, algorithm, Pen);
         }
         // Strokg.GetGeometry = 厚みがある：「二重線」ができる
         // GetOriginalGeometryType1：線でひく：破線が引ける
         // これらの特徴のため，Algoithmが無視されることがある
-        public DrawingVisual GetVisual(DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo) {
+        DrawingVisual GetVisual(DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo, Pen pen) {
             if(!redraw) return visual;
             redraw = false;
             matrixTransform = null;
@@ -134,23 +137,26 @@ namespace ablib {
             using(var dc = visual.RenderOpen()) {
                 if(selecting) {
                     var geom = base.GetGeometry(dattr);
-                    dc.DrawGeometry(null, new Pen(Brush, dattr.Width / 5), geom);
+                    var p = pen.Clone();
+                    p.Thickness /= 5;
+                    p.Freeze();
+                    dc.DrawGeometry(null, p, geom);
                 } else {
                     switch(algo) {
                     case DrawingAlgorithm.Type1WithHosei:
-                        DrawOriginalType1(dc, MabikiPointsType1(GetHoseiPoints(StylusPoints),dattr),dattr,dattrPlus);
+                        DrawOriginalType1(dc, MabikiPointsType1(GetHoseiPoints(StylusPoints), dattr), dattr, dattrPlus, pen);
                         break;
                     case DrawingAlgorithm.Type1:
-                        DrawOriginalType1(dc, MabikiPointsType1(StylusPoints, dattr), dattr, dattrPlus);
+                        DrawOriginalType1(dc, MabikiPointsType1(StylusPoints, dattr), dattr, dattrPlus, pen);
                         break;
                     case DrawingAlgorithm.Line:
-                        DrawOriginalLine(dc, StylusPoints, dattr, dattrPlus);
+                        DrawOriginalLine(dc, StylusPoints, dattr, dattrPlus,pen);
                         break;
                     default:
                         if(dattrPlus.IsNormalDashArray) {
                             base.Draw(dc, dattr);
                         } else {
-                            DrawOriginalType1(dc, GetHoseiPoints(StylusPoints),dattr,dattrPlus);
+                            DrawOriginalType1(dc, MabikiPointsType1(StylusPoints, dattr), dattr, dattrPlus, pen);
                         }
                         break;
                     }
@@ -158,6 +164,8 @@ namespace ablib {
             }
             return visual;
         }
+        
+        public void UpdateVisual(){GetVisual();}
 
         public new StrokeData Clone() {
             return new StrokeData(StylusPoints, DrawingAttributes, DrawingAttributesPlus, algorithm);
@@ -633,18 +641,17 @@ namespace ablib {
             ClearSelected();
             Point basePoint = new Point(20, 20);
             Matrix shift = new Matrix(1, 0, 0, 1, basePoint.X, basePoint.Y);
-            DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
+            //DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
             if(Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
                 System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
                 StrokeCollection strokes = new StrokeCollection(stream);
-                StrokeDataCollection strokeData = new StrokeDataCollection();
-                DrawingAttributesPlus dattrplus = new DrawingAttributesPlus();
-                foreach(var s in strokes) {
+                var dattrplus = new DrawingAttributesPlus();
+                var strokeData = new StrokeDataCollection(strokes.Select(s => {
                     StrokeData sd = new StrokeData(s.StylusPoints, s.DrawingAttributes, dattrplus, DrawingAlgorithm, true);
                     sd.Transform(shift, true);
-                    Strokes.Add(sd);
-                    strokeData.Add(sd);
-                }
+                    return sd;
+                }));
+                Strokes.AddRange(strokeData);
                 AddUndoList(new AddStrokeCommand(strokeData));
                 OnStrokeAdded(new StrokeChangedEventArgs(strokeData));
             }
@@ -694,6 +701,7 @@ namespace ablib {
             }
         }
 
+        #region Proto-bufferのためのクラス
         [ProtoContract]
         class ProtoStylusPointCollection {
             [ProtoMember(1,OverwriteList=true)]
@@ -807,6 +815,7 @@ namespace ablib {
             model.Add(typeof(FontWeight), false).SetSurrogate(typeof(ProtoFontWeight));
             return model;
         }
+        #endregion
 
         public InkData Clone() {
             var strokes = new StrokeDataCollection(Strokes.Count);
@@ -965,7 +974,7 @@ namespace ablib {
             return rv;
         }
 
-        void DrawOriginalType1(DrawingContext dc,StylusPointCollection Points,DrawingAttributes dattr,DrawingAttributesPlus dattrplus) {
+        void DrawOriginalType1(DrawingContext dc,StylusPointCollection Points,DrawingAttributes dattr,DrawingAttributesPlus dattrplus,Pen pen) {
             if(Points.Count <= 1) {
                 return;
             }
@@ -980,11 +989,6 @@ namespace ablib {
                     }
                 }
                 geom.Freeze();
-                var pen = new Pen(Brush, dattr.Width);
-                pen.DashStyle = new DashStyle(dattrplus.DashArray, 0);
-                pen.DashCap = PenLineCap.Flat;
-                pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
-                pen.Freeze();
                 dc.DrawGeometry(null,pen,geom);
             } else {
                 PointCollection ctrl1 = new PointCollection(), ctrl2 = new PointCollection();
@@ -998,46 +1002,41 @@ namespace ablib {
                         ctx.BezierTo(ctrl1[i - 1], ctrl2[i - 1], Points[i].ToPoint(), true, false);
                     }
                     geom.Freeze();
-                    var pen = new Pen(Brush, dattr.Width * Points[i - 1].PressureFactor * 2);
-                    if(!dattrplus.IsNormalDashArray){
-                        pen.DashStyle = new DashStyle(dattrplus.DashArray,dashOffset);
-                        pen.DashCap = PenLineCap.Flat;
+                    var p = pen.Clone();
+                    p.Thickness *= Points[i - 1].PressureFactor * 2;
+                    if(p.DashStyle.Dashes.Count > 0){
+                        p.DashStyle.Offset = dashOffset;
                         double dx = Points[i].X - Points[i-1].X,dy = Points[i-1].Y - Points[i].Y;
                         dashOffset +=Math.Sqrt(dx*dx+dy*dy)/pen.Thickness;
                     }
-                    pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
-                    pen.Freeze();
-                    group.Children.Add(new GeometryDrawing(null, pen, geom));
+                    p.Freeze();
+                    group.Children.Add(new GeometryDrawing(null, p, geom));
                 }
                 group.Freeze();
                 dc.DrawDrawing(group);
             }
         }
 
-        void DrawOriginalLine(DrawingContext dc,StylusPointCollection Points,DrawingAttributes dattr,DrawingAttributesPlus dattrplus) {
+        void DrawOriginalLine(DrawingContext dc,StylusPointCollection Points,DrawingAttributes dattr,DrawingAttributesPlus dattrplus,Pen pen) {
             if(Points.Count <= 1) {
                 return;
             }
             if(dattr.IgnorePressure){
-                var pen = new Pen(Brush,dattr.Width);
-                if(!dattrplus.IsNormalDashArray){
-                    pen.DashStyle = new DashStyle(dattrplus.DashArray,0);
-                    pen.DashCap = PenLineCap.Flat;
-                }
                 for(int i = 1 ; i < Points.Count ; ++i) {
                     dc.DrawLine(pen, Points[i - 1].ToPoint(), Points[i].ToPoint());
                 }
             }else{
                 double dashOffset = 0;
                 for(int i = 1 ; i < Points.Count ; ++i) {
-                    var pen = new Pen(Brush, dattr.Width * Points[i - 1].PressureFactor * 2);
-                    if(!dattrplus.IsNormalDashArray) {
-                        pen.DashStyle = new DashStyle(dattrplus.DashArray, dashOffset);
-                        pen.DashCap = PenLineCap.Flat;
+                    var p = pen.Clone();
+                    p.Thickness *= Points[i - 1].PressureFactor * 2;
+                    if(p.DashStyle.Dashes.Count > 0){
+                        p.DashStyle.Offset = dashOffset;
                         double dx = Points[i].X - Points[i-1].X,dy = Points[i].Y - Points[i-1].Y;
                         dashOffset += Math.Sqrt(dx * dx + dy * dy) / pen.Thickness;
                     }
-                    dc.DrawLine(pen, Points[i - 1].ToPoint(), Points[i].ToPoint());
+                    p.Freeze();
+                    dc.DrawLine(p, Points[i - 1].ToPoint(), Points[i].ToPoint());
                 }
             }
         }
