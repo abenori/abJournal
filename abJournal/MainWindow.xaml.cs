@@ -124,6 +124,7 @@ namespace abJournal {
             mainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("WindowTitle"); });
             mainCanvas.MouseDown += ((s, e) => { mainCanvas.Focus(); });
             mainCanvas.StylusDown += ((s, e) => { mainCanvas.Focus(); });
+            mainCanvas.PropertyChanged += ((s, e) => { if(e.PropertyName == "Updated")OnPropertyChanged("WindowTitle"); });
 
             Panel.SetZIndex(mainCanvas, -4);
 
@@ -344,7 +345,9 @@ namespace abJournal {
         }
         public static readonly RoutedCommand DeletePage = new RoutedCommand("DeletePage", typeof(MainWindow));
         private void DeletePageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.DeleteCanvas(mainCanvas.CurrentPage);
+            if(mainCanvas.Count > 0) {
+                InkCanvasManager.DeleteCanvas(mainCanvas.CurrentPage);
+            }
         }
 
         public static readonly RoutedCommand SystemSetting = new RoutedCommand("SystemSetting", typeof(MainWindow));
@@ -414,6 +417,7 @@ namespace abJournal {
             if(dialog.ShowDialog() == true) {
                 InkCanvasManager.Info = dialog.Info;
                 foreach(var c in InkCanvasManager) c.InkCanvas.BackGroundColor = dialog.Info.InkCanvasInfo.BackGround;
+                InkCanvasManager.ReDraw();
                 OnPropertyChanged("InkCanvasManager");
             }
         }

@@ -135,7 +135,15 @@ namespace abJournal {
             MainCanvas.Clear();
             inkCanvasInfo.Clear();
         }
-
+        public void ReDraw() {
+            for(int i = 0 ; i < MainCanvas.Count ; ++i){
+                var c = this[i];
+                c.InkCanvas.FixedRenderClear();
+                if(i == 0) DrawNoteContents(c.InkCanvas, Info);
+                DrawRules(c.InkCanvas, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
+                c.InkCanvas.ReDraw();
+            }
+        }
         #region 保存など
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData {

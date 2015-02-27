@@ -290,7 +290,8 @@ namespace ablib {
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             VerticalArrangeCanvas();
             Canvas.SetLeft(canvas, -size.Width/2);
-            OnPropertyChanged("Update");
+            OnPropertyChanged("Updated");
+            OnPropertyChanged("Count");
             //Scale = 12;
         }
 
@@ -301,7 +302,8 @@ namespace ablib {
             innerCanvas.Children.Remove(ic);
             AddUndoChain(new DeleteCanvasCommand(ic, index));
             VerticalArrangeCanvas();
-            OnPropertyChanged("Update");
+            OnPropertyChanged("Updated");
+            OnPropertyChanged("Count");
             return;
         }
 
@@ -562,7 +564,7 @@ namespace ablib {
         public delegate void UndoChainChangedEventhandelr(object sender, UndoChainChangedEventArgs e);
         public event UndoChainChangedEventhandelr UndoChainChanged = ((sender, t) => { });
         protected virtual void OnUndoChainChanged(UndoChainChangedEventArgs e) {
-            OnPropertyChanged("Update");
+            OnPropertyChanged("Updated");
             UndoChainChanged(this, e);
         }
         #endregion
@@ -606,6 +608,7 @@ namespace ablib {
         public void ClearUpdated() {
             foreach(var c in CanvasCollection) c.InkData.ClearUpdated();
             EditCount = 0;
+            OnPropertyChanged("Updated");
         }
         public void Clear() {
             foreach(var c in CanvasCollection) {

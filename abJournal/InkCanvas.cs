@@ -406,7 +406,7 @@ namespace ablib {
             Children.Clear();
             foreach(var s in InkData.Strokes) {
                 s.ReDraw();
-                Children.Add(s.GetVisual());
+                Children.Add(s.Visual);
                 /*
                 foreach(var spt in s.StylusPoints) {
                     var pt = spt.ToPoint();

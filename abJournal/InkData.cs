@@ -104,35 +104,32 @@ namespace ablib {
         }
 
         public override void Transform(Matrix transformMatrix, bool applyToStylusTip) {
-            if(matrixTransform == null) {
-                matrixTransform = new MatrixTransform(transformMatrix);
-                visual.Transform = matrixTransform;
-            } else {
-                matrixTransform.Matrix = matrixTransform.Matrix * transformMatrix;
-            }
+            ((MatrixTransform) visual.Transform).Matrix *= transformMatrix;
             base.Transform(transformMatrix, applyToStylusTip);
         }
-        DrawingVisual visual;
-        public DrawingVisual Visual{
-			get {return GetVisual();}
-		}
-        bool redraw = true;
-        MatrixTransform matrixTransform = null;
-
-        public void ReDraw() { redraw = true; GetVisual(); }
-        
-        // GetVisualで得られるVisualはこのStrokeDataが生きている間有効
+        // VisualはこのStrokeDataが生きている間有効
         // 各種データの変更により描画の結果は変わりうる．
-        public DrawingVisual GetVisual() {
-            return GetVisual(DrawingAttributes, DrawingAttributesPlus, Selected, algorithm, Pen);
+        DrawingVisual visual;
+        public DrawingVisual Visual {
+            get { UpdateVisual(); return visual; }
+        }
+        bool redraw = true;
+
+        public void ReDraw() { redraw = true; UpdateVisual(); }
+        
+        // 内部状態の変更などにより見た目が変化すべきでも，
+        // Visualを実際に取得するか，UpdateVisualを実行するまでは
+        // Visualは更新されない．
+        public void UpdateVisual() {
+            UpdateVisual(DrawingAttributes, DrawingAttributesPlus, Selected, algorithm, Pen);
         }
         // Strokg.GetGeometry = 厚みがある：「二重線」ができる
         // GetOriginalGeometryType1：線でひく：破線が引ける
         // これらの特徴のため，Algoithmが無視されることがある
-        DrawingVisual GetVisual(DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo, Pen pen) {
-            if(!redraw) return visual;
+        void UpdateVisual(DrawingAttributes dattr, DrawingAttributesPlus dattrPlus, bool selecting, DrawingAlgorithm algo, Pen pen) {
+            if(!redraw) return;
             redraw = false;
-            matrixTransform = null;
+            visual.Transform = new MatrixTransform();
             
             using(var dc = visual.RenderOpen()) {
                 if(selecting) {
@@ -162,10 +159,8 @@ namespace ablib {
                     }
                 }
             }
-            return visual;
         }
         
-        public void UpdateVisual(){GetVisual();}
 
         public new StrokeData Clone() {
             return new StrokeData(StylusPoints, DrawingAttributes, DrawingAttributesPlus, algorithm);
