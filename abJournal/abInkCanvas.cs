@@ -50,6 +50,7 @@ namespace abJournal {
             get { return StrokeBrush.Color; }
             set {
                 StrokeBrush = new SolidColorBrush(value);
+                StrokeBrush.Freeze();
                 StrokeDrawingAttributes.Color = value;
                 SetCursor();
             }
@@ -66,11 +67,6 @@ namespace abJournal {
         public DoubleCollection PenDashArray {
             get { return StrokeDrawingAttributesPlus.DashArray; }
             set { StrokeDrawingAttributesPlus.DashArray = value; }
-        }
-        Color backGroundColor = Colors.White;
-        public Color BackGroundColor {
-            get { return backGroundColor; }
-            set { backGroundColor = value; Background = new SolidColorBrush(backGroundColor); }
         }
         #endregion
 
@@ -110,7 +106,7 @@ namespace abJournal {
             }
         }
         // 消しゴムカーソル
-        static Cursor ErasingCursor =  Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+        public static Cursor ErasingCursor =  Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
         void SetCursor() {
             switch(Mode) {
@@ -128,14 +124,16 @@ namespace abJournal {
         #endregion
 
         public abInkCanvas(abInkData d, double width, double height) {
+            StrokeChildren = new VisualCollection(this);
             Children = new VisualCollection(this);
+            
             InkData = d;
             Width = width; Height = height;
             PenThickness = 2;
             ignorePressure = true;
             PenColor = Colors.Black;
             Mode = InkManipulationMode.Inking;
-            BackGroundColor = Colors.White;
+            Background = Brushes.White;
             StrokeDrawingAttributes.FitToCurve = true;
             StrokeDrawingAttributes.IgnorePressure = true;
             SetCursor();
@@ -168,13 +166,13 @@ namespace abJournal {
 
         void InkData_StrokeDeleted(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Children.Remove(s.Visual);
+                StrokeChildren.Remove(s.Visual);
             }
         }
 
         void InkData_StrokeAdded(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
-                Children.Add(s.Visual);
+                StrokeChildren.Add(s.Visual);
             }
         }
 
@@ -196,7 +194,7 @@ namespace abJournal {
             }
             if(Mode != InkManipulationMode.Erasing) {
                 StrokeDrawingVisual.StartPoint(pt);
-                Children.Add(StrokeDrawingVisual);
+                StrokeChildren.Add(StrokeDrawingVisual);
             }
         }
         
@@ -209,9 +207,9 @@ namespace abJournal {
 
         void DrawingEnd(StylusPoint pt) {
             if(Mode != InkManipulationMode.Erasing) {
-                for(int i = Children.Count - 1 ; i >= 0 ; --i) {
-                    if(Children[i] == StrokeDrawingVisual) {
-                        Children.RemoveAt(i);
+                for(int i = StrokeChildren.Count - 1 ; i >= 0 ; --i) {
+                    if(StrokeChildren[i] == StrokeDrawingVisual) {
+                        StrokeChildren.RemoveAt(i);
                         break;
                     }
                 }
@@ -403,10 +401,10 @@ namespace abJournal {
         #endregion
 
         public void ReDraw() {
-            Children.Clear();
+            StrokeChildren.Clear();
             foreach(var s in InkData.Strokes) {
                 s.ReDraw();
-                Children.Add(s.Visual);
+                StrokeChildren.Add(s.Visual);
                 /*
                 foreach(var spt in s.StylusPoints) {
                     var pt = spt.ToPoint();
@@ -415,7 +413,7 @@ namespace abJournal {
                         Width = 1,
                         Height = 1
                     };
-                    Children.Add(ell);
+                    StrokeChildren.Add(ell);
                     SetLeft(ell, pt.X - 0.5);
                     SetTop(ell, pt.Y - 0.5);
                     SetZIndex(ell, 10);
@@ -452,18 +450,18 @@ namespace abJournal {
 
         public abInkCanvas Clone(){
             var rv = new abInkCanvas(InkData.Clone(), Width, Height);
-            rv.FixedDrawingGroup = FixedDrawingGroup.Clone();
             rv.mode = mode;
             rv.ignorePressure = ignorePressure;
             rv.PenColor = PenColor;
             rv.PenThickness = PenThickness;
             rv.PenDashArray = PenDashArray.Clone();
-            rv.BackGroundColor = BackGroundColor;
+            rv.Background = Background.Clone();
             return rv;
         }
 
 
         #region FrameworkElementでの描画のため
+        VisualCollection StrokeChildren;
         public VisualCollection Children;
         Brush background;
         public Brush Background {
@@ -472,11 +470,12 @@ namespace abJournal {
         }
         protected override int VisualChildrenCount {
             get {
-                return Children.Count;
+                return StrokeChildren.Count + Children.Count;
             }
         }
         protected override Visual GetVisualChild(int index) {
-            return Children[index];
+            if(index < Children.Count) return Children[index];
+            else return StrokeChildren[index - Children.Count];
         }
         protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) {
             return new PointHitTestResult(this, hitTestParameters.HitPoint);
@@ -485,13 +484,8 @@ namespace abJournal {
             if(Background != null) {
                 drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
             }
-            drawingContext.DrawDrawing(FixedDrawingGroup);
             base.OnRender(drawingContext);
         }
-        DrawingGroup FixedDrawingGroup = new DrawingGroup();
-        // 追加で何か書き込みたいときに使う．Childrenに入っているものよりも前に描画される（はず）
-        public void FixedRenderClear() { FixedDrawingGroup.Children.Clear(); }
-        public DrawingContext FixedRenderAppend() { return FixedDrawingGroup.Append(); }
         #endregion
     }
 }

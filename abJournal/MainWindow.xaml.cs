@@ -176,6 +176,7 @@ namespace abJournal {
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
+            InkCanvasManager.Import(@"C:\Users\Abe_Noriyuki\Desktop\sample.xps");
         }
 
         private void UndoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -416,7 +417,7 @@ namespace abJournal {
             var dialog = new PageSetting(InkCanvasManager.Info);
             if(dialog.ShowDialog() == true) {
                 InkCanvasManager.Info = dialog.Info;
-                foreach(var c in InkCanvasManager) c.InkCanvas.BackGroundColor = dialog.Info.InkCanvasInfo.BackGround;
+                for(int i = 0 ; i < InkCanvasManager.Count ; ++i )InkCanvasManager.SetBackground(i,dialog.Info.InkCanvasInfo.BackGround);
                 InkCanvasManager.ReDraw();
                 OnPropertyChanged("abInkCanvasManager");
             }

@@ -81,6 +81,8 @@ namespace abJournal {
             public Size Size = new Size();
             [ProtoMember(4)]
             public Color BackGround { get; set; }
+            
+            
             public InkCanvasInfo() {
                 BackGround = Colors.White;
             }
@@ -99,12 +101,21 @@ namespace abJournal {
         public string FileName { get; set; }
         List<InkCanvasInfo> inkCanvasInfo = new List<InkCanvasInfo>();
 
+        public class ManagedInkCanvas {
+            public abInkCanvas InkCanvas;
+            public InkCanvasInfo Info;
+            public ManagedInkCanvas(abInkCanvas c, InkCanvasInfo i) {
+                InkCanvas = c; Info = i;
+            }
+        }
+
         public abInkCanvasManager(abInkCanvasCollection main) {
             FileName = null;
             MainCanvas = main;
             Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
         }
 
+        #region Canvas追加
         public void AddCanvas() {
             AddCanvas(new abInkData());
         }
@@ -135,15 +146,60 @@ namespace abJournal {
             MainCanvas.Clear();
             inkCanvasInfo.Clear();
         }
+        #endregion
+
         public void ReDraw() {
             for(int i = 0 ; i < MainCanvas.Count ; ++i){
                 var c = this[i];
-                c.InkCanvas.FixedRenderClear();
                 if(i == 0) DrawNoteContents(c.InkCanvas, Info);
                 DrawRules(c.InkCanvas, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
                 c.InkCanvas.ReDraw();
             }
         }
+
+        #region background関連
+        public void SetBackground(int index,Color color) {
+            var c = this[index];
+            DisposeAttachedFileAssociatedToBrush(c);
+            c.InkCanvas.Background = new SolidColorBrush(color);
+            c.InkCanvas.Background.Freeze();
+            c.Info.BackGround = color;
+        }
+        public void SetBackground(int index, Brush brush, AttachedFile file) {
+            var c = this[index];
+            DisposeAttachedFileAssociatedToBrush(c);
+            c.InkCanvas.Background = brush;
+        }
+        void DisposeAttachedFileAssociatedToBrush(ManagedInkCanvas c){
+            try {
+                var file = BackgroundImageManager.GetFile(c.InkCanvas.Background);
+                file.Dispose();
+            }
+            catch(KeyNotFoundException) { }// 見付からなかったら何もしない
+        }
+        #endregion
+
+        #region Import
+        public void Import(string path) {
+            // 全く更新がない時はインポートしたページのみにする
+            if(MainCanvas.Count == 1 && !MainCanvas.Updated) {
+                DeleteCanvas(0);
+                Info.ShowTitle = false;
+            }
+            using(var file = FileManager.GetFile(path)) {
+                var ext = System.IO.Path.GetExtension(path);
+                switch(ext) {
+                case ".xps":
+                    BackgroundImageManager.LoadXPSFile(file, FileManager, this);
+                    MainCanvas.ClearUpdated();
+                    break;
+                default:
+                    throw new NotImplementedException();
+                }
+            }
+        }
+        #endregion
+
         #region 保存など
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData {
@@ -327,8 +383,13 @@ namespace abJournal {
             titleheight = c.Height * 0.06;
             hankei = c.Width * 0.02;
         }
+        static Dictionary<abInkCanvas, Visual> noteContents = new Dictionary<abInkCanvas, Visual>();
+
         public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
-            using(var dc = c.FixedRenderAppend()){
+            try { c.Children.Remove(noteContents[c]); }
+            catch(KeyNotFoundException) { }// 何もしない．
+            var visual = new DrawingVisual();
+            using(var dc = visual.RenderOpen()){
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
                 if(info.ShowTitle) {
@@ -360,10 +421,17 @@ namespace abJournal {
                     }
                 }
             }
+            c.Children.Add(visual);
+            noteContents[c] = visual;
         }
 
+        static Dictionary<abInkCanvas, Visual> rules = new Dictionary<abInkCanvas, Visual>();
+
         public static void DrawRules(abInkCanvas c, Rule Horizontal, Rule Vertical, bool showTitle) {
-            using(var dc = c.FixedRenderAppend()) {
+            try { c.Children.Remove(rules[c]); }
+            catch(KeyNotFoundException) { }// 何もしない．
+            var visual = new DrawingVisual();
+            using(var dc = visual.RenderOpen()){
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
                 if(Horizontal.Show) {
@@ -401,6 +469,8 @@ namespace abJournal {
                     }
                 }
             }
+            noteContents[c] = visual;
+            c.Children.Add(visual);
         }
 
         public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, abInkCanvas c, CanvasCollectionInfo info) {
@@ -513,13 +583,7 @@ namespace abJournal {
         }
         #endregion
 
-        public class ManagedInkCanvas {
-            public abInkCanvas InkCanvas;
-            public InkCanvasInfo Info;
-            public ManagedInkCanvas(abInkCanvas c,InkCanvasInfo i){
-                InkCanvas = c;Info = i;
-            }
-        }
+        #region IEnumerator実装
         public ManagedInkCanvas this[int i] {
             get { return new ManagedInkCanvas(MainCanvas[i], inkCanvasInfo[i]); }
         }
@@ -535,6 +599,9 @@ namespace abJournal {
             }
         }
         public int Count { get { return MainCanvas.Count; } }
+        #endregion
         abInkCanvasCollection MainCanvas;
+        AttachedFileManager FileManager = new AttachedFileManager();
+        BackgroundImageManager BackgroundImageManager = new BackgroundImageManager();
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 
-namespace ablib {
+namespace abJournal {
     public class Paper {
         public enum PaperSize {
             A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10,

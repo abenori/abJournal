@@ -160,6 +160,7 @@ namespace abJournal {
         }
 
         void VerticalArrangeCanvas() {
+            if(CanvasCollection.Count == 0) return;
             double height = 0;
             double width = 0;
             for(int i = 0 ; i < CanvasCollection.Count ; ++i) {
@@ -269,7 +270,8 @@ namespace abJournal {
             d.DrawingAlgorithm = DrawingAlgorithm;
             abInkCanvas canvas = new abInkCanvas(d, size.Width, size.Height);
             canvas.IgnorePressure = ignorePressure;
-            canvas.BackGroundColor = background;
+            canvas.Background = new SolidColorBrush(background);
+            canvas.Background.Freeze();
             canvas.Mode = Mode;
 
             CanvasCollection.Insert(index, canvas);
@@ -667,7 +669,7 @@ namespace abJournal {
                 };
                 SetLeft(ell, pt.X - 0.5);
                 SetTop(ell, pt.Y - 0.5);
-                CanvasCollection[0].Children.Add(ell);
+                CanvasCollection[0].StrokeChildren.Add(ell);
                 if(i == 2000) break;
                 ++i;
             }
