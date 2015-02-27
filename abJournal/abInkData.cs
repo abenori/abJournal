@@ -11,7 +11,7 @@ using System.Runtime.Serialization;
 using System.Xml;
 using ProtoBuf;
 
-namespace ablib {
+namespace abJournal {
     /**
      * 管理したいもの
      * Stroke
@@ -205,13 +205,13 @@ namespace ablib {
     [ProtoContract]
     public class TextDataCollection : List<TextData> { }
     [ProtoContract]
-    public class InkData {
+    public class abInkData {
         [ProtoMember(1)]
         public StrokeDataCollection Strokes { get; set; }
         [ProtoMember(2)]
         public TextDataCollection Texts { get; set; }
 
-        public InkData() {
+        public abInkData() {
             Strokes = new StrokeDataCollection();
             Texts = new TextDataCollection();
         }
@@ -423,8 +423,8 @@ namespace ablib {
         }
 
         interface UndoCommand {
-            void Undo(InkData data);
-            void Redo(InkData data);
+            void Undo(abInkData data);
+            void Redo(abInkData data);
         }
         interface UndoCommandComibinable : UndoCommand {
             // UndoCommand.Undoの呼び出しがかなり遅いっぽいので，
@@ -437,10 +437,10 @@ namespace ablib {
             public int Count { get { return Commands.Count; } }
             public UndoGroup() { }
             public void Add(UndoCommand c) { Commands.Add(c); }
-            public void Undo(InkData data) {
+            public void Undo(abInkData data) {
                 for(int i = Commands.Count - 1 ; i >= 0 ; --i) Commands[i].Undo(data);
             }
-            public void Redo(InkData data) {
+            public void Redo(abInkData data) {
                 for(int i = 0 ; i < Commands.Count ; ++i) Commands[i].Redo(data);
             }
             // undoCommandCombinableなコマンドを全て展開し，Combineでくっつけておく．
@@ -490,11 +490,11 @@ namespace ablib {
                 stroke = new StrokeDataCollection(); stroke.Add(s);
             }
             public DeleteStrokeCommand(StrokeDataCollection s) { stroke = s; }
-            public void Undo(InkData data) {
+            public void Undo(abInkData data) {
                 foreach(var s in stroke) data.Strokes.Add(s);
                 data.StrokeAdded(data, new StrokeChangedEventArgs(stroke));
             }
-            public void Redo(InkData data) {
+            public void Redo(abInkData data) {
                 foreach(var s in stroke) data.Strokes.Remove(s);
                 data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
             }
@@ -508,13 +508,13 @@ namespace ablib {
             public AddStrokeCommand(StrokeData s) {
                 stroke = new StrokeDataCollection(); stroke.Add(s);
             }
-            public void Redo(InkData data) {
+            public void Redo(abInkData data) {
                 foreach(var s in stroke) {
                     data.Strokes.Add(s);
                 }
                 data.OnStrokeAdded(new StrokeChangedEventArgs(stroke));
             }
-            public void Undo(InkData data) {
+            public void Undo(abInkData data) {
                 foreach(var s in stroke) {
                     data.Strokes.Remove(s);
                 }
@@ -529,13 +529,13 @@ namespace ablib {
             public SelectChangeCommand(StrokeDataCollection strokes) {
                 Strokes = strokes;
             }
-            public void Undo(InkData data) {
+            public void Undo(abInkData data) {
                 for(int i = 0 ; i < Strokes.Count ; ++i) {
                     Strokes[i].Selected = !Strokes[i].Selected;
                 }
                 data.StrokeSelectedChanged(data, new StrokeChangedEventArgs(Strokes));
             }
-            public void Redo(InkData data) {
+            public void Redo(abInkData data) {
                 Undo(data);
             }
         }
@@ -561,7 +561,7 @@ namespace ablib {
                     Matrices.Add(sdc[i], new MatrixPair(matrices[i]));
                 }
             }
-            public void Undo(InkData data) {
+            public void Undo(abInkData data) {
                 StrokeDataCollection sdc = new StrokeDataCollection();
                 foreach(var x in Matrices) {
                     x.Key.Transform(x.Value.invMatrix, false);
@@ -569,7 +569,7 @@ namespace ablib {
                 }
                 data.StrokeChanged(data, new StrokeChangedEventArgs(sdc));
             }
-            public void Redo(InkData data) {
+            public void Redo(abInkData data) {
                 StrokeDataCollection sdc = new StrokeDataCollection();
                 foreach(var x in Matrices) {
                     x.Key.Transform(x.Value.matrix, true);
@@ -668,10 +668,10 @@ namespace ablib {
             Clipboard.SetDataObject(obj, true);
         }
 
-        public ablib.Saving.InkData GetSavingData() {
-            return new ablib.Saving.InkData(this);
+        public abJournal.Saving.InkData GetSavingData() {
+            return new abJournal.Saving.InkData(this);
         }
-        public void LoadSavingData(ablib.Saving.InkData data) {
+        public void LoadSavingData(abJournal.Saving.InkData data) {
             Strokes = data.Strokes.ToOriginalType();
             foreach(var s in Strokes) {
                 //s.DrawingAttributesPlus.DashArray.Clear();
@@ -812,12 +812,12 @@ namespace ablib {
         }
         #endregion
 
-        public InkData Clone() {
+        public abInkData Clone() {
             var strokes = new StrokeDataCollection(Strokes.Count);
             foreach(var d in Strokes) strokes.Add(d.Clone());
             var texts = new TextDataCollection();
             foreach(var d in Texts) texts.Add(d);
-            var rv = new InkData();
+            var rv = new abInkData();
             rv.Strokes = strokes;
             rv.Texts = texts;
             rv.DrawingAlgorithm = DrawingAlgorithm;
@@ -863,25 +863,25 @@ namespace ablib {
             }
         }
         public class StrokeData : Stroke {
-            public ablib.DrawingAttributesPlus DrawingAttributesPlus;
-            public StrokeData(ablib.StrokeData strokeData)
+            public abJournal.DrawingAttributesPlus DrawingAttributesPlus;
+            public StrokeData(abJournal.StrokeData strokeData)
                 : base(strokeData) {
                 DrawingAttributesPlus = strokeData.DrawingAttributesPlus.Clone();
             }
             public StrokeData() {
                 DrawingAttributesPlus = new DrawingAttributesPlus();
             }
-            public ablib.StrokeData ToOriginalType() {
-                return new ablib.StrokeData(StylusPoints.ToOriginalType(),DrawingAttributes,DrawingAttributesPlus,DrawingAlgorithm.dotNet);
+            public abJournal.StrokeData ToOriginalType() {
+                return new abJournal.StrokeData(StylusPoints.ToOriginalType(), DrawingAttributes, DrawingAttributesPlus, DrawingAlgorithm.dotNet);
             }
         }
         public class StrokeDataCollection : List<StrokeData> {
-            public StrokeDataCollection(ablib.StrokeDataCollection sdc) : base(sdc.Count){
+            public StrokeDataCollection(abJournal.StrokeDataCollection sdc) : base(sdc.Count){
                 foreach(var sd in sdc) base.Add(new StrokeData(sd));
             }
             public StrokeDataCollection() { }
-            public ablib.StrokeDataCollection ToOriginalType() {
-                var rv = new ablib.StrokeDataCollection(Count);
+            public abJournal.StrokeDataCollection ToOriginalType() {
+                var rv = new abJournal.StrokeDataCollection(Count);
                 for(int i = 0 ; i < Count ; ++i) rv.Add(this[i].ToOriginalType());
                 return rv;
             }
@@ -895,7 +895,7 @@ namespace ablib {
             double FontSize { get; set; }
             public Color Color { get; set; }
 	        public TextData(){}
-	        public TextData(ablib.TextData td){
+	        public TextData(abJournal.TextData td){
 				Text = td.Text;
 				Rect = td.Rect;
                 FontFamily = td.FontFamily.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.Name)];
@@ -904,17 +904,17 @@ namespace ablib {
                 FontSize = td.FontSize;
 				Color = td.Color;
 			}
-			public ablib.TextData ToOriginalType(){
-                return new ablib.TextData(Text, Rect, new FontFamily(FontFamily), FontSize, FontStyle, FontWeight, Color);
+			public abJournal.TextData ToOriginalType(){
+                return new abJournal.TextData(Text, Rect, new FontFamily(FontFamily), FontSize, FontStyle, FontWeight, Color);
 			}
 	    }
         public class TextDataCollection : List<TextData> { 
-			public TextDataCollection(ablib.TextDataCollection tdc) : base(tdc.Count){
+			public TextDataCollection(abJournal.TextDataCollection tdc) : base(tdc.Count){
 				foreach(var td in tdc)base.Add(new TextData(td));
 			}
 			public TextDataCollection(){}
-			public ablib.TextDataCollection ToOriginalType(){
-				var rv = new ablib.TextDataCollection();
+			public abJournal.TextDataCollection ToOriginalType(){
+				var rv = new abJournal.TextDataCollection();
 				for(int i = 0 ; i < Count ; ++i)rv.Add(this[i].ToOriginalType());
 				return rv;
 			}
@@ -922,7 +922,7 @@ namespace ablib {
         public class InkData {
             public StrokeDataCollection Strokes;
             public TextDataCollection Texts;
-            public InkData(ablib.InkData data) {
+            public InkData(abJournal.abInkData data) {
                 Strokes = new StrokeDataCollection(data.Strokes);
                 Texts = new TextDataCollection(data.Texts);
             }

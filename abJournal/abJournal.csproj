@@ -94,13 +94,14 @@
     <Compile Include="AboutDialog.xaml.cs">
       <DependentUpon>AboutDialog.xaml</DependentUpon>
     </Compile>
+    <Compile Include="BackgroundImage.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="AttachedFileManager.cs" />
     <Compile Include="Hotkey.cs" />
     <Compile Include="hpdf.cs" />
     <Compile Include="Img2Cursor.cs" />
-    <Compile Include="InkCanvasCollection.cs" />
-    <Compile Include="InkCanvasManager.cs" />
+    <Compile Include="abInkCanvasCollection.cs" />
+    <Compile Include="abInkCanvasManager.cs" />
     <Compile Include="LowLevelHook.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PageSetting.xaml.cs">
@@ -125,8 +126,8 @@
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="InkCanvas.cs" />
-    <Compile Include="InkData.cs" />
+    <Compile Include="abInkCanvas.cs" />
+    <Compile Include="abInkData.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>

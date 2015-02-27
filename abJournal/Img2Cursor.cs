@@ -7,7 +7,7 @@ using System.IO;
 using System.Drawing;
 using System.Drawing.Imaging;
 
-namespace ablib {
+namespace abJournal {
     // https://social.msdn.microsoft.com/Forums/windows/en-US/9ea0bf74-760f-4f40-b64c-0cf7b0a56939/save-custom-cursor?forum=winforms
     // からのコピペです．
     // なのでここだけSystem.Drawing名前空間（WPFじゃない）

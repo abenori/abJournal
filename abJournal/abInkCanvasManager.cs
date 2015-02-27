@@ -8,7 +8,7 @@ using System.Windows;
 using ProtoBuf;
 
 namespace abJournal {
-    public class InkCanvasManager : IEnumerable<InkCanvasManager.ManagedInkCanvas> {
+    public class abInkCanvasManager : IEnumerable<abInkCanvasManager.ManagedInkCanvas> {
         #region 付加情報クラス
         [ProtoContract(SkipConstructor = true)]
         public class CanvasCollectionInfo {
@@ -99,28 +99,28 @@ namespace abJournal {
         public string FileName { get; set; }
         List<InkCanvasInfo> inkCanvasInfo = new List<InkCanvasInfo>();
 
-        public InkCanvasManager(InkCanvasCollection main) {
+        public abInkCanvasManager(abInkCanvasCollection main) {
             FileName = null;
             MainCanvas = main;
             Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
         }
 
         public void AddCanvas() {
-            AddCanvas(new InkData());
+            AddCanvas(new abInkData());
         }
-        public void AddCanvas(InkData d) {
+        public void AddCanvas(abInkData d) {
             AddCanvas(d, Info, Info.InkCanvasInfo);
         }
-        public void AddCanvas(InkData d, CanvasCollectionInfo info, InkCanvasInfo inkcanvasinfo) {
+        public void AddCanvas(abInkData d, CanvasCollectionInfo info, InkCanvasInfo inkcanvasinfo) {
             InsertCanvas(d, info, inkcanvasinfo, MainCanvas.Count);
         }
         public void InsertCanvas(int index) {
-            InsertCanvas(new InkData(), index);
+            InsertCanvas(new abInkData(), index);
         }
-        public void InsertCanvas(InkData d, int index) {
+        public void InsertCanvas(abInkData d, int index) {
             InsertCanvas(d, Info, Info.InkCanvasInfo, index);
         }
-        public void InsertCanvas(InkData d, CanvasCollectionInfo info,InkCanvasInfo inkcanvasinfo, int index) {
+        public void InsertCanvas(abInkData d, CanvasCollectionInfo info,InkCanvasInfo inkcanvasinfo, int index) {
             MainCanvas.InsertCanvas(d, inkcanvasinfo.Size, inkcanvasinfo.BackGround, index);
             var c = MainCanvas[index];
             inkCanvasInfo.Insert(index, inkcanvasinfo);
@@ -149,12 +149,12 @@ namespace abJournal {
         public class ablibInkCanvasCollectionSavingProtobufData {
             [ProtoContract(SkipConstructor = true)]
             public class CanvasData {
-                public CanvasData(InkData d, InkCanvasInfo i) {
+                public CanvasData(abInkData d, InkCanvasInfo i) {
                     Data = d;
                     Info = i.DeepCopy();
                 }
                 [ProtoMember(1)]
-                public InkData Data;
+                public abInkData Data;
                 [ProtoMember(2)]
                 public InkCanvasInfo Info;
             }
@@ -171,14 +171,14 @@ namespace abJournal {
         public class ablibInkCanvasCollectionSavingData {
             public class CanvasData {
                 public CanvasData() {
-                    Data = new ablib.Saving.InkData();
+                    Data = new abJournal.Saving.InkData();
                     Info = new InkCanvasInfo();
                 }
-                public CanvasData(ablib.Saving.InkData d, InkCanvasInfo i) {
+                public CanvasData(abJournal.Saving.InkData d, InkCanvasInfo i) {
                     Data = d;
                     Info = i.DeepCopy();
                 }
-                public ablib.Saving.InkData Data;
+                public abJournal.Saving.InkData Data;
                 public InkCanvasInfo Info;
             }
             public List<CanvasData> Data { get; set; }
@@ -189,7 +189,7 @@ namespace abJournal {
             }
         }
         public static string GetSchema() {
-            return InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
+            return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
         }
         public void Save() {
             Save(FileName);
@@ -200,7 +200,7 @@ namespace abJournal {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkCanvas.InkData,c.Info));
             }
             data.Info = Info;
-            var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+            var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
             using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
                 //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                 model.Serialize(wfs, data);
@@ -263,7 +263,7 @@ namespace abJournal {
         public void Open(string file) {
             var watch = new Stopwatch();
             using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
-                var model = InkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+                var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
                 ablibInkCanvasCollectionSavingProtobufData protodata = null;
                 // protobufデシリアライズ
                 try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
@@ -298,7 +298,7 @@ namespace abJournal {
 
                     MainCanvas.Clear();
                     foreach(var d in data.Data) {
-                        InkData id = new InkData();
+                        abInkData id = new abInkData();
                         id.LoadSavingData(d.Data);
                         AddCanvas(id, data.Info, d.Info);
                     }
@@ -311,7 +311,7 @@ namespace abJournal {
             MainCanvas.ClearUndoChain();
             watch.CheckTime("Openにかかった時間");
             //CanvasCollection[0].ReDraw();
-            //foreach(var str in CanvasCollection[0].InkData.Strokes) {
+            //foreach(var str in CanvasCollection[0].abInkData.Strokes) {
             //ForDebugPtsDrwaing(new PointCollection(str.StylusPoints.Where(s => true).Select(p => p.ToPoint())), Brushes.Red);
             //}
             //ForDebugPtsDrwaing(new PointCollection(StrokeData.HoseiPts.Select(p => p.ToPoint())), Brushes.Blue);
@@ -321,13 +321,13 @@ namespace abJournal {
         #endregion
 
         #region タイトルとか描くやつ（PDF含）
-        static void GetYohakuHankei(InkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
+        static void GetYohakuHankei(abInkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
             yyohaku = c.Width * 0.03;
             titleheight = c.Height * 0.06;
             hankei = c.Width * 0.02;
         }
-        public static void DrawNoteContents(InkCanvas c, CanvasCollectionInfo info) {
+        public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
             using(var dc = c.FixedRenderAppend()){
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
@@ -362,7 +362,7 @@ namespace abJournal {
             }
         }
 
-        public static void DrawRules(InkCanvas c, Rule Horizontal, Rule Vertical, bool showTitle) {
+        public static void DrawRules(abInkCanvas c, Rule Horizontal, Rule Vertical, bool showTitle) {
             using(var dc = c.FixedRenderAppend()) {
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
@@ -403,7 +403,7 @@ namespace abJournal {
             }
         }
 
-        public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, InkCanvas c, CanvasCollectionInfo info) {
+        public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, abInkCanvas c, CanvasCollectionInfo info) {
             var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
 
             double xyohaku, yyohaku, height, hankei;
@@ -457,7 +457,7 @@ namespace abJournal {
             }
         }
 
-        public static void DrawRules(PdfSharp.Drawing.XGraphics g, InkCanvas c, Rule HorizontalRule,Rule VerticalRule, bool showTitle) {
+        public static void DrawRules(PdfSharp.Drawing.XGraphics g, abInkCanvas c, Rule HorizontalRule,Rule VerticalRule, bool showTitle) {
             double xyohaku, yyohaku, height, hankei;
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
             if(HorizontalRule.Show) {
@@ -514,9 +514,9 @@ namespace abJournal {
         #endregion
 
         public class ManagedInkCanvas {
-            public InkCanvas InkCanvas;
+            public abInkCanvas InkCanvas;
             public InkCanvasInfo Info;
-            public ManagedInkCanvas(InkCanvas c,InkCanvasInfo i){
+            public ManagedInkCanvas(abInkCanvas c,InkCanvasInfo i){
                 InkCanvas = c;Info = i;
             }
         }
@@ -535,6 +535,6 @@ namespace abJournal {
             }
         }
         public int Count { get { return MainCanvas.Count; } }
-        InkCanvasCollection MainCanvas;
+        abInkCanvasCollection MainCanvas;
     }
 }

@@ -217,7 +217,7 @@
             <TextBlock Margin="5"><TextBlock Text="{Binding ElementName=mainCanvas,Path=CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding ElementName=mainCanvas,Path=Count,Mode=OneWay}"/>（ページ）</TextBlock>
         </ToolBar>
         </DockPanel>
-        <ablib:InkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 
+        <local:abInkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 
                                     AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop" 
                                     Focusable="True" 
                                     /> 

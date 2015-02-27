@@ -11,13 +11,12 @@ using System.Runtime.Serialization;
 using System.Xml;
 using ProtoBuf;
 using System.ComponentModel;
-using ablib;
 
-namespace ablib {
+namespace abJournal {
     // InkCanvasたちからなる「文書用」
     // InkCanvasの適切な配置とかを担当．
     // 継承しているCanvasの中にもう一つCanvas（innerCanvas）を置き，その中にablib.InkCanvasを並べる．
-    public class InkCanvasCollection : Canvas, IEnumerable<ablib.InkCanvas>, INotifyPropertyChanged {
+    public class abInkCanvasCollection : Canvas, IEnumerable<abInkCanvas>, INotifyPropertyChanged {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {
@@ -25,7 +24,7 @@ namespace ablib {
             }
         }
 
-        List<ablib.InkCanvas> CanvasCollection = new List<ablib.InkCanvas>();
+        List<abInkCanvas> CanvasCollection = new List<abInkCanvas>();
         Canvas innerCanvas = new Canvas();
         const double sukima = 100;
         const double LengthBetweenCanvas = 10;
@@ -124,17 +123,17 @@ namespace ablib {
         public int Count {
             get { return CanvasCollection.Count; }
         }
-        public InkCanvas this[int i] {
+        public abInkCanvas this[int i] {
             get { return CanvasCollection[i]; }
         }
         #endregion
 
         #region 選択
         RectTracker SelectedRectTracker = new RectTracker();
-        InkCanvas CanvasContainingSelection = null;
+        abInkCanvas CanvasContainingSelection = null;
         #endregion
 
-        public InkCanvasCollection() {
+        public abInkCanvasCollection() {
             SizeChanged += InkCanvasCollection_SizeChanged;
 
             Mode = InkManipulationMode.Inking;
@@ -263,12 +262,12 @@ namespace ablib {
         }
         #endregion
 
-        public void AddCanvas(InkData d,Size size,Color background) {
+        public void AddCanvas(abInkData d,Size size,Color background) {
             InsertCanvas(d, size,background,CanvasCollection.Count);
         }
-        public void InsertCanvas(InkData d, Size size,Color background,int index) {
+        public void InsertCanvas(abInkData d, Size size,Color background,int index) {
             d.DrawingAlgorithm = DrawingAlgorithm;
-            ablib.InkCanvas canvas = new ablib.InkCanvas(d, size.Width, size.Height);
+            abInkCanvas canvas = new abInkCanvas(d, size.Width, size.Height);
             canvas.IgnorePressure = ignorePressure;
             canvas.BackGroundColor = background;
             canvas.Mode = Mode;
@@ -297,7 +296,7 @@ namespace ablib {
 
         public void DeleteCanvas(int index) {
             if(index < 0 || index >= CanvasCollection.Count) return;
-            InkCanvas ic = CanvasCollection[index];
+            abInkCanvas ic = CanvasCollection[index];
             CanvasCollection.RemoveAt(index);
             innerCanvas.Children.Remove(ic);
             AddUndoChain(new DeleteCanvasCommand(ic, index));
@@ -331,7 +330,7 @@ namespace ablib {
         }
 
 
-        void SetSelectedRectTracker(InkCanvas can) {
+        void SetSelectedRectTracker(abInkCanvas can) {
             int count = 0;
             Rect bound = new Rect(Canvas.GetLeft(can), Canvas.GetTop(can), can.Width, can.Height);
             bound = can.RenderTransform.TransformBounds(bound);
@@ -389,7 +388,7 @@ namespace ablib {
             CanvasContainingSelection.InkData.BeginUndoGroup();
         }
 
-        void InkData_StrokeDeleted(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeDeleted(abInkCanvas sender, abInkData.StrokeChangedEventArgs e) {
             if(CanvasContainingSelection != null && CanvasContainingSelection.Equals(sender)) {
                 foreach(var s in e.Strokes) {
                     if(s.Selected){
@@ -400,7 +399,7 @@ namespace ablib {
             }
         }
 
-        void InkData_StrokeChanged(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeChanged(abInkCanvas sender, abInkData.StrokeChangedEventArgs e) {
             //System.Diagnostics.Debug.WriteLine("StrokeChanged");
             foreach(var s in e.Strokes) {
                 if(s.Selected){
@@ -410,7 +409,7 @@ namespace ablib {
             }
         }
 
-        void InkData_StrokeAdded(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeAdded(abInkCanvas sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
                 if(s.Selected){
 					SetSelectedRectTracker(sender);
@@ -419,7 +418,7 @@ namespace ablib {
             }
         }
 
-        void InkData_StrokeSelectedChanged(InkCanvas sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeSelectedChanged(abInkCanvas sender, abInkData.StrokeChangedEventArgs e) {
             SetSelectedRectTracker(sender);
         }
 
@@ -454,18 +453,18 @@ namespace ablib {
 
         #region Undo/Redo関係
         interface UndoCommand {
-            void Undo(InkCanvasCollection icc);
-            void Redo(InkCanvasCollection icc);
+            void Undo(abInkCanvasCollection icc);
+            void Redo(abInkCanvasCollection icc);
         }
         class UndoGroup : UndoCommand {
             List<UndoCommand> Commands = new List<UndoCommand>();
             public int Count { get { return Commands.Count; } }
             public UndoGroup() { }
             public void Add(UndoCommand c) { Commands.Add(c); }
-            public void Undo(InkCanvasCollection data) {
+            public void Undo(abInkCanvasCollection data) {
                 for(int i = Commands.Count - 1 ; i >= 0 ; --i) Commands[i].Undo(data);
             }
-            public void Redo(InkCanvasCollection data) {
+            public void Redo(abInkCanvasCollection data) {
                 for(int i = 0 ; i < Commands.Count ; ++i) Commands[i].Redo(data);
             }
             // Commandも全部表示するようにしておく．Debug用．
@@ -479,36 +478,36 @@ namespace ablib {
             }
         }
         class CanvasUndoCommand : UndoCommand {
-            public ablib.InkCanvas InkCanvas;
-            public CanvasUndoCommand(ablib.InkCanvas c) { InkCanvas = c; }
-            public void Undo(InkCanvasCollection icc) { InkCanvas.Undo(); }
-            public void Redo(InkCanvasCollection icc) { InkCanvas.Redo(); }
+            public abInkCanvas InkCanvas;
+            public CanvasUndoCommand(abInkCanvas c) { InkCanvas = c; }
+            public void Undo(abInkCanvasCollection icc) { InkCanvas.Undo(); }
+            public void Redo(abInkCanvasCollection icc) { InkCanvas.Redo(); }
         }
         class AddCanvasCommand : UndoCommand {
-            ablib.InkCanvas InkCanvas;
+            abInkCanvas InkCanvas;
             int index;
-            public AddCanvasCommand(ablib.InkCanvas c, int i) { InkCanvas = c; index = i; }
-            public void Undo(InkCanvasCollection icc) {
+            public AddCanvasCommand(abInkCanvas c, int i) { InkCanvas = c; index = i; }
+            public void Undo(abInkCanvasCollection icc) {
                 icc.CanvasCollection.RemoveAt(index);
                 icc.innerCanvas.Children.Remove(InkCanvas);
                 icc.VerticalArrangeCanvas();
             }
-            public void Redo(InkCanvasCollection icc) {
+            public void Redo(abInkCanvasCollection icc) {
                 icc.CanvasCollection.Insert(index, InkCanvas);
                 icc.innerCanvas.Children.Add(InkCanvas);
                 icc.VerticalArrangeCanvas();
             }
         }
         class DeleteCanvasCommand : UndoCommand {
-            ablib.InkCanvas InkCanvas;
+            abInkCanvas InkCanvas;
             int index;
-            public DeleteCanvasCommand(ablib.InkCanvas c, int i) { InkCanvas = c; index = i; }
-            public void Undo(InkCanvasCollection icc) {
+            public DeleteCanvasCommand(abInkCanvas c, int i) { InkCanvas = c; index = i; }
+            public void Undo(abInkCanvasCollection icc) {
                 icc.CanvasCollection.Insert(index, InkCanvas);
                 icc.innerCanvas.Children.Add(InkCanvas);
                 icc.VerticalArrangeCanvas();
             }
-            public void Redo(InkCanvasCollection icc) {
+            public void Redo(abInkCanvasCollection icc) {
                 icc.CanvasCollection.RemoveAt(index);
                 icc.innerCanvas.Children.Remove(InkCanvas);
                 icc.VerticalArrangeCanvas();
@@ -520,7 +519,7 @@ namespace ablib {
         int EditCount = 0;
 
         void InkCanvasCollection_UndoChainChanged(object sender, EventArgs e) {
-            AddUndoChain(new CanvasUndoCommand((ablib.InkCanvas) sender));
+            AddUndoChain(new CanvasUndoCommand((abInkCanvas) sender));
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
         void AddUndoChain(UndoCommand c) {
@@ -674,7 +673,7 @@ namespace ablib {
             }
         }*/
 
-        public IEnumerable<InkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
+        public IEnumerable<abInkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
             for(int i = 0 ; i < Count ; ++i) {
                 var c = CanvasCollection[i].Clone();
                 c.InkData.DrawingAlgorithm = algo;
@@ -683,7 +682,7 @@ namespace ablib {
             }
         }
 
-        public IEnumerator<ablib.InkCanvas> GetEnumerator() {
+        public IEnumerator<abInkCanvas> GetEnumerator() {
             return CanvasCollection.GetEnumerator();
         }
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() {

@@ -13,11 +13,11 @@ using System.Diagnostics;
 using System.ComponentModel;
 using ProtoBuf;
 
-namespace ablib {
-    public class InkCanvas : FrameworkElement {
+namespace abJournal {
+    public class abInkCanvas : FrameworkElement {
         #region 公開用プロパティ
         // データ
-        public InkData InkData {get; set;}
+        public abInkData InkData {get; set;}
 
         // 設定用
         InkManipulationMode mode;
@@ -127,7 +127,7 @@ namespace ablib {
         }
         #endregion
 
-        public InkCanvas(InkData d, double width, double height) {
+        public abInkCanvas(abInkData d, double width, double height) {
             Children = new VisualCollection(this);
             InkData = d;
             Width = width; Height = height;
@@ -148,37 +148,37 @@ namespace ablib {
         }
 
         #region InkDataからの通知を受け取る
-        public event InkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
+        public event abInkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
 
-        protected virtual void OnUndoChainChanged(InkData.UndoChainChangedEventArgs e) {
+        protected virtual void OnUndoChainChanged(abInkData.UndoChainChangedEventArgs e) {
             UndoChainChanged(this, e);
         }
         
-        void InkData_StrokeSelectedChanged(object sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeSelectedChanged(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
                 s.UpdateVisual();
             }
         }
 
-        void InkData_StrokeChanged(object sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeChanged(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes){
                 s.UpdateVisual();
             }
         }
 
-        void InkData_StrokeDeleted(object sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeDeleted(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
                 Children.Remove(s.Visual);
             }
         }
 
-        void InkData_StrokeAdded(object sender, InkData.StrokeChangedEventArgs e) {
+        void InkData_StrokeAdded(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
                 Children.Add(s.Visual);
             }
         }
 
-        void InkData_UndoChainChanged(object sender, InkData.UndoChainChangedEventArgs e) {
+        void InkData_UndoChainChanged(object sender, abInkData.UndoChainChangedEventArgs e) {
             OnUndoChainChanged(e);
         }
         #endregion
@@ -450,8 +450,8 @@ namespace ablib {
             InkData.ClearSelected();
         }
 
-        public InkCanvas Clone(){
-            var rv = new InkCanvas(InkData.Clone(), Width, Height);
+        public abInkCanvas Clone(){
+            var rv = new abInkCanvas(InkData.Clone(), Width, Height);
             rv.FixedDrawingGroup = FixedDrawingGroup.Clone();
             rv.mode = mode;
             rv.ignorePressure = ignorePressure;

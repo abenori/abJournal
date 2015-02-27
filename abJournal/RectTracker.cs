@@ -7,7 +7,7 @@ using System.Windows.Media;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ablib {
+namespace abJournal {
     // 選択の時に現れる四角のやつ．
     // 拡大縮小と移動ができる．
     // MFCにCRectTrackerってのがあるらしいからたぶんそれ．
