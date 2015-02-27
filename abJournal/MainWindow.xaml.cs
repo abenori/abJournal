@@ -31,9 +31,6 @@ namespace abJournal {
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
-                if(name == "InkCanvasManager") {
-                    PropertyChanged(this, new PropertyChangedEventArgs("WindowTitle"));
-                }
             }
         }
 
@@ -41,24 +38,23 @@ namespace abJournal {
         public int ScaleComboBoxIndex {
             get {
                 if(FitScaleToWidth) return 0;
-                if(InkCanvasManager.MainCanvas.Scale == 0.5) return 1;
-                else if(InkCanvasManager.MainCanvas.Scale == 0.7) return 2;
-                else if(InkCanvasManager.MainCanvas.Scale == 1) return 3;
-                else if(InkCanvasManager.MainCanvas.Scale == 1.5) return 4;
-                else if(InkCanvasManager.MainCanvas.Scale == 2) return 5;
+                if(mainCanvas.Scale == 0.5) return 1;
+                else if(mainCanvas.Scale == 0.7) return 2;
+                else if(mainCanvas.Scale == 1) return 3;
+                else if(mainCanvas.Scale == 1.5) return 4;
+                else if(mainCanvas.Scale == 2) return 5;
                 else return 0;
             }
             set {
                 FitScaleToWidth = false;
                 var scales = new double[] { 0.5, 0.7, 1, 1.1, 1.25, 1.5, 2 };
                 if(value >= 1 && value <= scales.Length) {
-                    InkCanvasManager.MainCanvas.Scale = scales[value - 1];
+                    mainCanvas.Scale = scales[value - 1];
                 } else {
                     FitScaleToWidth = true;
                     if(InkCanvasManager.Count == 0) return;
-                    InkCanvasManager.MainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
+                    mainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
                 }
-                OnPropertyChanged("InkCanvasManager");
             }
         }
 
@@ -67,10 +63,9 @@ namespace abJournal {
             get { return currentPen; }
             set {
                 currentPen = value;
-                InkCanvasManager.MainCanvas.PenColor = Properties.Settings.Default.PenColor[currentPen];
-                InkCanvasManager.MainCanvas.PenThickness = Properties.Settings.Default.PenThickness[currentPen];
-                InkCanvasManager.MainCanvas.PenDashed = Properties.Settings.Default.PenDashed[currentPen];
-                OnPropertyChanged("InkCanvasManager");
+                mainCanvas.PenColor = Properties.Settings.Default.PenColor[currentPen];
+                mainCanvas.PenThickness = Properties.Settings.Default.PenThickness[currentPen];
+                mainCanvas.PenDashed = Properties.Settings.Default.PenDashed[currentPen];
             }
         }
 
@@ -85,7 +80,7 @@ namespace abJournal {
                 string rv;
                 if(InkCanvasManager.FileName == null) rv = "無題ノート";
                 else rv = System.IO.Path.GetFileName(InkCanvasManager.FileName);
-                if(InkCanvasManager.MainCanvas.Updated) rv += " （更新）";
+                if(mainCanvas.Updated) rv += " （更新）";
                 rv += "  abJournal";
                 return rv;
             }
@@ -125,17 +120,17 @@ namespace abJournal {
             SetLowLevelKeyboardHook();
 
             InkCanvasManager = new InkCanvasManager(mainCanvas);
-            InkCanvasManager.MainCanvas.ManipulationDelta += ((s, e) => { OnPropertyChanged("InkCanvasManager"); });
-            InkCanvasManager.MainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("InkCanvasManager"); });
-            InkCanvasManager.MainCanvas.MouseDown += ((s, e) => { InkCanvasManager.MainCanvas.Focus(); });
-            InkCanvasManager.MainCanvas.StylusDown += ((s, e) => { InkCanvasManager.MainCanvas.Focus(); });
+            //mainCanvas.ManipulationDelta += ((s, e) => { OnPropertyChanged("InkCanvasManager"); });
+            mainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("WindowTitle"); });
+            mainCanvas.MouseDown += ((s, e) => { mainCanvas.Focus(); });
+            mainCanvas.StylusDown += ((s, e) => { mainCanvas.Focus(); });
 
-            Panel.SetZIndex(InkCanvasManager.MainCanvas, -4);
+            Panel.SetZIndex(mainCanvas, -4);
 
             ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
             CurrentPen = 0;
-            InkCanvasManager.MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
-            InkCanvasManager.MainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
+            mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
+            mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
 
             files.RemoveAll(f => {
                 if(!System.IO.File.Exists(f)) {
@@ -177,28 +172,25 @@ namespace abJournal {
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             if(InkCanvasManager.Count == 0)AddPage.Execute(null, this);
-            InkCanvasManager.MainCanvas.ClearUpdated();
-            InkCanvasManager.MainCanvas.ClearUndoChain();
+            mainCanvas.ClearUpdated();
+            mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
         }
 
         private void UndoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Undo();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Undo();
         }
         private void UndoCommandCanExecute(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = InkCanvasManager != null ? InkCanvasManager.MainCanvas.CanUndo() : false;
+            e.CanExecute = InkCanvasManager != null ? mainCanvas.CanUndo() : false;
         }
         private void RedoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Redo();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Redo();
         }
         private void RedoCommandCanExecute(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = InkCanvasManager != null ? InkCanvasManager.MainCanvas.CanRedo() : false;
+            e.CanExecute = InkCanvasManager != null ? mainCanvas.CanRedo() : false;
         }
         private void DeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Delete();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Delete();
         }
         private void SaveAsCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new SaveFileDialog();
@@ -211,7 +203,7 @@ namespace abJournal {
                         //InkCanvasManager.SavePDFWithiText(fd.FileName);
                     } else {
                         InkCanvasManager.Save(fd.FileName);
-                        InkCanvasManager.MainCanvas.ClearUpdated();
+                        mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
                 }
@@ -225,7 +217,7 @@ namespace abJournal {
             if(InkCanvasManager.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
                 InkCanvasManager.Save();
-                InkCanvasManager.MainCanvas.ClearUpdated();
+                mainCanvas.ClearUpdated();
                 AddHistory(InkCanvasManager.FileName);
                 OnPropertyChanged("InkCanvasManager");
             }
@@ -251,7 +243,7 @@ namespace abJournal {
             }
         }
         private bool BeforeClose() {
-            if(InkCanvasManager.MainCanvas.Updated) {
+            if(mainCanvas.Updated) {
                 MessageBoxResult res = MessageBoxResult.No;
                 if(InkCanvasManager.FileName != null) {
                     res = MessageBox.Show("\"" + InkCanvasManager.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
@@ -279,19 +271,16 @@ namespace abJournal {
             if(BeforeClose()) Close();
         }
         private void SelectAllCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.SelectAll();
+            mainCanvas.SelectAll();
         }
         private void PasteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Paste();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Paste();
         }
         private void CopyCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Copy();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Copy();
         }
         private void CutCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Cut();
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Cut();
         }
         private void PrintCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(InkCanvasManager.Count == 0) {
@@ -301,7 +290,7 @@ namespace abJournal {
             PrintDialog pd = new PrintDialog();
             if(pd.ShowDialog() == true) {
                 FixedDocument doc = new FixedDocument();
-                var canvases = InkCanvasManager.MainCanvas.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
+                var canvases = mainCanvas.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
                 foreach(var c in canvases) { 
                     FixedPage page = new FixedPage();
                     page.Width = c.Width;
@@ -319,23 +308,21 @@ namespace abJournal {
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e) {
             if(FitScaleToWidth && InkCanvasManager.Count != 0) {
-                InkCanvasManager.MainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
+                mainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
             }
             /*
             InkCanvasManager.Width = ActualWidth;
             InkCanvasManager.Height = ActualHeight;
              */
-            InkCanvasManager.MainCanvas.Scroll();
+            mainCanvas.Scroll();
         }
         public static readonly RoutedCommand AddPage = new RoutedCommand("AddPage", typeof(MainWindow));
         private void AddPageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             InkCanvasManager.AddCanvas();
-            OnPropertyChanged("InkCanvasManager");
         }
         public static readonly RoutedCommand InsertPage = new RoutedCommand("InsertPage", typeof(MainWindow));
         private void InsertPageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.InsertCanvas(InkCanvasManager.MainCanvas.CurrentPage + 1);
-            OnPropertyChanged("InkCanvasManager");
+            InkCanvasManager.InsertCanvas(mainCanvas.CurrentPage + 1);
         }
 
         WindowState SaveWindowState;
@@ -357,17 +344,16 @@ namespace abJournal {
         }
         public static readonly RoutedCommand DeletePage = new RoutedCommand("DeletePage", typeof(MainWindow));
         private void DeletePageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.DeleteCanvas(InkCanvasManager.MainCanvas.CurrentPage);
-            OnPropertyChanged("InkCanvasManager");
+            InkCanvasManager.DeleteCanvas(mainCanvas.CurrentPage);
         }
 
         public static readonly RoutedCommand SystemSetting = new RoutedCommand("SystemSetting", typeof(MainWindow));
         private void SystemSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             SystemSetting dialog = new SystemSetting();
             if(dialog.ShowDialog() == true) {
-                InkCanvasManager.MainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
+                mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
                 SetLowLevelKeyboardHook();
-                InkCanvasManager.MainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
+                mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
             }
         }
 
@@ -383,55 +369,44 @@ namespace abJournal {
         }
         public static readonly RoutedCommand ModeChangeToPen = new RoutedCommand("ModeChangeToPen", typeof(MainWindow));
         private void ModeChangeToPenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Mode = ablib.InkManipulationMode.Inking;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Mode = ablib.InkManipulationMode.Inking;
         }
         public static readonly RoutedCommand ModeChangeToEraser = new RoutedCommand("ModeChangeToEraser", typeof(MainWindow));
         private void ModeChangeToEraserCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Mode = ablib.InkManipulationMode.Erasing;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Mode = ablib.InkManipulationMode.Erasing;
         }
         public static readonly RoutedCommand ModeChangeToSelection = new RoutedCommand("ModeChangeToSelection", typeof(MainWindow));
         private void ModeChangeToSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Mode = ablib.InkManipulationMode.Selecting;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Mode = ablib.InkManipulationMode.Selecting;
         }
         public static readonly RoutedCommand ClearSelection = new RoutedCommand("ClearSelection", typeof(MainWindow));
         private void ClearSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.ClearSelected();
+            mainCanvas.ClearSelected();
         }
 
         private void FirstPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.CurrentPage = 0;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.CurrentPage = 0;
         }
         private void LastPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.CurrentPage = InkCanvasManager.Count - 1;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.CurrentPage = InkCanvasManager.Count - 1;
         }
         private void PreviousPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.CurrentPage++;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.CurrentPage++;
         }
         private void NextPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.CurrentPage++;
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.CurrentPage++;
         }
         private void MoveDownExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Scroll(new Vector(0, -20));
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Scroll(new Vector(0, -20));
         }
         private void MoveUpExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Scroll(new Vector(0, 20));
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Scroll(new Vector(0, 20));
         }
         private void ScrollPageDownExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Scroll(new Vector(0, -400));
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Scroll(new Vector(0, -400));
         }
         private void ScrollPageUpExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.MainCanvas.Scroll(new Vector(0, 400));
-            OnPropertyChanged("InkCanvasManager");
+            mainCanvas.Scroll(new Vector(0, 400));
         }
         public static readonly RoutedCommand PageSetting = new RoutedCommand("PageSetting", typeof(MainWindow));
         private void PageSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -466,7 +441,7 @@ namespace abJournal {
 
         private void FileOpen(List<string> files) {
             if(files.Count > 0) {
-                if(InkCanvasManager.FileName == null && !InkCanvasManager.MainCanvas.Updated) {
+                if(InkCanvasManager.FileName == null && !mainCanvas.Updated) {
                     WindowTitle = "ファイルを開いています……";
                     while(files.Count > 0) {
                         try { InkCanvasManager.Open(files[0]); }

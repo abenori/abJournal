@@ -98,7 +98,6 @@ namespace abJournal {
         public CanvasCollectionInfo Info;
         public string FileName { get; set; }
         List<InkCanvasInfo> inkCanvasInfo = new List<InkCanvasInfo>();
-        public InkCanvasInfo GetInkCanvasInfo(int i) { return inkCanvasInfo[i]; }
 
         public InkCanvasManager(InkCanvasCollection main) {
             FileName = null;
@@ -110,23 +109,27 @@ namespace abJournal {
             AddCanvas(new InkData());
         }
         public void AddCanvas(InkData d) {
-            AddCanvas(d, Info.InkCanvasInfo);
+            AddCanvas(d, Info, Info.InkCanvasInfo);
         }
-        public void AddCanvas(InkData d, InkCanvasInfo info) {
-            InsertCanvas(d, info, MainCanvas.Count);
+        public void AddCanvas(InkData d, CanvasCollectionInfo info, InkCanvasInfo inkcanvasinfo) {
+            InsertCanvas(d, info, inkcanvasinfo, MainCanvas.Count);
         }
         public void InsertCanvas(int index) {
             InsertCanvas(new InkData(), index);
         }
         public void InsertCanvas(InkData d, int index) {
-            InsertCanvas(d, Info.InkCanvasInfo, index);
+            InsertCanvas(d, Info, Info.InkCanvasInfo, index);
         }
-        public void InsertCanvas(InkData d, InkCanvasInfo info, int index) {
-            MainCanvas.InsertCanvas(d, info.Size, info.BackGround, index);
+        public void InsertCanvas(InkData d, CanvasCollectionInfo info,InkCanvasInfo inkcanvasinfo, int index) {
+            MainCanvas.InsertCanvas(d, inkcanvasinfo.Size, inkcanvasinfo.BackGround, index);
             var c = MainCanvas[index];
-            inkCanvasInfo.Insert(index, info);
-            if(index == 0) DrawNoteContents(c, Info);
-            DrawRules(c, info.HorizontalRule, info.VerticalRule, (index == 0) && Info.ShowTitle);
+            inkCanvasInfo.Insert(index, inkcanvasinfo);
+            if(index == 0) DrawNoteContents(c, info);
+            DrawRules(c, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
+        }
+        public void DeleteCanvas(int index) {
+            MainCanvas.DeleteCanvas(index);
+            inkCanvasInfo.RemoveAt(index);
         }
         public void Clear() {
             MainCanvas.Clear();
@@ -238,7 +241,7 @@ namespace abJournal {
                     var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
                     g.ScaleTransform(scale);
                     if(i == 0) DrawNoteContents(g, MainCanvas[i], Info);
-                    DrawRules(g, MainCanvas[i], GetInkCanvasInfo(i).HorizontalRule,GetInkCanvasInfo(i).VerticalRule,(i == 0 && Info.ShowTitle));
+                    DrawRules(g, MainCanvas[i], inkCanvasInfo[i].HorizontalRule,inkCanvasInfo[i].VerticalRule,(i == 0 && Info.ShowTitle));
                     MainCanvas[i].InkData.AddPdfGraphic(g);
                 }
                 doc.Info.Creator = "abJournal";
@@ -267,7 +270,7 @@ namespace abJournal {
                 if(protodata != null) {
                     Clear();
                     foreach(var d in protodata.Data) {
-                        AddCanvas(d.Data, d.Info);
+                        AddCanvas(d.Data, protodata.Info, d.Info);
                     }
                     Info = protodata.Info;
                 } else {
@@ -289,7 +292,7 @@ namespace abJournal {
                     foreach(var d in data.Data) {
                         InkData id = new InkData();
                         id.LoadSavingData(d.Data);
-                        AddCanvas(id, d.Info);
+                        AddCanvas(id, data.Info, d.Info);
                     }
                     Info = data.Info;
                 }
@@ -298,7 +301,6 @@ namespace abJournal {
             FileName = file;
             MainCanvas.ClearUpdated();
             MainCanvas.ClearUndoChain();
-            DrawNoteContents(MainCanvas[0], Info);
             watch.CheckTime("Openにかかった時間");
             //CanvasCollection[0].ReDraw();
             //foreach(var str in CanvasCollection[0].InkData.Strokes) {
@@ -525,6 +527,6 @@ namespace abJournal {
             }
         }
         public int Count { get { return MainCanvas.Count; } }
-        public InkCanvasCollection MainCanvas { get; private set; }
+        InkCanvasCollection MainCanvas;
     }
 }

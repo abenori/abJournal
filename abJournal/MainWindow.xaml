@@ -142,10 +142,10 @@
             </Button>
             <Button Command="Undo" ToolTip="元に戻す" Style="{StaticResource UndoButtonStyle}" Margin="0 0 3 0"/>
             <Button Command="Redo" ToolTip="やり直し" Style="{StaticResource RedoButtonStyle}"/>
-            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding InkCanvasManager.MainCanvas.Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
+            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding ElementName=mainCanvas, Path=Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
                 <Image Height="18" Source="icon/pencil.png" />
             </ToggleButton>
-            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding InkCanvasManager.MainCanvas.Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
+                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding ElementName=mainCanvas, Path=Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
             <Image Height="18" Source="icon/eraser.png"/>
             </ToggleButton>
             <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
@@ -214,12 +214,12 @@
             <ToggleButton Command="{x:Static local:MainWindow.FullScreen}" ToolTip="全画面切り替え" x:Name="FullScreenButton">
                 <Image Height="18" Source="icon/FullScreen.png"/>
             </ToggleButton>
-            <TextBlock Margin="5"><TextBlock Text="{Binding InkCanvasManager.MainCanvas.CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding InkCanvasManager.Count,Mode=OneWay}"/>（ページ）</TextBlock>
+            <TextBlock Margin="5"><TextBlock Text="{Binding ElementName=mainCanvas,Path=CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding InkCanvasManager.Count,Mode=OneWay}"/>（ページ）</TextBlock>
         </ToolBar>
         </DockPanel>
-        <ablib:InkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}"
-                                   AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop"
-                                   Focusable="True"
-                                   />
+        <ablib:InkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 
+                                    AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop" 
+                                    Focusable="True" 
+                                    /> 
     </DockPanel>
 </Window>

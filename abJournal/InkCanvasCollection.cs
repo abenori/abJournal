@@ -10,13 +10,21 @@ using System.Windows.Input;
 using System.Runtime.Serialization;
 using System.Xml;
 using ProtoBuf;
+using System.ComponentModel;
 using ablib;
 
 namespace ablib {
     // InkCanvasたちからなる「文書用」
     // InkCanvasの適切な配置とかを担当．
     // 継承しているCanvasの中にもう一つCanvas（innerCanvas）を置き，その中にablib.InkCanvasを並べる．
-    public class InkCanvasCollection : Canvas, IEnumerable<ablib.InkCanvas> {
+    public class InkCanvasCollection : Canvas, IEnumerable<ablib.InkCanvas>, INotifyPropertyChanged {
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name) {
+            if(PropertyChanged != null) {
+                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            }
+        }
+
         List<ablib.InkCanvas> CanvasCollection = new List<ablib.InkCanvas>();
         Canvas innerCanvas = new Canvas();
         const double sukima = 100;
@@ -27,10 +35,13 @@ namespace ablib {
         public DrawingAlgorithm DrawingAlgorithm {
             get { return drawingAlgorithm; }
             set {
-                drawingAlgorithm = value;
-                foreach(var c in CanvasCollection) {
-                    c.InkData.DrawingAlgorithm = value;
-                    c.ReDraw();
+                if(drawingAlgorithm != value) {
+                    drawingAlgorithm = value;
+                    foreach(var c in CanvasCollection) {
+                        c.InkData.DrawingAlgorithm = value;
+                        c.ReDraw();
+                    }
+                    OnPropertyChanged("DrawingAlgorithm");
                 }
             }
         }
@@ -39,24 +50,33 @@ namespace ablib {
         public InkManipulationMode Mode {
             get { return mode; }
             set {
-                mode = value;
-                foreach(var i in CanvasCollection) i.Mode = Mode;
+                if(mode != value) {
+                    mode = value;
+                    foreach(var i in CanvasCollection) i.Mode = Mode;
+                    OnPropertyChanged("Mode");
+                }
             }
         }
         Color penColor;
         public Color PenColor {
             get { return penColor; }
             set {
-                penColor = value;
-                foreach(var c in CanvasCollection) c.PenColor = penColor;
+                if(penColor != value) {
+                    penColor = value;
+                    foreach(var c in CanvasCollection) c.PenColor = penColor;
+                    OnPropertyChanged("PenColor");
+                }
             }
         }
         double penThickness;
         public double PenThickness {
             get { return penThickness; }
             set {
-                penThickness = value;
-                foreach(var c in CanvasCollection) c.PenThickness = penThickness;
+                if(penThickness != value) {
+                    penThickness = value;
+                    foreach(var c in CanvasCollection) c.PenThickness = penThickness;
+                    OnPropertyChanged("PenThickness");
+                }
             }
         }
         public static DoubleCollection DashArray_Dashed = new DoubleCollection(new double[] { 2, 1 });
@@ -67,6 +87,7 @@ namespace ablib {
             set {
                 penDashed = value;
                 foreach(var c in CanvasCollection) c.PenDashArray = value ? DashArray_Dashed : DashArray_Normal;
+                OnPropertyChanged("PenDashed");
             }
         }
 
@@ -79,6 +100,7 @@ namespace ablib {
                 ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
                 Scroll();
                 scale = value;
+                OnPropertyChanged("Scale");
             }
         }
         bool ignorePressure = true;
@@ -90,12 +112,13 @@ namespace ablib {
                     c.IgnorePressure = value;
                     c.ReDraw();
                 }
+                OnPropertyChanged("IgnorePressure");
             }
         }
 
         public new Brush Background {
             get { return base.Background; }
-            set { base.Background = value; innerCanvas.Background = value; }
+            set { base.Background = value; innerCanvas.Background = value; OnPropertyChanged("Background"); }
         }
 
         public int Count {
@@ -160,6 +183,7 @@ namespace ablib {
             Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
             m.Translate(vec.X, vec.Y);
             ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
+            OnPropertyChanged("CurrentPage");
         }
 
         protected override void OnManipulationDelta(System.Windows.Input.ManipulationDeltaEventArgs e) {
@@ -266,6 +290,7 @@ namespace ablib {
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             VerticalArrangeCanvas();
             Canvas.SetLeft(canvas, -size.Width/2);
+            OnPropertyChanged("Update");
             //Scale = 12;
         }
 
@@ -276,6 +301,7 @@ namespace ablib {
             innerCanvas.Children.Remove(ic);
             AddUndoChain(new DeleteCanvasCommand(ic, index));
             VerticalArrangeCanvas();
+            OnPropertyChanged("Update");
             return;
         }
 
@@ -536,6 +562,7 @@ namespace ablib {
         public delegate void UndoChainChangedEventhandelr(object sender, UndoChainChangedEventArgs e);
         public event UndoChainChangedEventhandelr UndoChainChanged = ((sender, t) => { });
         protected virtual void OnUndoChainChanged(UndoChainChangedEventArgs e) {
+            OnPropertyChanged("Update");
             UndoChainChanged(this, e);
         }
         #endregion
@@ -543,7 +570,6 @@ namespace ablib {
         public void Delete() {
             foreach(var c in CanvasCollection) c.InkData.DeleteSelected();
         }
-
         public void SelectAll() {
             CanvasCollection[CurrentPage].InkData.SelectAll();
         }
@@ -582,7 +608,9 @@ namespace ablib {
             EditCount = 0;
         }
         public void Clear() {
-            innerCanvas.Children.Clear();
+            foreach(var c in CanvasCollection) {
+                innerCanvas.Children.Remove(c);
+            }
             CanvasCollection.Clear();
         }
 
@@ -622,6 +650,7 @@ namespace ablib {
                 Matrix m = trans.Matrix;
                 m.Translate(0, -pt.Y);
                 trans.Matrix = m;
+                OnPropertyChanged("CurrentPage");
             }
         }
 
