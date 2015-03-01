@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using ablib;
 using System.Windows.Media;
 using System.Windows;
+using System.IO;
+using System.IO.Compression;
 using ProtoBuf;
 
 namespace abJournal {
@@ -80,18 +81,24 @@ namespace abJournal {
             [ProtoMember(3)]
             public Size Size = new Size();
             [ProtoMember(4)]
-            public Color BackGround { get; set; }
-            
+            public Color BackgroundColor { get; set; }
+
+            // Backgroundの種別を記述する．
+            // "color": BackgroundColor（から作られたSolidBrush）
+            // "image:xps:(識別子):page=(ページ)": xpsファイルから作られたVisualBrush，ファイル名は(識別子)で管理される
+            [ProtoMember(5)]
+            public string BackgroundStr { get; set; }
             
             public InkCanvasInfo() {
-                BackGround = Colors.White;
+                BackgroundColor = Colors.White;
             }
             public InkCanvasInfo DeepCopy() {
                 InkCanvasInfo rv = new InkCanvasInfo();
                 rv.HorizontalRule = HorizontalRule.DeepCopy();
                 rv.VerticalRule = VerticalRule.DeepCopy();
                 rv.Size = Size;
-                rv.BackGround = BackGround;
+                rv.BackgroundColor = BackgroundColor;
+                rv.BackgroundStr = BackgroundStr;
                 return rv;
             }
         }
@@ -132,9 +139,10 @@ namespace abJournal {
             InsertCanvas(d, Info, Info.InkCanvasInfo, index);
         }
         public void InsertCanvas(abInkData d, CanvasCollectionInfo info,InkCanvasInfo inkcanvasinfo, int index) {
-            MainCanvas.InsertCanvas(d, inkcanvasinfo.Size, inkcanvasinfo.BackGround, index);
+            var icinfo = inkcanvasinfo.DeepCopy();
+            MainCanvas.InsertCanvas(d, inkcanvasinfo.Size, icinfo.BackgroundColor, index);
             var c = MainCanvas[index];
-            inkCanvasInfo.Insert(index, inkcanvasinfo);
+            inkCanvasInfo.Insert(index, icinfo);
             if(index == 0) DrawNoteContents(c, info);
             DrawRules(c, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
@@ -160,22 +168,41 @@ namespace abJournal {
         #region background関連
         public void SetBackground(int index,Color color) {
             var c = this[index];
-            DisposeAttachedFileAssociatedToBrush(c);
+            ClearnUpBrush(c);
             c.InkCanvas.Background = new SolidColorBrush(color);
             c.InkCanvas.Background.Freeze();
-            c.Info.BackGround = color;
+            c.Info.BackgroundColor = color;
+            c.Info.BackgroundStr = "color";
         }
-        public void SetBackground(int index, Brush brush, AttachedFile file) {
+        public void SetBackground(int index, Brush brush, AttachedFile file,string backgroundStr) {
             var c = this[index];
-            DisposeAttachedFileAssociatedToBrush(c);
+            ClearnUpBrush(c);
             c.InkCanvas.Background = brush;
+            c.Info.BackgroundStr = backgroundStr;
         }
-        void DisposeAttachedFileAssociatedToBrush(ManagedInkCanvas c){
+        void ClearnUpBrush(ManagedInkCanvas c){
             try {
                 var file = BackgroundImageManager.GetFile(c.InkCanvas.Background);
                 file.Dispose();
             }
             catch(KeyNotFoundException) { }// 見付からなかったら何もしない
+        }
+        public void SetBackgroundFromStr() {
+            for(int i = 0 ; i < Count ; ++i) {
+                var c = this[i];
+                string str = c.Info.BackgroundStr;
+                if(str == null || str == "" || str == "color") SetBackground(i, c.Info.BackgroundColor);
+                else if(str.StartsWith("image:")) {
+                    str = str.Substring("image:".Length);
+                    if(str.StartsWith("xps:")) {
+                        str = str.Substring("xps:".Length);
+                        int r = str.IndexOf(":");
+                        var file = FileManager.GetFileFromIdentifier(str.Substring(0, r));
+                        int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
+                        BackgroundImageManager.SetBrushByXPS(file, pageNumber, i, this);
+                    } else throw new NotImplementedException();
+                } else throw new NotImplementedException();
+            }
         }
         #endregion
 
@@ -200,6 +227,18 @@ namespace abJournal {
         }
         #endregion
 
+        public IEnumerable<abInkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
+            for(int i = 0 ; i < Count ; ++i) {
+                var c = this[i];
+                var r = c.InkCanvas.Clone();
+                r.InkData.DrawingAlgorithm = algo;
+                r.ReDraw();
+                if(i == 0) DrawNoteContents(r);
+                DrawRules(r, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0 && Info.ShowTitle));
+                yield return r;
+            }
+        }
+
         #region 保存など
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData {
@@ -218,12 +257,14 @@ namespace abJournal {
             public List<CanvasData> Data { get; set; }
             [ProtoMember(2)]
             public CanvasCollectionInfo Info { get; set; }
+            [ProtoMember(3)]
+            public List<AttachedFileManager.SavingAttachedFile> AttachedFiles { get; set; }
             public ablibInkCanvasCollectionSavingProtobufData() {
                 Data = new List<CanvasData>();
                 Info = new CanvasCollectionInfo();
+                AttachedFiles = new List<AttachedFileManager.SavingAttachedFile>();
             }
         }
-
         public class ablibInkCanvasCollectionSavingData {
             public class CanvasData {
                 public CanvasData() {
@@ -257,10 +298,26 @@ namespace abJournal {
             }
             data.Info = Info;
             var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
+            string tmpFile = null;
+            if(File.Exists(file)) {
+                tmpFile = Path.GetTempFileName();
+                File.Delete(tmpFile);
+                File.Move(file, tmpFile);
+            }
+            using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
+                data.AttachedFiles = FileManager.Save(zip);
+                var mainEntry = zip.CreateEntry("_data.abjnt");
+                using(var ws = mainEntry.Open()) {
+                    model.Serialize(ws, data);
+                }
+            }
+
+            /*
             using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
                 //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                 model.Serialize(wfs, data);
-            }
+            }*/
+            if(tmpFile != null) File.Delete(tmpFile);
             FileName = file;
         }
 
@@ -321,9 +378,21 @@ namespace abJournal {
             using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
                 var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
                 ablibInkCanvasCollectionSavingProtobufData protodata = null;
-                // protobufデシリアライズ
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                try {
+                    using(var zip = new ZipArchive(fs)) {
+                        var data = zip.GetEntry("_data.abjnt");
+                        using(var reader = data.Open()) {
+                            protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
+                        }
+                        FileManager.Open(zip, protodata.AttachedFiles);
+                    }
+                }
                 catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                // protobufデシリアライズ
+                if(protodata == null) {
+                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                    catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                }
                 // zip解凍＋protobufデシリアライズ
                 if(protodata == null) {
                     using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
@@ -363,6 +432,8 @@ namespace abJournal {
             }
             if(MainCanvas.Count == 0) AddCanvas();
             FileName = file;
+            SetBackgroundFromStr();
+            MainCanvas.InvalidateVisual();
             MainCanvas.ClearUpdated();
             MainCanvas.ClearUndoChain();
             watch.CheckTime("Openにかかった時間");
@@ -384,7 +455,9 @@ namespace abJournal {
             hankei = c.Width * 0.02;
         }
         static Dictionary<abInkCanvas, Visual> noteContents = new Dictionary<abInkCanvas, Visual>();
-
+        public void DrawNoteContents(abInkCanvas c) {
+            DrawNoteContents(c, Info);
+        }
         public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
             try { c.Children.Remove(noteContents[c]); }
             catch(KeyNotFoundException) { }// 何もしない．
@@ -427,6 +500,9 @@ namespace abJournal {
 
         static Dictionary<abInkCanvas, Visual> rules = new Dictionary<abInkCanvas, Visual>();
 
+        public void DrawRules(ManagedInkCanvas c,bool showTitle) {
+            DrawRules(c.InkCanvas, c.Info.HorizontalRule, c.Info.VerticalRule, showTitle);
+        }
         public static void DrawRules(abInkCanvas c, Rule Horizontal, Rule Vertical, bool showTitle) {
             try { c.Children.Remove(rules[c]); }
             catch(KeyNotFoundException) { }// 何もしない．

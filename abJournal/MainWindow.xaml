@@ -45,6 +45,7 @@
         <CommandBinding Command="{x:Static local:MainWindow.ClearSelection}" Executed="ClearSelectionCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.OpenHistory}" Executed="OpenHistoryCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.ShowAboutDialog}" Executed="ShowAboutDialogCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.Import}" Executed="ImportCommandExecuted"/>
     </Window.CommandBindings>
     <Window.Resources>
         <local:ColorBrushConverter x:Key="ColorBrushConverter"/>
@@ -69,6 +70,7 @@
                     <MenuItem Header="開く(_O)" Command="Open"/>
                     <MenuItem Header="保存(_S)" Command="Save"/>
                     <MenuItem Header="名前をつけて保存(_A)" Command="SaveAs"/>
+                    <MenuItem Header="インポート(_I)" Command="{x:Static local:MainWindow.Import}"/>
                     <MenuItem Header="印刷(_P)" Command="Print"/>
                     <MenuItem Header="履歴(_L)" ItemsSource="{Binding History}" Command="{x:Static local:MainWindow.OpenHistory}">
                         <MenuItem.ItemContainerStyle>

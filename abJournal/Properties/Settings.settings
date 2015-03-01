@@ -5,7 +5,7 @@
     <Setting Name="IsUpgraded" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
-    <Setting Name="DrawingAlgorithm" Type="ablib.DrawingAlgorithm" Scope="User">
+    <Setting Name="DrawingAlgorithm" Type="abJournal.DrawingAlgorithm" Scope="User">
       <Value Profile="(Default)">dotNet</Value>
     </Setting>
     <Setting Name="PrintDrawingAlgorithm" Type="ablib.DrawingAlgorithm" Scope="User">

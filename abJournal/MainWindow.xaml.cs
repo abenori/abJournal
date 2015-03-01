@@ -15,6 +15,7 @@ using System.Windows.Shapes;
 using System.Diagnostics;
 using Microsoft.Win32;
 using System.ComponentModel;
+using System.IO.Compression;
 using ablib;
 
 /* 
@@ -176,7 +177,7 @@ namespace abJournal {
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
-            InkCanvasManager.Import(@"C:\Users\Abe_Noriyuki\Desktop\sample.xps");
+            //InkCanvasManager.Import(@"C:\Users\Abe_Noriyuki\Desktop\sample.xps");
         }
 
         private void UndoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -200,7 +201,8 @@ namespace abJournal {
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|PDF ファイル (*.pdf)|*.pdf|全てのファイル|*.*";
             if(fd.ShowDialog() == true) {
                 try {
-                    if(System.IO.Path.GetExtension(fd.FileName) == ".pdf") {
+                    var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
+                    if(ext == ".pdf") {
                         InkCanvasManager.SavePDF(fd.FileName);
                         //abInkCanvasManager.SavePDFWithiText(fd.FileName);
                     } else {
@@ -244,6 +246,24 @@ namespace abJournal {
                 }
             }
         }
+        public static readonly RoutedCommand Import = new RoutedCommand("Import", typeof(MainWindow));
+        private void ImportCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
+            var ofd = new OpenFileDialog();
+            ofd.Title = "インポートするファイルを選んでください";
+            ofd.Filter = "xpsファイル (*.xps)|*.xps";
+            if(ofd.ShowDialog() == true) {
+                try {
+                    InkCanvasManager.Import(ofd.FileName);
+                }
+                catch(NotImplementedException) {
+                    MessageBox.Show("サポートされていない形式です．", "abJournal");
+                }
+                catch(System.IO.FileNotFoundException) {
+                    MessageBox.Show("ファイルが見付かりません．", "abJournal");
+                }
+            }
+        }
+
         private bool BeforeClose() {
             if(mainCanvas.Updated) {
                 MessageBoxResult res = MessageBoxResult.No;
@@ -292,8 +312,8 @@ namespace abJournal {
             PrintDialog pd = new PrintDialog();
             if(pd.ShowDialog() == true) {
                 FixedDocument doc = new FixedDocument();
-                var canvases = mainCanvas.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
-                foreach(var c in canvases) { 
+                var canvases = InkCanvasManager.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
+                foreach(var c in canvases){
                     FixedPage page = new FixedPage();
                     page.Width = c.Width;
                     page.Height = c.Height;
@@ -417,7 +437,7 @@ namespace abJournal {
             var dialog = new PageSetting(InkCanvasManager.Info);
             if(dialog.ShowDialog() == true) {
                 InkCanvasManager.Info = dialog.Info;
-                for(int i = 0 ; i < InkCanvasManager.Count ; ++i )InkCanvasManager.SetBackground(i,dialog.Info.InkCanvasInfo.BackGround);
+                for(int i = 0 ; i < InkCanvasManager.Count ; ++i )InkCanvasManager.SetBackground(i,dialog.Info.InkCanvasInfo.BackgroundColor);
                 InkCanvasManager.ReDraw();
                 OnPropertyChanged("abInkCanvasManager");
             }

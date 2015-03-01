@@ -52,7 +52,7 @@ namespace abJournal.Properties {
         [global::System.Configuration.DefaultSettingValueAttribute("dotNet")]
         public global::abJournal.DrawingAlgorithm PrintDrawingAlgorithm {
             get {
-                return ((global::abJournal.DrawingAlgorithm) (this["PrintDrawingAlgorithm"]));
+                return ((global::abJournal.DrawingAlgorithm)(this["PrintDrawingAlgorithm"]));
             }
             set {
                 this["PrintDrawingAlgorithm"] = value;
