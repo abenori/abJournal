@@ -129,7 +129,9 @@ namespace abJournal {
 
             Panel.SetZIndex(mainCanvas, -4);
 
-            ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
+            //ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
+            ScaleComboBoxIndex = 3;// Scale = 1
+            //ScaleComboBoxIndex = 5;// Scale = 1
             CurrentPen = 0;
             mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
             mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
@@ -167,13 +169,33 @@ namespace abJournal {
 	        }
 	    }
 
-
         private void Window_Closing(object sender, CancelEventArgs e) {
             if(!BeforeClose()) e.Cancel = true;
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             if(InkCanvasManager.Count == 0)AddPage.Execute(null, this);
+
+            //string path = @"C:\Users\Abe_Noriyuki\Documents\mywrite\math\ronbun\irred_rep_of_pro-p_Iwahori-Hecke.pdf";
+            //string path = @"C:\Users\Abe_Noriyuki\Documents\mywrite\work\2013\w\linalg\0114.pdf";
+            /*
+            string path = @"C:\Users\Abe_Noriyuki\Desktop\Compatibility.pdf";
+            InkCanvasManager.DeleteCanvas(0);
+            for(int j = 0 ; j < 2 ; ++j) {
+                using(var doc = new pdfium.pdfiumDocument(path)) {
+                    int pages = doc.GetPageCount();
+                    pages = 1;
+                    for(int i = 0 ; i < pages ; ++i) {
+                        InkCanvasManager.AddCanvas();
+                        var canvas = mainCanvas[i];
+                        using(var page = doc.GetPage(i)) {
+                            var brush = new VisualBrush(page.GetVisual(new Size(canvas.Width, canvas.Height), 1));
+                            canvas.Background = brush;
+                        }
+                    }
+                }
+            }*/
+            
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
@@ -238,12 +260,8 @@ namespace abJournal {
             var fd = new OpenFileDialog();
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
             if(fd.ShowDialog() == true) {
-                if(System.IO.File.Exists(fd.FileName)) {
-                    FileOpen(new List<string>() { fd.FileName });
-                    OnPropertyChanged("abInkCanvasManager");
-                } else {
-                    MessageBox.Show("\"" + fd.FileName + "\" は存在しません．", "abJournal");
-                }
+                FileOpen(new List<string>() { fd.FileName });
+                OnPropertyChanged("abInkCanvasManager");
             }
         }
         public static readonly RoutedCommand Import = new RoutedCommand("Import", typeof(MainWindow));
@@ -469,19 +487,24 @@ namespace abJournal {
                 if(InkCanvasManager.FileName == null && !mainCanvas.Updated) {
                     WindowTitle = "ファイルを開いています……";
                     while(files.Count > 0) {
-                        try { InkCanvasManager.Open(files[0]); }
+                        try { 
+                            InkCanvasManager.Open(files[0]);
+                            AddHistory(files[0]);
+                            files.RemoveAt(0);
+                        }
                         catch(InvalidOperationException) {
                             MessageBox.Show(files[0] + " は正しいフォーマットではありません．");
+                            files.RemoveAt(0);
+                            continue;
+                        }
+                        catch(System.IO.FileNotFoundException) {
+                            MessageBox.Show(files[0] + "は存在しません．");
                             files.RemoveAt(0);
                             continue;
                         }
                         break;
                     }
                     WindowTitle = null;
-                    if(files.Count > 0) {
-                        AddHistory(files[0]);
-                        files.RemoveAt(0);
-                    }
                 }
             }
             if(files.Count > 0) {
@@ -510,8 +533,6 @@ namespace abJournal {
             Properties.Settings.Default.Save();
             OnPropertyChanged("History");
         }
-
-        AttachedFileManager AttachedFileManager = new AttachedFileManager();
     }
 }
 

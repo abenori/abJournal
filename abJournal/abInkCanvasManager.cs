@@ -145,8 +145,10 @@ namespace abJournal {
             inkCanvasInfo.Insert(index, icinfo);
             if(index == 0) DrawNoteContents(c, info);
             DrawRules(c, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
+            SetBackgroundFromStr(index);
         }
         public void DeleteCanvas(int index) {
+            ClearnUpBrush(this[index]);
             MainCanvas.DeleteCanvas(index);
             inkCanvasInfo.RemoveAt(index);
         }
@@ -187,38 +189,47 @@ namespace abJournal {
             }
             catch(KeyNotFoundException) { }// 見付からなかったら何もしない
         }
-        public void SetBackgroundFromStr() {
-            for(int i = 0 ; i < Count ; ++i) {
-                var c = this[i];
-                string str = c.Info.BackgroundStr;
-                if(str == null || str == "" || str == "color") SetBackground(i, c.Info.BackgroundColor);
-                else if(str.StartsWith("image:")) {
-                    str = str.Substring("image:".Length);
-                    if(str.StartsWith("xps:")) {
-                        str = str.Substring("xps:".Length);
-                        int r = str.IndexOf(":");
+        public void SetBackgroundFromStr(int index) {
+            var c = this[index];
+            string str = c.Info.BackgroundStr;
+            if(str == null || str == "" || str == "color") SetBackground(index, c.Info.BackgroundColor);
+            else if(str.StartsWith("image:")) {
+                str = str.Substring("image:".Length);
+                if(str.StartsWith("xps:")) {
+                    str = str.Substring("xps:".Length);
+                    int r = str.IndexOf(":");
+                    try {
                         var file = FileManager.GetFileFromIdentifier(str.Substring(0, r));
                         int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
-                        BackgroundImageManager.SetBrushByXPS(file, pageNumber, i, this);
-                    } else throw new NotImplementedException();
+                        BackgroundImageManager.SetBrushByXPS(file, pageNumber, index, this);
+                    }
+                    catch(KeyNotFoundException) { }// Identifierからファイルが見付からなかったら諦める
                 } else throw new NotImplementedException();
-            }
+            } else throw new NotImplementedException();
+        }
+        public void SetBackgroundFromStr() {
+            for(int i = 0 ; i < Count ; ++i) SetBackgroundFromStr(i);
         }
         #endregion
 
         #region Import
         public void Import(string path) {
             // 全く更新がない時はインポートしたページのみにする
-            if(MainCanvas.Count == 1 && !MainCanvas.Updated) {
+            bool newImport = false;
+            if(!MainCanvas.Updated && FileName == null) {
                 DeleteCanvas(0);
                 Info.ShowTitle = false;
+                newImport = true;
             }
             using(var file = FileManager.GetFile(path)) {
                 var ext = System.IO.Path.GetExtension(path);
                 switch(ext) {
                 case ".xps":
                     BackgroundImageManager.LoadXPSFile(file, FileManager, this);
-                    MainCanvas.ClearUpdated();
+                    if(newImport) {
+                        MainCanvas.ClearUndoChain();
+                        MainCanvas.ClearUpdated();
+                    }
                     break;
                 default:
                     throw new NotImplementedException();
@@ -323,6 +334,7 @@ namespace abJournal {
 
         public void SavePDF(string file) {
             double scale = (double) 720 / (double) 254 / Paper.mmToSize;
+
             using(var doc = new PdfSharp.Pdf.PdfDocument()) {
                 for(int i = 0 ; i < MainCanvas.Count ; ++i) {
                     var page = doc.AddPage();
@@ -392,13 +404,6 @@ namespace abJournal {
                 if(protodata == null) {
                     try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
                     catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                }
-                // zip解凍＋protobufデシリアライズ
-                if(protodata == null) {
-                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
-                        try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(zs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                        catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                    }
                 }
                 if(protodata != null) {
                     Clear();
@@ -477,7 +482,7 @@ namespace abJournal {
                         text.MaxTextHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
                         int n = (int) (height / text.MaxTextHeight);
                         pt.Y += (height - n * text.MaxTextHeight) / 2;
-                        text.MaxTextHeight += n;
+                        text.MaxTextHeight *= n;
                         dc.DrawText(text, pt);
                     }
 
@@ -545,7 +550,7 @@ namespace abJournal {
                     }
                 }
             }
-            noteContents[c] = visual;
+            rules[c] = visual;
             c.Children.Add(visual);
         }
 

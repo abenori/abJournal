@@ -17,7 +17,6 @@ namespace abJournal {
     /// SystemSetting.xaml の相互作用ロジック
     /// </summary>
     public partial class SystemSetting : Window {
-
         KeyValuePair<string, DrawingAlgorithm>[] ComboList = new KeyValuePair<string, DrawingAlgorithm>[]{
                 new KeyValuePair<string,DrawingAlgorithm>("Stroke.GetGeometry",DrawingAlgorithm.dotNet),
                 new KeyValuePair<string,DrawingAlgorithm>("独自型その1",DrawingAlgorithm.Type1),

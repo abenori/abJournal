@@ -6,7 +6,7 @@
 ノートをとるためのソフトです．劣化Windows Journalです．一応以下がWindows Journalよりもよいところと思っています．
 * ペンによる書き込みとタッチでのスクロールを分けて認識．（デジタイザペン，マウスはペンでの書き込みと認識．タッチはその面積が小さければペンと判断．タッチ判断は試していない．）
 * スクロールバーがない．（手があたって勝手にスクロールしてしまうことがない．）
-* 保存データはProtocol Buffersで保存される．（独自仕様だが仕様が明確．.jntよりはサイズが大きめ．読み込み書き込み遅め．）
+* 保存データはProtocol Buffersで保存される．（.jntよりはサイズが大きめ．読み込み書き込み遅め．）
 * 破線用のペンが使える．
 * PDFへの変換機能を持っている．
 
@@ -26,12 +26,21 @@
 * PDF生成時は独自アルゴリズムで，更に筆圧無視．
 
 速度はだいたい
+
 線を引くだけ > 独自アルゴリズム > Strokg.GetGeometry > Strokg.GetGeometry + 筆圧 > 独自アルゴリズム + 筆圧
+
 という感じです．特に独自アルゴリズム + 筆圧はかなり遅いです．線を引くだけ + 筆圧がどこに入るかはよくわからない，
+
+## 保存ファイル
+zipでアーカイブされていて，解凍すると
+* _data.abjnt
+* attached\*
+がでてきます．_data.abjntがprotobufでシリアライズされたデータ本体（abInkCanvasManager.ablibInkCanvasCollectionSavingProtobufData型）
+attachedの中が，このファイルに付随するファイルたちです（たとえば背景に使われている画像とか）．
 
 ## 謝辞
 * PDFへの変換はPDFSharpを使っています．
-  <http://pdfsharp.com/PDFsharp/>
+  <http://www.pdfsharp.net/>
 * Protocol Buffersへの（デ）シリアル化はProtobuf-netを使っています．
   <http://code.google.com/p/protobuf-net/>
 * Option解析にはNDesk.Optionsを使っています．

@@ -11,5 +11,7 @@ namespace abJournal {
     /// App.xaml の相互作用ロジック
     /// </summary>
     public partial class App : Application {
+        // pdfium.dllの初期化
+        pdfium.pdfium pdfium = new pdfium.pdfium();
     }
 }

@@ -43,7 +43,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
+    <PlatformTarget>x86</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -113,6 +113,7 @@
       <DependentUpon>PageSetting.xaml</DependentUpon>
     </Compile>
     <Compile Include="Paper.cs" />
+    <Compile Include="pdfium.cs" />
     <Compile Include="PenSetting.xaml.cs" />
     <Compile Include="RectTracker.cs" />
     <Compile Include="Settings.cs" />

@@ -293,7 +293,6 @@ namespace abJournal {
             Canvas.SetLeft(canvas, -size.Width/2);
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
-            //Scale = 12;
         }
 
         public void DeleteCanvas(int index) {
