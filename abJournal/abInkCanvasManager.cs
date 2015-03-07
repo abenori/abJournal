@@ -177,7 +177,7 @@ namespace abJournal {
             c.Info.BackgroundColor = color;
             c.Info.BackgroundStr = "color";
         }
-        void CleanUpBrush(ManagedInkCanvas c) {
+        public void CleanUpBrush(ManagedInkCanvas c) {
             var str = c.Info.BackgroundStr;
             if(str == null) return;
             if(str.StartsWith("image")) {
@@ -198,11 +198,15 @@ namespace abJournal {
                 if(str.StartsWith("xps:")) {
                     str = str.Substring("xps:".Length);
                     int r = str.IndexOf(":");
-                    var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, r));
-                    if(file != null) {
-                        int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
-                        BackgroundImageManager.XPSBackground.SetBackground(c, file, pageNumber);
+                    try {
+                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, r))) {
+                            if(file != null) {
+                                int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
+                                BackgroundImageManager.XPSBackground.SetBackground(c, file, pageNumber);
+                            }
+                        }
                     }
+                    catch { }// file = nullなら無視する
                 } else if(str.StartsWith("pdf:")){
                     str = str.Substring("pdf:".Length);
                     int r = str.IndexOf(":");
@@ -233,24 +237,30 @@ namespace abJournal {
             using(var file = new AttachedFile(path)) {
                 var ext = System.IO.Path.GetExtension(path);
                 switch(ext) {
-                case ".xps":
-                    BackgroundImageManager.LoadXPSFile(file, this);
-                    if(newImport) {
-                        MainCanvas.ClearUndoChain();
-                        MainCanvas.ClearUpdated();
+                case ".xps": {
+                        int oldCount = Count;
+                        BackgroundImageManager.LoadXPSFile(file, this);
+                        for(int i = 0 ; i < Count - oldCount ; ++i) {
+                            this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
+                        }
+                        if(newImport) {
+                            MainCanvas.ClearUndoChain();
+                            MainCanvas.ClearUpdated();
+                        }
+                        break;
                     }
-                    break;
-                case ".pdf":
-                    int oldCount = Count;
-                    BackgroundImageManager.LoadPDFFile(file, this);
-                    for(int i = 0 ; i < Count - oldCount ; ++i) {
-                        this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
+                case ".pdf": {
+                        int oldCount = Count;
+                        BackgroundImageManager.LoadPDFFile(file, this);
+                        for(int i = 0 ; i < Count - oldCount ; ++i) {
+                            this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
+                        }
+                        if(newImport) {
+                            MainCanvas.ClearUndoChain();
+                            MainCanvas.ClearUpdated();
+                        }
+                        break;
                     }
-                    if(newImport) {
-                        MainCanvas.ClearUndoChain();
-                        MainCanvas.ClearUpdated();
-                    }
-                    break;
                 default:
                     throw new NotImplementedException();
                 }
@@ -258,15 +268,42 @@ namespace abJournal {
         }
         #endregion
 
-        public IEnumerable<abInkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
+        public IEnumerable<ManagedInkCanvas> GetInkCanvases(DrawingAlgorithm algo) {
             for(int i = 0 ; i < Count ; ++i) {
                 var c = this[i];
                 var r = c.InkCanvas.Clone();
                 r.InkData.DrawingAlgorithm = algo;
+                var str = c.Info.BackgroundStr;
+                if(str.StartsWith("image:")) {
+                    str = str.Substring("image:".Length);
+                    if(str.StartsWith("xps:")) {
+                        str = str.Substring("xps:".Length);
+                        int ri = str.IndexOf(":");
+                        try {
+                            using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
+                                if(file != null) {
+                                    int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
+                                    BackgroundImageManager.XPSBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
+                                }
+                            }
+                        }
+                        catch { }// file = nullなら無視する
+                    } else if(str.StartsWith("pdf:")) {
+                        str = str.Substring("pdf:".Length);
+                        int ri = str.IndexOf(":");
+                        try {
+                            using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
+                                int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
+                                BackgroundImageManager.PDFBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
+                            }
+                        }
+                        catch { }// file = nullなら無視する
+                    }
+                }
                 r.ReDraw();
                 if(i == 0) DrawNoteContents(r);
                 DrawRules(r, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0 && Info.ShowTitle));
-                yield return r;
+                yield return new ManagedInkCanvas(r,c.Info);
             }
         }
 

@@ -475,7 +475,7 @@ namespace abJournal {
             rv.PenColor = PenColor;
             rv.PenThickness = PenThickness;
             rv.PenDashArray = PenDashArray.Clone();
-            rv.Background = Background.Clone();
+            rv.Background = Background == null ? null : Background.Clone();
             return rv;
         }
 

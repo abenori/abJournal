@@ -129,8 +129,8 @@ namespace abJournal {
 
             Panel.SetZIndex(mainCanvas, -4);
 
-            //ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
-            ScaleComboBoxIndex = 3;// Scale = 1
+            ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
+            //ScaleComboBoxIndex = 3;// Scale = 1
             //ScaleComboBoxIndex = 5;// Scale = 1
             CurrentPen = 0;
             mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
@@ -252,6 +252,10 @@ namespace abJournal {
 					WindowTitle = "インポート中……";
                     InkCanvasManager.Import(ofd.FileName);
 					WindowTitle = null;
+                    // Importで横幅が変わる可能性があるので，「横幅にあわせる」の場合は計算し直し．
+                    if(ScaleComboBoxIndex == 0) {
+                        ScaleComboBoxIndex = 0;
+                    }
                 }
                 catch(NotImplementedException) {
                     MessageBox.Show("サポートされていない形式です．", "abJournal");
@@ -309,19 +313,22 @@ namespace abJournal {
             }
             PrintDialog pd = new PrintDialog();
             if(pd.ShowDialog() == true) {
+                WindowTitle = "印刷準備中……";
                 FixedDocument doc = new FixedDocument();
                 var canvases = InkCanvasManager.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
                 foreach(var c in canvases){
                     FixedPage page = new FixedPage();
-                    page.Width = c.Width;
-                    page.Height = c.Height;
-                    page.Children.Add(c);
+                    page.Width = c.InkCanvas.Width;
+                    page.Height = c.InkCanvas.Height;
+                    page.Children.Add(c.InkCanvas);
                     PageContent content = new PageContent();
                     content.Child = page;
                     doc.Pages.Add(content);
                 }
+                WindowTitle = "印刷中……";
                 pd.PrintDocument(doc.DocumentPaginator,InkCanvasManager.FileName == null ?
                     "無題ノート" : System.IO.Path.GetFileNameWithoutExtension(InkCanvasManager.FileName));
+                WindowTitle = null;
             }
             return;
         }
