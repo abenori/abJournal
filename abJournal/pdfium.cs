@@ -105,38 +105,11 @@ namespace abJournal {
             [DllImport("pdfium.dll")]
             public static extern double FPDF_GetPageHeight(IntPtr page);
             [DllImport("pdfium.dll")]
-            public static extern double FPDF_RenderPage(IntPtr dc, IntPtr page, int start_x, int start_y, int size_x, int size_y, int rotate, int flags);
-            [DllImport("pdfium.dll")]
             public static extern void FPDF_ClosePage(IntPtr page);
             [DllImport("pdfium.dll")]
             public static extern void FPDF_CloseDocument(IntPtr document);
             [DllImport("pdfium.dll")]
             public static extern int FPDF_GetPageCount(IntPtr document);
-            [DllImport("pdfium.dll")]
-            public static extern bool FSDK_SetUnSpObjProcessHandler(UNSUPPORT_INFO unsp_info);
-            public delegate void FSDK_UnSupport_Handler(UNSUPPORT_INFO pThis, FPDF_UNSP nType);
-            [StructLayout(LayoutKind.Sequential)]
-            public class UNSUPPORT_INFO {
-                public int version;
-                public FSDK_UnSupport_Handler FSDK_UnSupport_Handler;
-            }
-            public enum FPDF_UNSP {
-                DOC_XFAFORM = 1,
-                DOC_PORTABLECOLLECTION = 2,
-                DOC_ATTACHMENT = 3,
-                DOC_SECURITY = 4,
-                DOC_SHAREDREVIEW = 5,
-                DOC_SHAREDFORM_ACROBAT = 6,
-                DOC_SHAREDFORM_FILESYSTEM = 7,
-                DOC_SHAREDFORM_EMAIL = 8,
-                ANNOT_3DANNOT = 11,
-                ANNOT_MOVIE = 12,
-                ANNOT_SOUND = 13,
-                ANNOT_SCREEN_MEDIA = 14,
-                ANNOT_SCREEN_RICHMEDIA = 15,
-                ANNOT_ATTACHMENT = 16,
-                ANNOT_SIG = 17
-            }
             [DllImport("pdfium.dll")]
             public static extern void FPDF_RenderPageBitmap(IntPtr bitmap, IntPtr page, int start_x, int start_y, int size_x, int size_y, int rotate, int flags);
             [DllImport("pdfium.dll")]
@@ -151,41 +124,10 @@ namespace abJournal {
             public static extern int FPDFBitmap_GetStride(IntPtr bitmap);
 
 
-            [DllImport("gdi32.dll", SetLastError = true)]
-            public static extern IntPtr CreateCompatibleDC([In] IntPtr hdc);
-            [DllImport("gdi32.dll", SetLastError = true)]
-            public static extern IntPtr CreateCompatibleBitmap([In] IntPtr hdc, int nWidth, int nHeight);
-            [DllImport("gdi32.dll")]
-            public static extern IntPtr SelectObject([In] IntPtr hdc, [In] IntPtr hgdiobj);
-            [DllImport("gdi32.dll")]
-            public static extern bool DeleteDC([In] IntPtr hdc);
-            [DllImport("gdi32.dll")]
-            public static extern bool DeleteObject(IntPtr handle);
             [DllImport("user32.dll")]
             public static extern IntPtr GetDC(IntPtr hWnd);
             [DllImport("user32.dll")]
             public static extern bool ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-            [DllImport("gdi32.dll")]
-            public static extern bool PatBlt(IntPtr hdc, int nXLeft, int nYLeft, int nWidth, int nHeight, TernaryRasterOperations dwRop);
-            public enum TernaryRasterOperations : uint {
-                SRCCOPY = 0x00CC0020,
-                SRCPAINT = 0x00EE0086,
-                SRCAND = 0x008800C6,
-                SRCINVERT = 0x00660046,
-                SRCERASE = 0x00440328,
-                NOTSRCCOPY = 0x00330008,
-                NOTSRCERASE = 0x001100A6,
-                MERGECOPY = 0x00C000CA,
-                MERGEPAINT = 0x00BB0226,
-                PATCOPY = 0x00F00021,
-                PATPAINT = 0x00FB0A09,
-                PATINVERT = 0x005A0049,
-                DSTINVERT = 0x00550009,
-                BLACKNESS = 0x00000042,
-                WHITENESS = 0x00FF0062,
-                CAPTUREBLT = 0x40000000
-            }
             [DllImport("gdi32.dll")]
             public static extern int GetDeviceCaps(IntPtr hdc, DeviceCap nIndex);
             public enum DeviceCap {

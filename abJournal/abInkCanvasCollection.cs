@@ -731,47 +731,6 @@ namespace abJournal {
         }
 
         /*
-        public int CurrentPage {
-            get {
-                if(Count == 0) return -1;
-
-                int rv = 0;
-                double maxval = -10;
-                const double x = 0;
-                double y = 0;
-                for(int i = 0 ; i < CanvasCollection.Count ; ++i) {
-                    Point lefttop = innerCanvas.RenderTransform.Transform(new Point(x, y));
-                    if(lefttop.Y > ActualHeight) break;
-                    double height = CanvasCollection[i].Height;
-                    double h;
-                    if(lefttop.Y + height < 0 || lefttop.Y > ActualHeight) h = 0;//画面外
-                    else h = Math.Min(ActualHeight, lefttop.Y + height) - Math.Max(0, lefttop.Y);
-                    if(maxval < h) {
-                        maxval = h;
-                        rv = i;
-                    }
-                    y += CanvasCollection[i].Height + LengthBetweenCanvas;
-                }
-                return rv;
-            }
-            set {
-                if(CurrentPage == value) return;
-                if(value < 0 || value >= CanvasCollection.Count) return;
-                double y = 0;
-                for(int i = 0 ; i < value ; ++i) {
-                    y += LengthBetweenCanvas + CanvasCollection[i].Height;
-                }
-                var trans = (MatrixTransform) innerCanvas.RenderTransform;
-                Point pt = trans.Transform(new Point(0, y));
-                // pt.Y --> 0となるように変換する．
-                Matrix m = trans.Matrix;
-                m.Translate(0, -pt.Y);
-                trans.Matrix = m;
-                OnPropertyChanged("CurrentPage");
-            }
-        }*/
-
-        /*
         void ForDebugPtsDrwaing(PointCollection stc, Brush brush) {
             int i = 0;
             foreach(var pt in stc) {
