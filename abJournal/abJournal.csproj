@@ -92,16 +92,16 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
+    <Page Include="App.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
-    </ApplicationDefinition>
+    </Page>
     <Compile Include="AboutDialog.xaml.cs">
       <DependentUpon>AboutDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="BackgroundImageManager.cs" />
     <Compile Include="Converters.cs" />
-    <Compile Include="AttachedFileManager.cs" />
+    <Compile Include="FileManager.cs" />
     <Compile Include="Hotkey.cs" />
     <Compile Include="hpdf.cs" />
     <Compile Include="Img2Cursor.cs" />

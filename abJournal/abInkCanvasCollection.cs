@@ -97,8 +97,8 @@ namespace abJournal {
                 Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
                 m.Scale(value / scale, value / scale);
                 ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
-                Scroll();
                 scale = value;
+                Scroll();
                 OnPropertyChanged("Scale");
             }
         }
@@ -183,7 +183,7 @@ namespace abJournal {
             Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
             m.Translate(vec.X, vec.Y);
             ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
-            OnPropertyChanged("CurrentPage");
+            CalculateCurrentPage(true);
         }
 
         protected override void OnManipulationDelta(System.Windows.Input.ManipulationDeltaEventArgs e) {
@@ -269,6 +269,7 @@ namespace abJournal {
         public void InsertCanvas(abInkData d, Size size,Color background,int index) {
             d.DrawingAlgorithm = DrawingAlgorithm;
             abInkCanvas canvas = new abInkCanvas(d, size.Width, size.Height);
+            canvas.PropertyChanged += canvas_PropertyChanged;
             canvas.IgnorePressure = ignorePressure;
             canvas.Background = new SolidColorBrush(background);
             canvas.Background.Freeze();
@@ -293,6 +294,18 @@ namespace abJournal {
             Canvas.SetLeft(canvas, -size.Width/2);
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
+            if(CurrentPage == -1) CurrentPage = 0;
+        }
+
+        void canvas_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+            switch(e.PropertyName) {
+            case "Width":
+                var c = (abInkCanvas)sender;
+                Canvas.SetLeft(c, -c.Width / 2);
+                break;
+            default:
+                break;
+            }
         }
 
         public void DeleteCanvas(int index) {
@@ -617,6 +630,107 @@ namespace abJournal {
             CanvasCollection.Clear();
         }
 
+        int currentPage = -1;
+        public int CurrentPage {
+            get { return currentPage; }
+            set { currentPage = value; OnPropertyChanged("CurrentPage"); }
+        }
+
+        void CalculateCurrentPage(bool callSetPort) {
+            if(Count == 0) {
+                currentPage = -1;
+                return;
+            }
+            if(currentPage < 0) currentPage = 0;
+            else if(currentPage >= Count) currentPage = Count - 1;
+
+            var transform = innerCanvas.RenderTransform;
+            var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]),Canvas.GetTop(CanvasCollection[currentPage]),CanvasCollection[currentPage].Width,CanvasCollection[currentPage].Height));
+            int start, direction;
+            if(currentRect.Top < 0) {
+                start = currentPage;
+                direction = 1;
+            } else if(currentRect.Bottom > ActualHeight) {
+                start = currentPage;
+                direction = -1;
+            } else {
+                direction = 1;
+                if(currentPage != 0) {
+                    start = currentPage - 1;
+                } else start = 0;
+            }
+            int rv = start;
+            double maxh = 0;
+            if(callSetPort) {
+                for(int i = start - direction ; i >= 0 && i < Count ; i -= direction) {
+                    CanvasCollection[i].SetViewport(new Rect());
+                }
+            }
+            if(direction == 1) {
+                int i;
+                for(i = start ; i < Count ; ++i) {
+                    var c = CanvasCollection[i];
+                    var rect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
+                    double top = Canvas.GetTop(c);
+                    double h;
+                    if(rect.Bottom < 0) {// まだ画面外
+                        h = 0;
+                        if(callSetPort) c.SetViewport(new Rect());
+                    } else if(rect.Top > ActualHeight) {// もう画面外
+                        if(callSetPort) c.SetViewport(new Rect());
+                        break;
+                    } else {
+                        var viewRect = new Rect(new Point(Math.Max(0, rect.Left), Math.Max(0, rect.Top)), new Point(Math.Min(ActualWidth, rect.Right), Math.Min(ActualHeight, rect.Bottom)));
+                        h = viewRect.Height;
+                        if(callSetPort) {
+                            var topleft = transform.Inverse.Transform(rect.TopLeft);
+                            var viewport = transform.Inverse.TransformBounds(viewRect);
+                            c.SetViewport(new Rect(viewport.Left - topleft.X, viewport.Top - topleft.Y, viewport.Width, viewport.Height));
+                        }
+                    }
+                    if(maxh < h) {
+                        maxh = h;
+                        rv = i;
+                    }
+                }
+                if(callSetPort){
+                    for( ; i < Count ; ++i) CanvasCollection[i].SetViewport(new Rect());
+                }
+            } else {
+                int i;
+                for(i = start ; i >= 0 ; --i) {
+                    var c = CanvasCollection[i];
+                    var rect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
+                    double h;
+                    if(rect.Top > ActualHeight) {// まだ画面外
+                        h = 0;
+                        if(callSetPort) c.SetViewport(new Rect());
+                    } else if(rect.Bottom < 0) {// もう画面外
+                        if(callSetPort) c.SetViewport(new Rect());
+                        break;
+                    } else {
+                        var viewRect = new Rect(new Point(Math.Max(0, rect.Left), Math.Max(0, rect.Top)), new Point(Math.Min(ActualWidth, rect.Right), Math.Min(ActualHeight, rect.Bottom)));
+                        h = viewRect.Height;
+                        if(callSetPort) {
+                            var topleft = transform.Inverse.Transform(rect.TopLeft);
+                            var viewport = transform.Inverse.TransformBounds(viewRect);
+                            c.SetViewport(new Rect(viewport.Left - topleft.X, viewport.Top - topleft.Y, viewport.Width, viewport.Height));
+                        }
+                    }
+                    if(maxh < h) {
+                        maxh = h;
+                        rv = i;
+                    }
+                }
+                if(callSetPort) {
+                    for( ; i >=0 ; --i) CanvasCollection[i].SetViewport(new Rect());
+                }
+            }
+            currentPage = rv;
+            OnPropertyChanged("CurrentPage");
+        }
+
+        /*
         public int CurrentPage {
             get {
                 if(Count == 0) return -1;
@@ -655,7 +769,7 @@ namespace abJournal {
                 trans.Matrix = m;
                 OnPropertyChanged("CurrentPage");
             }
-        }
+        }*/
 
         /*
         void ForDebugPtsDrwaing(PointCollection stc, Brush brush) {

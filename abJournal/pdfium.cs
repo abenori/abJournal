@@ -10,16 +10,18 @@ using System.Windows.Media.Imaging;
 
 namespace abJournal {
     namespace pdfium{
-        public class pdfiumDocument : IDisposable {
+        public class PDFDocument : IDisposable {
             IntPtr documentPtr;
-            public pdfiumDocument(string path) {
+            public string FileName { get; private set; }
+            public PDFDocument(string path) {
                 documentPtr = PInvoke.FPDF_LoadDocument(path, null);
                 if(documentPtr == IntPtr.Zero) throw new System.IO.FileNotFoundException();
+                FileName = path;
             }
-            public pdfiumPage GetPage(int pageNum) {
+            public PDFPage GetPage(int pageNum) {
                 IntPtr p = PInvoke.FPDF_LoadPage(documentPtr, pageNum);
                 if(p == IntPtr.Zero) throw new Exception();//後で直す
-                return new pdfiumPage(p);
+                return new PDFPage(p);
             }
             public int GetPageCount() {
                 return PInvoke.FPDF_GetPageCount(documentPtr);
@@ -30,9 +32,13 @@ namespace abJournal {
                     documentPtr = IntPtr.Zero;
                 }
             }
+            static PDFDocument() {
+                if(pdfiumInitializerHolder.initializer == null) pdfiumInitializerHolder.initializer = new pdfiumInitializer();
+            }
+            ~PDFDocument() { Dispose(); }
         }
-        public class pdfiumPage : IDisposable {
-            public pdfiumPage(IntPtr p) {
+        public class PDFPage : IDisposable {
+            public PDFPage(IntPtr p) {
                 pagePtr = p;
             }
             IntPtr pagePtr;
@@ -45,45 +51,32 @@ namespace abJournal {
                     return sizeInner.Value;
                 }
             }
-            public BitmapSource GetBitmapSource(Size size, double scale) {
-                Stopwatch stop = new Stopwatch();
+            public BitmapSource GetBitmapSource(Rect rect, double scale) {
+                const double scale_multiple = 2;
                 var desktophdc = PInvoke.GetDC(IntPtr.Zero);
-                int width = (int) (size.Width * PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale*1.5);
-                int height = (int) (size.Height * PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSY) / 96 * scale*1.5);
-
-                
+                double multx = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale * scale_multiple;
+                double multy = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSY) / 96 * scale * scale_multiple;
+                int width = (int) (rect.Width * multx);
+                int height = (int) (rect.Height * multy);
+                int x = (int) (rect.Left * multx);
+                int y = (int) (rect.Top * multy);
                 var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
                 PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, 0xFFFFFFFF);
-                PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, 0, 0, width, height, 0, 0);
+                PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
                 var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
                 var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
-                var bitmap = BitmapSource.Create(width, height, 96, 96, PixelFormats.Bgr32, null, buf, height * stride, stride);
+                var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
                 PInvoke.FPDFBitmap_Destroy(pdfbitmap);
-                stop.CheckTime("after FPDF_RenderPageBitmap");
-
-                /*
-                var hdc = PInvoke.CreateCompatibleDC(desktophdc);
-                System.Diagnostics.Debug.WriteLine("width = " + width.ToString() + ", height = " + height.ToString());
-                var hbitmap = PInvoke.CreateCompatibleBitmap(desktophdc, width, height);
-                hbitmap = PInvoke.SelectObject(hdc, hbitmap);
-                PInvoke.PatBlt(hdc, 0, 0, width, height, PInvoke.TernaryRasterOperations.WHITENESS);
-                PInvoke.FPDF_RenderPage(hdc, pagePtr, 0, 0, width, height, 0, 0);
-                hbitmap = PInvoke.SelectObject(hdc, hbitmap);
-                bitmap = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(hbitmap, IntPtr.Zero, System.Windows.Int32Rect.Empty, System.Windows.Media.Imaging.BitmapSizeOptions.FromEmptyOptions());
-                PInvoke.DeleteObject(hbitmap);
-                PInvoke.DeleteDC(hdc);
-                PInvoke.ReleaseDC(IntPtr.Zero, desktophdc);
-                stop.CheckTime("Create bitmap from PDF via FPDF_RenderPage");
-                */
                 return bitmap;
             }
 
-            public System.Windows.Media.Visual GetVisual(System.Windows.Size size, double scale) {
-                var bitmap = GetBitmapSource(size, scale);
+            public System.Windows.Media.Visual GetVisual(Rect rect, double scale) {
+                var bitmap = GetBitmapSource(rect, scale);
+                bitmap.Freeze();
                 var rv = new System.Windows.Media.DrawingVisual();
-                System.Diagnostics.Debug.WriteLine(rv.Effect);
                 using(var dc = rv.RenderOpen()) {
-                    dc.DrawImage(bitmap, new System.Windows.Rect(0, 0, size.Width, size.Height));
+                    //dc.DrawRectangle(Brushes.White, null, new Rect(0, 0, rect.Left + rect.Width, rect.Top + rect.Height));
+                    dc.DrawImage(bitmap, rect);
                 }
                 return rv;
             }
@@ -92,6 +85,10 @@ namespace abJournal {
                     PInvoke.FPDF_ClosePage(pagePtr);
                     pagePtr = IntPtr.Zero;
                 }
+            }
+            ~PDFPage() { Dispose(); }
+            static PDFPage() {
+                if(pdfiumInitializerHolder.initializer == null) pdfiumInitializerHolder.initializer = new pdfiumInitializer();
             }
         }
         class PInvoke {
@@ -234,22 +231,16 @@ namespace abJournal {
             }
 
         }
-        public class pdfium {
-            public pdfium() {
+        class pdfiumInitializer {
+            public pdfiumInitializer() {
                 PInvoke.FPDF_InitLibrary();
-                /*
-                var _unsupportedInfo = new PInvoke.UNSUPPORT_INFO();
-                var _unsupportedInfoHandle = GCHandle.Alloc(_unsupportedInfo);
-                _unsupportedInfo.version = 1;
-                _unsupportedInfo.FSDK_UnSupport_Handler = (a, b) => { };
-                var _unsupportedHandlerHandle = GCHandle.Alloc(_unsupportedInfo.FSDK_UnSupport_Handler);
-
-                PInvoke.FSDK_SetUnSpObjProcessHandler(_unsupportedInfo);
-                 */ 
             }
-            ~pdfium() {
+            ~pdfiumInitializer() {
                 PInvoke.FPDF_DestroyLibrary();
             }
+        }
+        static class pdfiumInitializerHolder {
+            public static pdfiumInitializer initializer = null;
         }
     }
 }

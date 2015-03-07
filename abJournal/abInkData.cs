@@ -249,13 +249,16 @@ namespace abJournal {
         }
         public void Select(StylusPointCollection spc, int percent) {
             PointCollection pc = new PointCollection(spc.Select(p => p.ToPoint()));
-            var changed = new StrokeDataCollection(Strokes.Where(s =>{
+            var changed = new StrokeDataCollection();
+            var watch = new Stopwatch();
+            foreach(var s in Strokes) {
                 bool hittest = s.HitTest(pc, percent);
                 if(hittest != s.Selected) {
                     s.Selected = hittest;
-                    return true;
-                } else return false;
-            }));
+                    changed.Add(s);
+                }
+            }
+            watch.CheckTime("Select");
             AddUndoList(new SelectChangeCommand(changed));
             OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
         }

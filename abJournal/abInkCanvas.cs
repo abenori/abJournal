@@ -14,7 +14,14 @@ using System.ComponentModel;
 using ProtoBuf;
 
 namespace abJournal {
-    public class abInkCanvas : FrameworkElement {
+    public class abInkCanvas : FrameworkElement,INotifyPropertyChanged {
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected void OnPropertyChanged(string name) {
+            if(PropertyChanged != null) {
+                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            }
+        }
+
         #region 公開用プロパティ
         // データ
         public abInkData InkData {get; set;}
@@ -27,6 +34,7 @@ namespace abJournal {
                 if(PenID == 0) {
                     mode = value;
                     SetCursor();
+                    OnPropertyChanged("Mode");
                 }
             }
         }
@@ -41,6 +49,7 @@ namespace abJournal {
                         StrokeDrawingAttributes.IgnorePressure = value;
                         foreach(var s in InkData.Strokes) s.DrawingAttributes.IgnorePressure = value;
                     }
+                    OnPropertyChanged("IgnorePressure");
                 }
             }
         }
@@ -53,6 +62,7 @@ namespace abJournal {
                 StrokeBrush.Freeze();
                 StrokeDrawingAttributes.Color = value;
                 SetCursor();
+                OnPropertyChanged("PenColor");
             }
         }   
         public double PenThickness {
@@ -60,6 +70,7 @@ namespace abJournal {
             set {
                 StrokeDrawingAttributes.Width = StrokeDrawingAttributes.Height = value;
                 SetCursor();
+                OnPropertyChanged("PenThickness");
             }
         }
 
@@ -67,6 +78,15 @@ namespace abJournal {
         public DoubleCollection PenDashArray {
             get { return StrokeDrawingAttributesPlus.DashArray; }
             set { StrokeDrawingAttributesPlus.DashArray = value; }
+        }
+
+        public new double Height {
+            get { return base.Height; }
+            set { base.Height = value; OnPropertyChanged("Height"); }
+        }
+        public new double Width {
+            get { return base.Width; }
+            set { base.Width = value; OnPropertyChanged("Width"); }
         }
         #endregion
 
@@ -126,7 +146,7 @@ namespace abJournal {
         public abInkCanvas(abInkData d, double width, double height) {
             StrokeChildren = new VisualCollection(this);
             Children = new VisualCollection(this);
-            
+
             InkData = d;
             Width = width; Height = height;
             PenThickness = 2;
@@ -486,6 +506,28 @@ namespace abJournal {
             }
             base.OnRender(drawingContext);
         }
+        #endregion
+
+        public Rect Viewport { get; protected set; }
+        #region Viewport制御
+        public void SetViewport(Rect rc) {
+            OnViewportChanged(new ViewportChangedEventArgs(Viewport, rc));
+            Viewport = rc;
+        }
+        public class ViewportChangedEventArgs : EventArgs{
+            public Rect OldViewport { get; private set; }
+            public Rect NewViewport { get; private set; }
+            public ViewportChangedEventArgs(Rect o, Rect n) {
+                OldViewport = o;
+                NewViewport = n;
+            }
+        }
+        private void OnViewportChanged(ViewportChangedEventArgs e) {
+            ViewportChanged(this, e);
+            //System.Diagnostics.Debug.WriteLine("OnViewportChanged: old = " + e.OldViewport.ToString() + ", nwe = " + e.NewViewport.ToString());
+        }
+        public delegate void ViewportChangedEventHandler(object sender, ViewportChangedEventArgs e);
+        public event ViewportChangedEventHandler ViewportChanged = ((s, e) => { });
         #endregion
     }
 }

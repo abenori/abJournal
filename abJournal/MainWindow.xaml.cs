@@ -175,31 +175,9 @@ namespace abJournal {
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             if(InkCanvasManager.Count == 0)AddPage.Execute(null, this);
-
-            //string path = @"C:\Users\Abe_Noriyuki\Documents\mywrite\math\ronbun\irred_rep_of_pro-p_Iwahori-Hecke.pdf";
-            //string path = @"C:\Users\Abe_Noriyuki\Documents\mywrite\work\2013\w\linalg\0114.pdf";
-            /*
-            string path = @"C:\Users\Abe_Noriyuki\Desktop\Compatibility.pdf";
-            InkCanvasManager.DeleteCanvas(0);
-            for(int j = 0 ; j < 2 ; ++j) {
-                using(var doc = new pdfium.pdfiumDocument(path)) {
-                    int pages = doc.GetPageCount();
-                    pages = 1;
-                    for(int i = 0 ; i < pages ; ++i) {
-                        InkCanvasManager.AddCanvas();
-                        var canvas = mainCanvas[i];
-                        using(var page = doc.GetPage(i)) {
-                            var brush = new VisualBrush(page.GetVisual(new Size(canvas.Width, canvas.Height), 1));
-                            canvas.Background = brush;
-                        }
-                    }
-                }
-            }*/
-            
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
-            //InkCanvasManager.Import(@"C:\Users\Abe_Noriyuki\Desktop\sample.xps");
         }
 
         private void UndoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -268,10 +246,12 @@ namespace abJournal {
         private void ImportCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var ofd = new OpenFileDialog();
             ofd.Title = "インポートするファイルを選んでください";
-            ofd.Filter = "xpsファイル (*.xps)|*.xps";
+            ofd.Filter = "pdfファイル (*.pdf)|*.pdf|xpsファイル (*.xps)|*.xps";
             if(ofd.ShowDialog() == true) {
                 try {
+					WindowTitle = "インポート中……";
                     InkCanvasManager.Import(ofd.FileName);
+					WindowTitle = null;
                 }
                 catch(NotImplementedException) {
                     MessageBox.Show("サポートされていない形式です．", "abJournal");
