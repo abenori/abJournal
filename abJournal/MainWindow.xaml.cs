@@ -16,7 +16,6 @@ using System.Diagnostics;
 using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO.Compression;
-using ablib;
 
 /* 
  * TODO（やりたい）：
@@ -53,8 +52,9 @@ namespace abJournal {
                     mainCanvas.Scale = scales[value - 1];
                 } else {
                     FitScaleToWidth = true;
-                    if(InkCanvasManager.Count == 0) return;
-                    mainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
+                    if(mainCanvas.Count == 0) return;
+                    double maxWidth = mainCanvas.Select(c => c.Width).Max();
+                    mainCanvas.Scale = MainPanel.ActualWidth / maxWidth;
                 }
             }
         }
@@ -79,15 +79,13 @@ namespace abJournal {
             get {
                 if(windowTitle != null)return windowTitle; 
                 string rv;
-                if(InkCanvasManager.FileName == null) rv = "無題ノート";
-                else rv = System.IO.Path.GetFileName(InkCanvasManager.FileName);
+                if(mainCanvas.FileName == null) rv = "無題ノート";
+                else rv = System.IO.Path.GetFileName(mainCanvas.FileName);
                 if(mainCanvas.Updated) rv += " （更新）";
                 rv += "  abJournal";
                 return rv;
             }
         }
-
-        public abInkCanvasManager InkCanvasManager { get; private set; }
 
         // バインディング用
         public bool[] PenDashed {
@@ -105,10 +103,24 @@ namespace abJournal {
 
         BlockWndowsKey blockWindows = null;
         public MainWindow() {
+            /*
+            string input = @"C:\Users\Abe_Noriyuki\Desktop\Compatibility.pdf";
+            using(var inputf = PdfSharp.Pdf.IO.PdfReader.Open(input, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)) {
+                string output = @"C:\Users\Abe_Noriyuki\Desktop\output.pdf";
+                var outputf = new PdfSharp.Pdf.PdfDocument();
+                outputf.AddPage(inputf.Pages[0]);
+                var page = outputf.Pages[0];
+                var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+                g.DrawLine(new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColors.Blue), new PdfSharp.Drawing.XPoint(0, 0), new PdfSharp.Drawing.XPoint(100, 100));
+                outputf.Save(output);
+            }
+            Environment.Exit(0);
+            */
+            
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
                     using(var fs = new System.IO.StreamWriter(System.IO.Path.Combine(Environment.CurrentDirectory,"abJournal.proto"))){
-                        fs.WriteLine(abInkCanvasManager.GetSchema());
+                        fs.WriteLine(abJournalInkCanvasCollection.GetSchema());
                     }
                     Environment.Exit(0);
                 }}
@@ -120,8 +132,7 @@ namespace abJournal {
             DataContext = this;
             SetLowLevelKeyboardHook();
 
-            InkCanvasManager = new abInkCanvasManager(mainCanvas);
-            //mainCanvas.ManipulationDelta += ((s, e) => { OnPropertyChanged("abInkCanvasManager"); });
+            //mainCanvas.ManipulationDelta += ((s, e) => { OnPropertyChanged("abmainCanvas"); });
             mainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("WindowTitle"); });
             mainCanvas.MouseDown += ((s, e) => { mainCanvas.Focus(); });
             mainCanvas.StylusDown += ((s, e) => { mainCanvas.Focus(); });
@@ -174,7 +185,7 @@ namespace abJournal {
         }
 
         private void Window_Loaded(object sender, RoutedEventArgs e) {
-            if(InkCanvasManager.Count == 0)AddPage.Execute(null, this);
+            if(mainCanvas.Count == 0)AddPage.Execute(null, this);
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
@@ -184,29 +195,29 @@ namespace abJournal {
             mainCanvas.Undo();
         }
         private void UndoCommandCanExecute(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = InkCanvasManager != null ? mainCanvas.CanUndo() : false;
+            e.CanExecute = mainCanvas != null ? mainCanvas.CanUndo() : false;
         }
         private void RedoCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.Redo();
         }
         private void RedoCommandCanExecute(object sender, CanExecuteRoutedEventArgs e) {
-            e.CanExecute = InkCanvasManager != null ? mainCanvas.CanRedo() : false;
+            e.CanExecute = mainCanvas != null ? mainCanvas.CanRedo() : false;
         }
         private void DeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.Delete();
         }
         private void SaveAsCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new SaveFileDialog();
-            fd.FileName = System.IO.Path.GetFileName(InkCanvasManager.FileName);
+            fd.FileName = System.IO.Path.GetFileName(mainCanvas.FileName);
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|PDF ファイル (*.pdf)|*.pdf|全てのファイル|*.*";
             if(fd.ShowDialog() == true) {
                 try {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     if(ext == ".pdf") {
-                        InkCanvasManager.SavePDF(fd.FileName);
-                        //abInkCanvasManager.SavePDFWithiText(fd.FileName);
+                        mainCanvas.SavePDF(fd.FileName);
+                        //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
-                        InkCanvasManager.Save(fd.FileName);
+                        mainCanvas.Save(fd.FileName);
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
@@ -214,16 +225,16 @@ namespace abJournal {
                 catch(System.IO.IOException) {
                     MessageBox.Show("他のアプリケーションが\n" + fd.FileName + "\nを開いているようです．","abJournal");
                 } 
-                OnPropertyChanged("abInkCanvasManager");
+                OnPropertyChanged("abmainCanvas");
             }
         }
         private void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(InkCanvasManager.FileName == null) SaveAsCommandExecuted(sender, e);
+            if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
-                InkCanvasManager.Save();
+                mainCanvas.Save();
                 mainCanvas.ClearUpdated();
-                AddHistory(InkCanvasManager.FileName);
-                OnPropertyChanged("abInkCanvasManager");
+                AddHistory(mainCanvas.FileName);
+                OnPropertyChanged("abmainCanvas");
             }
         }
         private void NewCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -239,7 +250,7 @@ namespace abJournal {
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
             if(fd.ShowDialog() == true) {
                 FileOpen(new List<string>() { fd.FileName });
-                OnPropertyChanged("abInkCanvasManager");
+                OnPropertyChanged("abmainCanvas");
             }
         }
         public static readonly RoutedCommand Import = new RoutedCommand("Import", typeof(MainWindow));
@@ -250,7 +261,7 @@ namespace abJournal {
             if(ofd.ShowDialog() == true) {
                 try {
 					WindowTitle = "インポート中……";
-                    InkCanvasManager.Import(ofd.FileName);
+                    mainCanvas.Import(ofd.FileName);
 					WindowTitle = null;
                     // Importで横幅が変わる可能性があるので，「横幅にあわせる」の場合は計算し直し．
                     if(ScaleComboBoxIndex == 0) {
@@ -269,11 +280,11 @@ namespace abJournal {
         private bool BeforeClose() {
             if(mainCanvas.Updated) {
                 MessageBoxResult res = MessageBoxResult.No;
-                if(InkCanvasManager.FileName != null) {
-                    res = MessageBox.Show("\"" + InkCanvasManager.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
+                if(mainCanvas.FileName != null) {
+                    res = MessageBox.Show("\"" + mainCanvas.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
                     if(res == MessageBoxResult.Yes) {
-                        InkCanvasManager.Save();
-                        AddHistory(InkCanvasManager.FileName);
+                        mainCanvas.Save();
+                        AddHistory(mainCanvas.FileName);
                         return true;
                     } else return (res != MessageBoxResult.Cancel);
                 } else {
@@ -282,7 +293,7 @@ namespace abJournal {
                         var fd = new SaveFileDialog();
                         fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
                         if(fd.ShowDialog() == true) {
-                            InkCanvasManager.Save(fd.FileName);
+                            mainCanvas.Save(fd.FileName);
                             AddHistory(fd.FileName);
                             return true;
                         } else return false;
@@ -307,7 +318,7 @@ namespace abJournal {
             mainCanvas.Cut();
         }
         private void PrintCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(InkCanvasManager.Count == 0) {
+            if(mainCanvas.Count == 0) {
                 MessageBox.Show("ページがありません．","abJournal");
                 return;
             }
@@ -315,7 +326,7 @@ namespace abJournal {
             if(pd.ShowDialog() == true) {
                 WindowTitle = "印刷準備中……";
                 FixedDocument doc = new FixedDocument();
-                var canvases = InkCanvasManager.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
+                /*var canvases = mainCanvas.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
                 foreach(var c in canvases){
                     FixedPage page = new FixedPage();
                     page.Width = c.InkCanvas.Width;
@@ -325,31 +336,33 @@ namespace abJournal {
                     content.Child = page;
                     doc.Pages.Add(content);
                 }
+                 */
                 WindowTitle = "印刷中……";
-                pd.PrintDocument(doc.DocumentPaginator,InkCanvasManager.FileName == null ?
-                    "無題ノート" : System.IO.Path.GetFileNameWithoutExtension(InkCanvasManager.FileName));
+                pd.PrintDocument(doc.DocumentPaginator,mainCanvas.FileName == null ?
+                    "無題ノート" : System.IO.Path.GetFileNameWithoutExtension(mainCanvas.FileName));
                 WindowTitle = null;
             }
             return;
         }
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e) {
-            if(FitScaleToWidth && InkCanvasManager.Count != 0) {
-                mainCanvas.Scale = MainPanel.ActualWidth / InkCanvasManager[0].InkCanvas.Width;
+            if(FitScaleToWidth && mainCanvas.Count != 0) {
+                double maxWidth = mainCanvas.Select(c => c.Width).Max();
+                mainCanvas.Scale = MainPanel.ActualWidth / maxWidth;
             }
             /*
-            abInkCanvasManager.Width = ActualWidth;
-            abInkCanvasManager.Height = ActualHeight;
+            abmainCanvas.Width = ActualWidth;
+            abmainCanvas.Height = ActualHeight;
              */
             mainCanvas.Scroll();
         }
         public static readonly RoutedCommand AddPage = new RoutedCommand("AddPage", typeof(MainWindow));
         private void AddPageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.AddCanvas();
+            mainCanvas.AddCanvas();
         }
         public static readonly RoutedCommand InsertPage = new RoutedCommand("InsertPage", typeof(MainWindow));
         private void InsertPageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            InkCanvasManager.InsertCanvas(mainCanvas.CurrentPage + 1);
+            mainCanvas.InsertCanvas(mainCanvas.CurrentPage + 1);
         }
 
         WindowState SaveWindowState;
@@ -372,7 +385,7 @@ namespace abJournal {
         public static readonly RoutedCommand DeletePage = new RoutedCommand("DeletePage", typeof(MainWindow));
         private void DeletePageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(mainCanvas.Count > 0) {
-                InkCanvasManager.DeleteCanvas(mainCanvas.CurrentPage);
+                mainCanvas.DeleteCanvas(mainCanvas.CurrentPage);
             }
         }
 
@@ -417,7 +430,7 @@ namespace abJournal {
             mainCanvas.CurrentPage = 0;
         }
         private void LastPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.CurrentPage = InkCanvasManager.Count - 1;
+            mainCanvas.CurrentPage = mainCanvas.Count - 1;
         }
         private void PreviousPageExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.CurrentPage++;
@@ -439,12 +452,12 @@ namespace abJournal {
         }
         public static readonly RoutedCommand PageSetting = new RoutedCommand("PageSetting", typeof(MainWindow));
         private void PageSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            var dialog = new PageSetting(InkCanvasManager.Info);
+            var dialog = new PageSetting(mainCanvas.Info);
             if(dialog.ShowDialog() == true) {
-                InkCanvasManager.Info = dialog.Info;
-                for(int i = 0 ; i < InkCanvasManager.Count ; ++i )InkCanvasManager.SetBackground(i,dialog.Info.InkCanvasInfo.BackgroundColor);
-                InkCanvasManager.ReDraw();
-                OnPropertyChanged("abInkCanvasManager");
+                mainCanvas.Info = dialog.Info;
+                foreach(var c in mainCanvas) c.SetBackground(dialog.Info.InkCanvasInfo.BackgroundColor);
+                mainCanvas.ReDraw();
+                OnPropertyChanged("abmainCanvas");
             }
         }
         public static readonly RoutedCommand OpenHistory = new RoutedCommand("OpenHistory", typeof(MainWindow));
@@ -471,11 +484,11 @@ namespace abJournal {
 
         private void FileOpen(List<string> files) {
             if(files.Count > 0) {
-                if(InkCanvasManager.FileName == null && !mainCanvas.Updated) {
+                if(mainCanvas.FileName == null && !mainCanvas.Updated) {
                     WindowTitle = "ファイルを開いています……";
                     while(files.Count > 0) {
                         try { 
-                            InkCanvasManager.Open(files[0]);
+                            mainCanvas.Open(files[0]);
                             AddHistory(files[0]);
                             files.RemoveAt(0);
                         }

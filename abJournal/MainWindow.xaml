@@ -6,7 +6,7 @@
         Stylus.IsTouchFeedbackEnabled="False" Stylus.IsFlicksEnabled="False"
         SizeChanged="Window_SizeChanged"
         Closing="Window_Closing" Loaded="Window_Loaded"
-        xmlns:local="clr-namespace:abJournal" xmlns:ablib="clr-namespace:ablib"
+        xmlns:local="clr-namespace:abJournal"
         FocusManager.FocusedElement="{Binding RelativeSource={x:Static RelativeSource.Self},Mode=OneTime}"
         Title="{Binding Path=WindowTitle,Mode=OneWay}"
         >
@@ -219,7 +219,7 @@
             <TextBlock Margin="5"><TextBlock Text="{Binding ElementName=mainCanvas,Path=CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding ElementName=mainCanvas,Path=Count,Mode=OneWay}"/>（ページ）</TextBlock>
         </ToolBar>
         </DockPanel>
-        <local:abInkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 
+        <local:abJournalInkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 
                                     AllowDrop="True" PreviewDragOver="mainCanvas_PreviewDragOver" Drop="mainCanvas_Drop" 
                                     Focusable="True" 
                                     /> 

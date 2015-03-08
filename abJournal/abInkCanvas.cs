@@ -14,7 +14,7 @@ using System.ComponentModel;
 using ProtoBuf;
 
 namespace abJournal {
-    public class abInkCanvas : FrameworkElement,INotifyPropertyChanged {
+    public class abInkCanvas : FrameworkElement, IabInkCanvas {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {
@@ -24,7 +24,7 @@ namespace abJournal {
 
         #region 公開用プロパティ
         // データ
-        public abInkData InkData {get; set;}
+        public abInkData InkData { get; set; }
 
         // 設定用
         InkManipulationMode mode;
@@ -64,7 +64,7 @@ namespace abJournal {
                 SetCursor();
                 OnPropertyChanged("PenColor");
             }
-        }   
+        }
         public double PenThickness {
             get { return StrokeDrawingAttributes.Width; }
             set {
@@ -108,7 +108,7 @@ namespace abJournal {
         // 直接造ることにした……Webからのコピペ（Img2Cursor.MakeCursor）に丸投げだけど．
         static Dictionary<Tuple<Color, double>, Cursor> InkingCursors = new Dictionary<Tuple<Color, double>, Cursor>();
         static Cursor MakeInkingCursor(double thickness, Color color) {
-            var key = new Tuple<Color,double>(color, thickness);
+            var key = new Tuple<Color, double>(color, thickness);
             try { return InkingCursors[key]; }
             catch(KeyNotFoundException) {
                 thickness *= 2;
@@ -126,7 +126,7 @@ namespace abJournal {
             }
         }
         // 消しゴムカーソル
-        public static Cursor ErasingCursor =  Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+        public static Cursor ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
 
         void SetCursor() {
             switch(Mode) {
@@ -171,7 +171,7 @@ namespace abJournal {
         protected virtual void OnUndoChainChanged(abInkData.UndoChainChangedEventArgs e) {
             UndoChainChanged(this, e);
         }
-        
+
         void InkData_StrokeSelectedChanged(object sender, abInkData.StrokeChangedEventArgs e) {
             foreach(var s in e.Strokes) {
                 s.UpdateVisual();
@@ -179,7 +179,7 @@ namespace abJournal {
         }
 
         void InkData_StrokeChanged(object sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes){
+            foreach(var s in e.Strokes) {
                 s.UpdateVisual();
             }
         }
@@ -209,7 +209,7 @@ namespace abJournal {
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
             if(Mode == InkManipulationMode.Selecting) {
                 StrokeDrawingVisual = new DrawingVisualLine(2, Brushes.Orange, DottedDoubleCollection, true);
-            } else if(Mode == InkManipulationMode.Inking){
+            } else if(Mode == InkManipulationMode.Inking) {
                 StrokeDrawingVisual = new DrawingVisualLine(PenThickness, StrokeBrush, StrokeDrawingAttributesPlus.DashArray, StrokeDrawingAttributes.IgnorePressure);
             }
             if(Mode != InkManipulationMode.Erasing) {
@@ -217,7 +217,7 @@ namespace abJournal {
                 StrokeChildren.Add(StrokeDrawingVisual);
             }
         }
-        
+
         void Drawing(StylusPoint pt) {
             InkData.ProcessPointerUpdate(pt);
             if(Mode != InkManipulationMode.Erasing) {
@@ -397,7 +397,7 @@ namespace abJournal {
                 System.Diagnostics.Debug.WriteLine("TouchMove");
                 System.Diagnostics.Debug.WriteLine(e.GetStylusPoints(this)[0].ToPoint());
                 System.Diagnostics.Debug.WriteLine(e.GetPosition(this));
-                 */ 
+                 */
                 return;
             }
             if(TouchType != STYLUS) return;
@@ -443,14 +443,18 @@ namespace abJournal {
             return;
         }
 
+        // Canvasに入る/から出る時にabInkCanvasCollectionから呼び出される．
+        public void RemovedFromView() { }
+        public void AddedToView() { }
+
         public void Copy() {
             InkData.Copy();
         }
-        
+
         public void Cut() {
             InkData.Cut();
         }
-        
+
         public void Paste() {
             InkData.BeginUndoGroup();
             InkData.Paste();
@@ -467,18 +471,6 @@ namespace abJournal {
         public void ClearSelected() {
             InkData.ClearSelected();
         }
-
-        public abInkCanvas Clone(){
-            var rv = new abInkCanvas(InkData.Clone(), Width, Height);
-            rv.mode = mode;
-            rv.ignorePressure = ignorePressure;
-            rv.PenColor = PenColor;
-            rv.PenThickness = PenThickness;
-            rv.PenDashArray = PenDashArray.Clone();
-            rv.Background = Background == null ? null : Background.Clone();
-            return rv;
-        }
-
 
         #region FrameworkElementでの描画のため
         VisualCollection StrokeChildren;
@@ -514,7 +506,7 @@ namespace abJournal {
             OnViewportChanged(new ViewportChangedEventArgs(Viewport, rc));
             Viewport = rc;
         }
-        public class ViewportChangedEventArgs : EventArgs{
+        public class ViewportChangedEventArgs : EventArgs {
             public Rect OldViewport { get; private set; }
             public Rect NewViewport { get; private set; }
             public ViewportChangedEventArgs(Rect o, Rect n) {
@@ -529,6 +521,29 @@ namespace abJournal {
         public delegate void ViewportChangedEventHandler(object sender, ViewportChangedEventArgs e);
         public event ViewportChangedEventHandler ViewportChanged = ((s, e) => { });
         #endregion
+    }
+
+    public interface IabInkCanvas : INotifyPropertyChanged{
+        double Height { get; set; }
+        double Width { get; set; }
+        abInkData InkData { get; set; }
+        Brush Background { get; set; }
+        double PenThickness { get; set; }
+        DoubleCollection PenDashArray { get; set; }
+        Color PenColor { get; set; }
+        InkManipulationMode Mode { get; set; }
+        bool IgnorePressure { get; set; }
+        void Copy();
+        void Cut();
+        void Paste();
+        bool Undo();
+        bool Redo();
+        event abInkData.UndoChainChangedEventhandelr UndoChainChanged;
+        void SetViewport(Rect rc);
+        void RemovedFromView();
+        void AddedToView();
+        void ReDraw();
+        void ClearSelected();
     }
 }
 

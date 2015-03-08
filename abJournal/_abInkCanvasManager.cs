@@ -116,7 +116,7 @@ namespace abJournal {
             }
         }
 
-        public abInkCanvasManager(abInkCanvasCollection main) {
+        public abInkCanvasManager(abJournalInkCanvasCollection main) {
             FileName = null;
             MainCanvas = main;
             Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
@@ -237,33 +237,29 @@ namespace abJournal {
             using(var file = new AttachedFile(path)) {
                 var ext = System.IO.Path.GetExtension(path);
                 switch(ext) {
-                case ".xps": {
-                        int oldCount = Count;
-                        BackgroundImageManager.LoadXPSFile(file, this);
-                        for(int i = 0 ; i < Count - oldCount ; ++i) {
-                            this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
-                        }
-                        if(newImport) {
-                            MainCanvas.ClearUndoChain();
-                            MainCanvas.ClearUpdated();
-                        }
-                        break;
-                    }
                 case ".pdf": {
                         int oldCount = Count;
                         BackgroundImageManager.LoadPDFFile(file, this);
                         for(int i = 0 ; i < Count - oldCount ; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
                         }
-                        if(newImport) {
-                            MainCanvas.ClearUndoChain();
-                            MainCanvas.ClearUpdated();
+                        break;
+                    }
+                case ".xps": {
+                        int oldCount = Count;
+                        BackgroundImageManager.LoadXPSFile(file, this);
+                        for(int i = 0 ; i < Count - oldCount ; ++i) {
+                            this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
                         }
                         break;
                     }
                 default:
                     throw new NotImplementedException();
                 }
+            }
+			if(newImport) {
+				MainCanvas.ClearUndoChain();
+				MainCanvas.ClearUpdated();
             }
         }
         #endregion
@@ -740,7 +736,7 @@ namespace abJournal {
         }
         public int Count { get { return MainCanvas.Count; } }
         #endregion
-        abInkCanvasCollection MainCanvas;
+        abJournalInkCanvasCollection MainCanvas;
         BackgroundImageManager BackgroundImageManager = new BackgroundImageManager();
     }
 }

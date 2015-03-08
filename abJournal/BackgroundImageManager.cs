@@ -51,7 +51,7 @@ namespace abJournal {
 
         public static class PDFBackground {
             static double scale = 1;
-            public static void SetBackground_IgnoreViewport(abInkCanvas c, AttachedFile file, int pageNum) {
+            public static void SetBackground_IgnoreViewport(abJournalInkCanvas c, AttachedFile file, int pageNum) {
                 using(var page = new PDFPage(file, pageNum))
                 using(var pdfpage = page.GetPage()) {
                     var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale));
@@ -59,33 +59,33 @@ namespace abJournal {
                 }
             }
 
-            public static void SetBackground(abInkCanvasManager.ManagedInkCanvas c, AttachedFile file, int pageNum) {
+            public static void SetBackground(abJournalInkCanvas c, AttachedFile file, int pageNum) {
                 var page = new PDFPage(file, pageNum);
                 SetBackground(c, page);
             }
-            public static void SetBackground(abInkCanvasManager.ManagedInkCanvas c, PDFPage page) {
-                BackgroundPDFPage[c.InkCanvas] = page;
-                c.InkCanvas.ViewportChanged += Setviewport;
-                if(c.InkCanvas.Viewport.Height != 0) {
+            public static void SetBackground(abJournalInkCanvas c, PDFPage page) {
+                BackgroundPDFPage[c] = page;
+                c.ViewportChanged += Setviewport;
+                if(c.Viewport.Height != 0) {
                     using(var pdfpage = page.GetPage()) {
-                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.InkCanvas.Width, c.InkCanvas.Height), scale));
-                        c.InkCanvas.Background = brush;
+                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale));
+                        c.Background = brush;
                     }
-                } else c.InkCanvas.Background = null;
+                } else c.Background = null;
             }
-            public static void DisposeBackground(abInkCanvasManager.ManagedInkCanvas c){
-                c.InkCanvas.Background = null;
-                var page = BackgroundPDFPage[c.InkCanvas];
+            public static void DisposeBackground(abJournalInkCanvas c){
+                c.Background = null;
+                var page = BackgroundPDFPage[c];
                 page.Dispose();
-                BackgroundPDFPage.Remove(c.InkCanvas);
-                c.InkCanvas.ViewportChanged -= Setviewport;
+                BackgroundPDFPage.Remove(c);
+                c.ViewportChanged -= Setviewport;
             }
 
             static void Setviewport(object sender, abInkCanvas.ViewportChangedEventArgs e) {                
-                //System.Diagnostics.Debug.WriteLine("page = " + BackgroundPDFPage[(abInkCanvas) sender].PageNum.ToString() + ", old = " + e.OldViewport.ToString() + ", new = " + e.NewViewport.ToString());
+                //System.Diagnostics.Debug.WriteLine("page = " + BackgroundPDFPage[(abJournalInkCanvas) sender].PageNum.ToString() + ", old = " + e.OldViewport.ToString() + ", new = " + e.NewViewport.ToString());
                 if(e.OldViewport.Height == 0) {
                     if(e.NewViewport.Height != 0) {
-                        var canvas = (abInkCanvas) sender;
+                        var canvas = (abJournalInkCanvas) sender;
                         using(var pdfpage = BackgroundPDFPage[canvas].GetPage()){
                             var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, canvas.Width, canvas.Height), scale));
                             canvas.Background = brush;
@@ -93,7 +93,7 @@ namespace abJournal {
                     }
                 }else{
                     if(e.NewViewport.Height == 0){
-                        var canvas = (abInkCanvas) sender;
+                        var canvas = (abJournalInkCanvas) sender;
                         canvas.Background = null;
                     }
                 }
@@ -101,7 +101,7 @@ namespace abJournal {
             public static void ScaleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
                 if(e.PropertyName == "Scale") {
                     //System.Diagnostics.Debug.WriteLine("ScaleChanged");
-                    var newScale = ((abInkCanvasCollection) sender).Scale;
+                    var newScale = ((abJournalInkCanvasCollection) sender).Scale;
                     if(scale != newScale) {
                         scale = newScale;
                         foreach(var c in BackgroundPDFPage) {
@@ -125,23 +125,23 @@ namespace abJournal {
                 }
             }
 
-            static Dictionary<abInkCanvas, PDFPage> BackgroundPDFPage = new Dictionary<abInkCanvas, PDFPage>();
+            static Dictionary<abJournalInkCanvas, PDFPage> BackgroundPDFPage = new Dictionary<abJournalInkCanvas, PDFPage>();
         }
 
-        public void LoadPDFFile(AttachedFile file, abInkCanvasManager inkCanvasManager) {
+        public static void LoadPDFFile(AttachedFile file, abJournalInkCanvasCollection collection){
             int pageCount = PDFPage.GetPageCount(file);
             double scale = (double) 254 * Paper.mmToSize / (double) 720;
             //pageCount = 2;
             for(int i = 0 ; i < pageCount ; ++i) {
-                inkCanvasManager.AddCanvas();
-                var c = inkCanvasManager[inkCanvasManager.Count - 1];
+                collection.AddCanvas();
+                var c = collection[collection.Count - 1];
                 var page = new PDFPage(file, i);
                 using(var pdfpage = page.GetPage()) {
                     var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    c.InkCanvas.Width = size.Width;
-                    c.InkCanvas.Height = size.Height;
+                    c.Width = size.Width;
+                    c.Height = size.Height;
                 }
                 PDFBackground.SetBackground(c, page);
             }
@@ -186,38 +186,38 @@ namespace abJournal {
         }
 
         public static class XPSBackground {
-            public static void SetBackground_IgnoreViewport(abInkCanvas c, AttachedFile file, int pageNum) {
+            public static void SetBackground_IgnoreViewport(abJournalInkCanvas c, AttachedFile file, int pageNum) {
                 using(var page = new XPSPage(file, pageNum))
                 using(var pagedoc = page.GetPage()) {
                     c.Background = new VisualBrush(pagedoc.Visual);
                 }
             }
 
-            public static void SetBackground(abInkCanvasManager.ManagedInkCanvas c, AttachedFile file, int pageNum) {
+            public static void SetBackground(abJournalInkCanvas c, AttachedFile file, int pageNum) {
                 var page = new XPSPage(file, pageNum);
                 SetBackground(c, page);
             }
-            public static void SetBackground(abInkCanvasManager.ManagedInkCanvas c, XPSPage page) {
-                BackgroundXPSPage[c.InkCanvas] = page;
-                c.InkCanvas.ViewportChanged += Setviewport;
-                if(c.InkCanvas.Viewport.Height != 0) {
+            public static void SetBackground(abJournalInkCanvas c, XPSPage page) {
+                BackgroundXPSPage[c] = page;
+                c.ViewportChanged += Setviewport;
+                if(c.Viewport.Height != 0) {
                     using(var pagedoc = page.GetPage()) {
-                        c.InkCanvas.Background = new VisualBrush(pagedoc.Visual);
+                        c.Background = new VisualBrush(pagedoc.Visual);
                     }
                 }
             }
-            public static void DisposeBackground(abInkCanvasManager.ManagedInkCanvas c) {
-                c.InkCanvas.Background = null;
-                var page = BackgroundXPSPage[c.InkCanvas];
+            public static void DisposeBackground(abJournalInkCanvas c) {
+                c.Background = null;
+                var page = BackgroundXPSPage[c];
                 page.Dispose();
-                BackgroundXPSPage.Remove(c.InkCanvas);
-                c.InkCanvas.ViewportChanged -= Setviewport;
+                BackgroundXPSPage.Remove(c);
+                c.ViewportChanged -= Setviewport;
             }
 
             static void Setviewport(object sender, abInkCanvas.ViewportChangedEventArgs e) {
                 if(e.OldViewport.Height == 0) {
                     if(e.NewViewport.Height != 0) {
-                        var canvas = (abInkCanvas) sender;
+                        var canvas = (abJournalInkCanvas) sender;
                         using(var pagedoc = BackgroundXPSPage[canvas].GetPage()) {
                             var brush = new VisualBrush(pagedoc.Visual);
                             canvas.Background = brush;
@@ -225,7 +225,7 @@ namespace abJournal {
                     }
                 } else {
                     if(e.NewViewport.Height == 0) {
-                        var canvas = (abInkCanvas) sender;
+                        var canvas = (abJournalInkCanvas) sender;
                         canvas.Background = null;
                     }
                 }
@@ -237,28 +237,27 @@ namespace abJournal {
                     }
                 }
             }
-            static Dictionary<abInkCanvas, XPSPage> BackgroundXPSPage = new Dictionary<abInkCanvas, XPSPage>();
+            static Dictionary<abJournalInkCanvas, XPSPage> BackgroundXPSPage = new Dictionary<abJournalInkCanvas, XPSPage>();
         }
 
-        public void LoadXPSFile(AttachedFile file, abInkCanvasManager inkCanvasManager) {
+        public static void LoadXPSFile(AttachedFile file, abJournalInkCanvasCollection collection){
             int pageCount = XPSPage.GetPageCount(file);
             double scale = (double) 25.4 / (double) 96 * Paper.mmToSize;
             //pageCount = 2;
             for(int i = 0 ; i < pageCount ; ++i) {
-                inkCanvasManager.AddCanvas();
-                var c = inkCanvasManager[inkCanvasManager.Count - 1];
+                collection.AddCanvas();
+                var c = collection[collection.Count - 1];
                 var page = new XPSPage(file, i);
                 using(var pagedoc = page.GetPage()) {
                     var size = new Size(pagedoc.Size.Width * scale, pagedoc.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    c.InkCanvas.Width = size.Width;
-                    c.InkCanvas.Height = size.Height;
+                    c.Width = size.Width;
+                    c.Height = size.Height;
                     XPSBackground.SetBackground(c, page);
                 }
             }
         }
         #endregion
-
     }
 }

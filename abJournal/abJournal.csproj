@@ -96,6 +96,8 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="abJournalInkCanvas.cs" />
+    <Compile Include="abJournalInkCanvasCollection.cs" />
     <Compile Include="AboutDialog.xaml.cs">
       <DependentUpon>AboutDialog.xaml</DependentUpon>
     </Compile>
@@ -106,7 +108,6 @@
     <Compile Include="hpdf.cs" />
     <Compile Include="Img2Cursor.cs" />
     <Compile Include="abInkCanvasCollection.cs" />
-    <Compile Include="abInkCanvasManager.cs" />
     <Compile Include="LowLevelHook.cs" />
     <Compile Include="Options.cs" />
     <Compile Include="PageSetting.xaml.cs">

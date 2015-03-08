@@ -5,7 +5,6 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Data;
 using System.Windows.Media;
-using ablib;
 
 namespace abJournal {
     class ColorBrushConverter : IValueConverter {
@@ -56,8 +55,8 @@ namespace abJournal {
     }
 
     class MakeDashArrayConverter : IValueConverter {
-        DoubleCollection normal = abInkCanvasCollection.DashArray_Normal;
-        DoubleCollection dashed = abInkCanvasCollection.DashArray_Dashed;
+        DoubleCollection normal = abJournalInkCanvasCollection.DashArray_Normal;
+        DoubleCollection dashed = abJournalInkCanvasCollection.DashArray_Dashed;
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
             return ((bool) value) ? dashed : normal;
         }

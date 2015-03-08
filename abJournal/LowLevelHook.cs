@@ -8,7 +8,7 @@ using System.Windows.Input;
 e.Handled = trueとすると，他のキーは無効化される．
 最後はllkh.Dispose();でフックおしまい．
 */
-namespace ablib {
+namespace abJournal {
     public class LowLevelKeyboardHook : IDisposable{
         delegate int HookProc(int nCode, IntPtr wParam, IntPtr lParam);
         [DllImport("user32.dll")]
