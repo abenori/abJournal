@@ -155,5 +155,41 @@ namespace abJournal {
         public new void AddedToView() {
             SetBackgroundFromStr();
         }
+
+        public abJournalInkCanvas GetPrintingCanvas(DrawingAlgorithm algo) {
+            var r = new abJournalInkCanvas(InkData.Clone(), Info);
+            r.InkData.DrawingAlgorithm = algo;
+            var str = Info.BackgroundStr;
+            if(str.StartsWith("image:")) {
+                str = str.Substring("image:".Length);
+                if(str.StartsWith("xps:")) {
+                    str = str.Substring("xps:".Length);
+                    int ri = str.IndexOf(":");
+                    try {
+                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
+                            if(file != null) {
+                                int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
+                                BackgroundImageManager.XPSBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
+                            }
+                        }
+                    }
+                    catch { }// file = nullなら無視する
+                } else if(str.StartsWith("pdf:")) {
+                    str = str.Substring("pdf:".Length);
+                    int ri = str.IndexOf(":");
+                    try {
+                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
+                            int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
+                            BackgroundImageManager.PDFBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
+                        }
+                    }
+                    catch { }// file = nullなら無視する
+                }
+            }
+            r.ReDraw();
+            return r;
+        }
+
+
     }
 }

@@ -326,17 +326,16 @@ namespace abJournal {
             if(pd.ShowDialog() == true) {
                 WindowTitle = "印刷準備中……";
                 FixedDocument doc = new FixedDocument();
-                /*var canvases = mainCanvas.GetInkCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
+                var canvases = mainCanvas.GetPrintingCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
                 foreach(var c in canvases){
                     FixedPage page = new FixedPage();
-                    page.Width = c.InkCanvas.Width;
-                    page.Height = c.InkCanvas.Height;
-                    page.Children.Add(c.InkCanvas);
+                    page.Width = c.Width;
+                    page.Height = c.Height;
+                    page.Children.Add(c);
                     PageContent content = new PageContent();
                     content.Child = page;
                     doc.Pages.Add(content);
                 }
-                 */
                 WindowTitle = "印刷中……";
                 pd.PrintDocument(doc.DocumentPaginator,mainCanvas.FileName == null ?
                     "無題ノート" : System.IO.Path.GetFileNameWithoutExtension(mainCanvas.FileName));

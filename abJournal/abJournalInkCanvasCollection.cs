@@ -550,6 +550,16 @@ namespace abJournal {
             return 10 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height)) - 1;
         }
         #endregion
-    
+
+        #region 印刷用
+        public IEnumerable<abJournalInkCanvas> GetPrintingCanvases(DrawingAlgorithm algo) {
+            for(int i = 0 ; i < Count ; ++i){
+                var r = this[i].GetPrintingCanvas(algo);
+                if(i == 0) DrawNoteContents(r);
+                DrawRules(r, r.Info.HorizontalRule, r.Info.VerticalRule, (i == 0 && Info.ShowTitle));
+                yield return r;
+            }
+        }
+        #endregion
     }
 }
