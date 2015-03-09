@@ -42,16 +42,16 @@ namespace abJournal {
                 pagePtr = p;
             }
             IntPtr pagePtr;
-            Size? sizeInner = null;
+            Size? sizeImpl = null;
             public Size Size {
                 get {
-                    if(sizeInner == null) {
-                        sizeInner = new Size(PInvoke.FPDF_GetPageWidth(pagePtr), PInvoke.FPDF_GetPageHeight(pagePtr));
+                    if(sizeImpl == null) {
+                        sizeImpl = new Size(PInvoke.FPDF_GetPageWidth(pagePtr), PInvoke.FPDF_GetPageHeight(pagePtr));
                     }
-                    return sizeInner.Value;
+                    return sizeImpl.Value;
                 }
             }
-            public BitmapSource GetBitmapSource(Rect rect, double scale) {
+            public BitmapSource GetBitmapSource(Rect rect, double scale, Color background) {
                 const double scale_multiple = 2;
                 var desktophdc = PInvoke.GetDC(IntPtr.Zero);
                 double multx = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale * scale_multiple;
@@ -61,7 +61,8 @@ namespace abJournal {
                 int x = (int) (rect.Left * multx);
                 int y = (int) (rect.Top * multy);
                 var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
-                PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, 0xFFFFFFFF);
+                int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
+                PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
                 PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
                 var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
                 var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
@@ -70,8 +71,8 @@ namespace abJournal {
                 return bitmap;
             }
 
-            public System.Windows.Media.Visual GetVisual(Rect rect, double scale) {
-                var bitmap = GetBitmapSource(rect, scale);
+            public System.Windows.Media.Visual GetVisual(Rect rect, double scale,Color background) {
+                var bitmap = GetBitmapSource(rect, scale, background);
                 bitmap.Freeze();
                 var rv = new System.Windows.Media.DrawingVisual();
                 using(var dc = rv.RenderOpen()) {

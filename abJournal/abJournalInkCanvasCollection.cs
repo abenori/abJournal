@@ -69,14 +69,15 @@ namespace abJournal {
         public void InsertCanvas(abInkData d, CanvasCollectionInfo info, abJournalInkCanvas.InkCanvasInfo inkcanvasinfo, int index) {
             var canvas = new abJournalInkCanvas(d, inkcanvasinfo);
             base.InsertCanvas(canvas, index);
-            var c = this[index];
-            if(index == 0) DrawNoteContents(c, info);
-            DrawRules(c, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
+            if(index == 0) DrawNoteContents(canvas, info);
+            DrawRules(canvas, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
 
         public void ReDraw() {
             for(int i = 0 ; i < Count ; ++i) {
                 var c = this[i];
+                c.CleanUpBrush();
+                c.SetBackgroundFromStr();
                 if(i == 0) DrawNoteContents(c, Info);
                 DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
                 c.ReDraw();
@@ -219,54 +220,85 @@ namespace abJournal {
 
         public void SavePDF(string file) {
             double scale = (double) 720 / (double) 254 / Paper.mmToSize;
-
-            using(var doc = new PdfSharp.Pdf.PdfDocument()) {
-                for(int i = 0 ; i < Count ; ++i) {
-                    var page = doc.AddPage();
-                    var ps = Paper.GetPaperSize(new Size(this[i].Width, this[i].Height));
-                    // 1 = 1/72インチ = 25.4/72 mm
-                    switch(ps) {
-                    case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
-                    case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
-                    case Paper.PaperSize.A2: page.Size = PdfSharp.PageSize.A2; break;
-                    case Paper.PaperSize.A3: page.Size = PdfSharp.PageSize.A3; break;
-                    case Paper.PaperSize.A4: page.Size = PdfSharp.PageSize.A4; break;
-                    case Paper.PaperSize.A5: page.Size = PdfSharp.PageSize.A5; break;
-                    case Paper.PaperSize.B0: page.Size = PdfSharp.PageSize.B0; break;
-                    case Paper.PaperSize.B1: page.Size = PdfSharp.PageSize.B1; break;
-                    case Paper.PaperSize.B2: page.Size = PdfSharp.PageSize.B2; break;
-                    case Paper.PaperSize.B3: page.Size = PdfSharp.PageSize.B3; break;
-                    case Paper.PaperSize.B4: page.Size = PdfSharp.PageSize.B4; break;
-                    case Paper.PaperSize.B5: page.Size = PdfSharp.PageSize.B5; break;
-                    case Paper.PaperSize.Letter: page.Size = PdfSharp.PageSize.Letter; break;
-                    case Paper.PaperSize.Tabloid: page.Size = PdfSharp.PageSize.Tabloid; break;
-                    case Paper.PaperSize.Ledger: page.Size = PdfSharp.PageSize.Ledger; break;
-                    case Paper.PaperSize.Legal: page.Size = PdfSharp.PageSize.Legal; break;
-                    case Paper.PaperSize.Folio: page.Size = PdfSharp.PageSize.Folio; break;
-                    case Paper.PaperSize.Quarto: page.Size = PdfSharp.PageSize.Quarto; break;
-                    case Paper.PaperSize.Executive: page.Size = PdfSharp.PageSize.Executive; break;
-                    case Paper.PaperSize.Statement: page.Size = PdfSharp.PageSize.Statement; break;
-                    case Paper.PaperSize.Other:
-                        page.Width = this[i].Width * scale;
-                        page.Height = this[i].Height * scale;
-                        break;
-                    default:
-                        var s = Paper.GetmmSize(ps);
-                        page.Width = s.Width * 720 / 254;
-                        page.Height = s.Height * 720 / 254;
-                        break;
+            var documents = new Dictionary<string, PdfSharp.Pdf.PdfDocument>();
+            try {
+                using(var doc = new PdfSharp.Pdf.PdfDocument()) {
+                    for(int i = 0 ; i < Count ; ++i) {
+                        PdfSharp.Pdf.PdfPage page;
+                        if(this[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
+                            var str = this[i].Info.BackgroundStr.Substring("image:pdf:".Length);
+                            var r = str.IndexOf(":");
+                            if(r == -1) page = doc.AddPage();
+                            else {
+                                var id = str.Substring(0, r);
+                                try {
+                                    var pagenum = Int32.Parse(str.Substring(r + "page=".Length + 1));
+                                    PdfSharp.Pdf.PdfDocument pdfdoc;
+                                    if(documents.ContainsKey(id)) pdfdoc = documents[id];
+                                    else {
+                                        using(var f = AttachedFile.GetFileFromIdentifier(id)) {
+                                            pdfdoc = PdfSharp.Pdf.IO.PdfReader.Open(f.FileName, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+                                            documents[id] = pdfdoc;
+                                        }
+                                    }
+                                    doc.AddPage(pdfdoc.Pages[pagenum]);
+                                    page = doc.Pages[i];
+                                }
+                                catch(FormatException) {
+                                    page = doc.AddPage();
+                                }
+                            }
+                        }else page = doc.AddPage();
+                        var ps = Paper.GetPaperSize(new Size(this[i].Width, this[i].Height));
+                        // 1 = 1/72インチ = 25.4/72 mm
+                        switch(ps) {
+                        case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
+                        case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
+                        case Paper.PaperSize.A2: page.Size = PdfSharp.PageSize.A2; break;
+                        case Paper.PaperSize.A3: page.Size = PdfSharp.PageSize.A3; break;
+                        case Paper.PaperSize.A4: page.Size = PdfSharp.PageSize.A4; break;
+                        case Paper.PaperSize.A5: page.Size = PdfSharp.PageSize.A5; break;
+                        case Paper.PaperSize.B0: page.Size = PdfSharp.PageSize.B0; break;
+                        case Paper.PaperSize.B1: page.Size = PdfSharp.PageSize.B1; break;
+                        case Paper.PaperSize.B2: page.Size = PdfSharp.PageSize.B2; break;
+                        case Paper.PaperSize.B3: page.Size = PdfSharp.PageSize.B3; break;
+                        case Paper.PaperSize.B4: page.Size = PdfSharp.PageSize.B4; break;
+                        case Paper.PaperSize.B5: page.Size = PdfSharp.PageSize.B5; break;
+                        case Paper.PaperSize.Letter: page.Size = PdfSharp.PageSize.Letter; break;
+                        case Paper.PaperSize.Tabloid: page.Size = PdfSharp.PageSize.Tabloid; break;
+                        case Paper.PaperSize.Ledger: page.Size = PdfSharp.PageSize.Ledger; break;
+                        case Paper.PaperSize.Legal: page.Size = PdfSharp.PageSize.Legal; break;
+                        case Paper.PaperSize.Folio: page.Size = PdfSharp.PageSize.Folio; break;
+                        case Paper.PaperSize.Quarto: page.Size = PdfSharp.PageSize.Quarto; break;
+                        case Paper.PaperSize.Executive: page.Size = PdfSharp.PageSize.Executive; break;
+                        case Paper.PaperSize.Statement: page.Size = PdfSharp.PageSize.Statement; break;
+                        case Paper.PaperSize.Other:
+                            page.Width = this[i].Width * scale;
+                            page.Height = this[i].Height * scale;
+                            break;
+                        default:
+                            var s = Paper.GetmmSize(ps);
+                            page.Width = s.Width * 720 / 254;
+                            page.Height = s.Height * 720 / 254;
+                            break;
+                        }
+                        var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
+                        g.ScaleTransform(scale);
+                        if(i == 0) DrawNoteContents(g, this[i], Info);
+                        DrawRules(g, this[i], this[i].Info.HorizontalRule, this[i].Info.VerticalRule, (i == 0 && Info.ShowTitle));
+                        this[i].InkData.AddPdfGraphic(g);
                     }
-                    var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                    g.ScaleTransform(scale);
-                    if(i == 0) DrawNoteContents(g, this[i], Info);
-                    DrawRules(g, this[i], this[i].Info.HorizontalRule, this[i].Info.VerticalRule, (i == 0 && Info.ShowTitle));
-                    this[i].InkData.AddPdfGraphic(g);
+                    doc.Info.Creator = "abJournal";
+                    doc.Info.Title = Info.Title;
+                    doc.Info.CreationDate = Info.Date;
+                    doc.Info.ModificationDate = DateTime.Now;
+                    doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
                 }
-                doc.Info.Creator = "abJournal";
-                doc.Info.Title = Info.Title;
-                doc.Info.CreationDate = Info.Date;
-                doc.Info.ModificationDate = DateTime.Now;
-                doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
+            }
+            finally {
+                foreach(var d in documents) {
+                    d.Value.Dispose();
+                }
             }
         }
 

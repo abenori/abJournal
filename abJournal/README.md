@@ -9,7 +9,7 @@
 * 保存データはProtocol Buffersで保存される．（.jntよりはサイズが大きめ．読み込み書き込み遅め．）
 * 破線用のペンが使える．
 
-以下も一応よいところですが，自分にとってはあまりプラスじゃないです．
+以下も一応Windows Journalではできないところですが，他のソフトウェアなどを併用すれば可能なので，個人的にはあまり利点にはなっていません．
 * PDFへの変換機能を持っている．
 * XPS/PDFを他のソフトを使わずにインポートできる．
 
@@ -20,13 +20,16 @@
 * .NET Framework 4.5以降
 
 ## 使い方
-適当に使えると思います．自分が必要な機能しか無いため，あまり色々はできません．保存の時に拡張子をpdfにするとPDFに変換されます．（今のところ）背景は無視されます．
+適当に使えると思います．自分が必要な機能しか無いため，あまり色々はできません．
+
+## PDF変換
+保存の時に拡張子をpdfにするとPDFに変換されます．背景はもともとがPDFのもの以外無視されます．
 
 ## 描画アルゴリズム
 設定から選べますが，場合によっては無視されます．具体的には
 * 選択状態ではStroke.GetGeometryで固定．
 * Stroke.GetGeometryが選択されている状態では，破線は独自アルゴリズムになる．
-* PDF生成時は独自アルゴリズムで，更に筆圧無視．（軽いPDFにしたいため．）
+* PDF生成時は独自アルゴリズムで，更に筆圧無視．（小さいPDFにしたいため．）
 
 速度はだいたい
 
@@ -37,8 +40,9 @@
 ## 保存ファイル
 zipでアーカイブされていて，解凍すると
 * _data.abjnt
-* attached\*
-がでてきます．_data.abjntがprotobufでシリアライズされたデータ本体（abInkCanvasManager.ablibInkCanvasCollectionSavingProtobufData型）
+* attached/*
+
+がでてきます．_data.abjntがprotobufでシリアライズされたデータ本体．（abInkCanvasManager.ablibInkCanvasCollectionSavingProtobufData型．添付しているabJournal.protoも参照．このファイルはabJournal.exe /getprotoschemaでも生成されます．）
 attachedの中が，このファイルに付随するファイルたちです（たとえば背景に使われている画像とか）．
 
 ## 謝辞

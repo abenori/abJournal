@@ -54,7 +54,7 @@ namespace abJournal {
             public static void SetBackground_IgnoreViewport(abJournalInkCanvas c, AttachedFile file, int pageNum) {
                 using(var page = new PDFPage(file, pageNum))
                 using(var pdfpage = page.GetPage()) {
-                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale));
+                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale,c.Info.BackgroundColor));
                     c.Background = brush;
                 }
             }
@@ -68,7 +68,7 @@ namespace abJournal {
                 c.ViewportChanged += Setviewport;
                 if(c.Viewport.Height != 0) {
                     using(var pdfpage = page.GetPage()) {
-                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale));
+                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale,c.Info.BackgroundColor));
                         c.Background = brush;
                     }
                 } else c.Background = null;
@@ -87,7 +87,7 @@ namespace abJournal {
                     if(e.NewViewport.Height != 0) {
                         var canvas = (abJournalInkCanvas) sender;
                         using(var pdfpage = BackgroundPDFPage[canvas].GetPage()){
-                            var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, canvas.Width, canvas.Height), scale));
+                            var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, canvas.Width, canvas.Height), scale, canvas.Info.BackgroundColor));
                             canvas.Background = brush;
                         }
                     }
@@ -107,7 +107,7 @@ namespace abJournal {
                         foreach(var c in BackgroundPDFPage) {
                             if(c.Key.Background != null) {
                                 using(var pdfpage = c.Value.GetPage()) {
-                                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Key.Width, c.Key.Height), scale));
+                                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Key.Width, c.Key.Height), scale, c.Key.Info.BackgroundColor));
                                     c.Key.Background = brush;
                                 }
                                 //System.Diagnostics.Debug.WriteLine("Background changed because scale is changed");

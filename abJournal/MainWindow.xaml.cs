@@ -103,19 +103,6 @@ namespace abJournal {
 
         BlockWndowsKey blockWindows = null;
         public MainWindow() {
-            /*
-            string input = @"C:\Users\Abe_Noriyuki\Desktop\Compatibility.pdf";
-            using(var inputf = PdfSharp.Pdf.IO.PdfReader.Open(input, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)) {
-                string output = @"C:\Users\Abe_Noriyuki\Desktop\output.pdf";
-                var outputf = new PdfSharp.Pdf.PdfDocument();
-                outputf.AddPage(inputf.Pages[0]);
-                var page = outputf.Pages[0];
-                var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                g.DrawLine(new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColors.Blue), new PdfSharp.Drawing.XPoint(0, 0), new PdfSharp.Drawing.XPoint(100, 100));
-                outputf.Save(output);
-            }
-            Environment.Exit(0);
-            */
             
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
@@ -454,9 +441,9 @@ namespace abJournal {
             var dialog = new PageSetting(mainCanvas.Info);
             if(dialog.ShowDialog() == true) {
                 mainCanvas.Info = dialog.Info;
-                foreach(var c in mainCanvas) c.SetBackground(dialog.Info.InkCanvasInfo.BackgroundColor);
+                foreach(var c in mainCanvas) c.Info.BackgroundColor = dialog.info.InkCanvasInfo.BackgroundColor;
                 mainCanvas.ReDraw();
-                OnPropertyChanged("abmainCanvas");
+                OnPropertyChanged("mainCanvas");
             }
         }
         public static readonly RoutedCommand OpenHistory = new RoutedCommand("OpenHistory", typeof(MainWindow));

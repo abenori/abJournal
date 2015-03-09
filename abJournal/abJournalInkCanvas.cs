@@ -116,12 +116,7 @@ namespace abJournal {
         }
         public void SetBackgroundFromStr() {
             string str = Info.BackgroundStr;
-            if(str == null || str == "" ){
-                var brush = Background as SolidColorBrush;
-                if(brush != null) Info.BackgroundColor = brush.Color;
-                else Background = new SolidColorBrush(Info.BackgroundColor);
-                Info.BackgroundStr = "color";
-            }else if(str == "color") SetBackground(Info.BackgroundColor);
+            if(str == null || str == "" || str == "color") SetBackground(Info.BackgroundColor);
             else if(str.StartsWith("image:")) {
                 str = str.Substring("image:".Length);
                 if(str.StartsWith("xps:")) {
