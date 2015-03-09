@@ -102,8 +102,7 @@ namespace abJournal {
         }
 
         BlockWndowsKey blockWindows = null;
-        public MainWindow() {
-            
+        public MainWindow() {            
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
                     using(var fs = new System.IO.StreamWriter(System.IO.Path.Combine(Environment.CurrentDirectory,"abJournal.proto"))){

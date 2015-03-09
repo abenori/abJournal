@@ -51,24 +51,32 @@ namespace abJournal {
                     return sizeImpl.Value;
                 }
             }
+            class HDC : IDisposable{
+                public IntPtr hdc = IntPtr.Zero;
+                public HDC() { hdc = PInvoke.GetDC(IntPtr.Zero); }
+                ~HDC() { Dispose(); }
+                public void Dispose() { PInvoke.ReleaseDC(IntPtr.Zero, hdc); }
+            }
             public BitmapSource GetBitmapSource(Rect rect, double scale, Color background) {
                 const double scale_multiple = 2;
-                var desktophdc = PInvoke.GetDC(IntPtr.Zero);
-                double multx = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale * scale_multiple;
-                double multy = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSY) / 96 * scale * scale_multiple;
-                int width = (int) (rect.Width * multx);
-                int height = (int) (rect.Height * multy);
-                int x = (int) (rect.Left * multx);
-                int y = (int) (rect.Top * multy);
-                var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
-                int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
-                PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
-                PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
-                var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
-                var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
-                var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
-                PInvoke.FPDFBitmap_Destroy(pdfbitmap);
-                return bitmap;
+                using(var hdc = new HDC()) {
+                    var desktophdc = hdc.hdc;
+                    double multx = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale * scale_multiple;
+                    double multy = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSY) / 96 * scale * scale_multiple;
+                    int width = (int) (rect.Width * multx);
+                    int height = (int) (rect.Height * multy);
+                    int x = (int) (rect.Left * multx);
+                    int y = (int) (rect.Top * multy);
+                    var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
+                    int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
+                    PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
+                    PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
+                    var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
+                    var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
+                    var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
+                    PInvoke.FPDFBitmap_Destroy(pdfbitmap);
+                    return bitmap;
+                }
             }
 
             public System.Windows.Media.Visual GetVisual(Rect rect, double scale,Color background) {
