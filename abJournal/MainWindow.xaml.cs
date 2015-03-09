@@ -5,17 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Diagnostics;
 using Microsoft.Win32;
 using System.ComponentModel;
 using System.IO.Compression;
+using System.IO;
 
 /* 
  * TODO（やりたい）：
@@ -94,7 +91,7 @@ namespace abJournal {
         public double[] PenThickness {
             get { return Properties.Settings.Default.PenThickness; }
         }
-        public Color[] PenColor {
+        public System.Windows.Media.Color[] PenColor {
             get { return Properties.Settings.Default.PenColor; }
         }
         public System.Collections.Specialized.StringCollection History {
@@ -102,7 +99,7 @@ namespace abJournal {
         }
 
         BlockWndowsKey blockWindows = null;
-        public MainWindow() {            
+        public MainWindow() {
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
                     using(var fs = new System.IO.StreamWriter(System.IO.Path.Combine(Environment.CurrentDirectory,"abJournal.proto"))){
@@ -200,7 +197,12 @@ namespace abJournal {
                 try {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     if(ext == ".pdf") {
-                        mainCanvas.SavePDF(fd.FileName);
+                        try {
+                            mainCanvas.SavePDF(fd.FileName);
+                        }
+                        catch(Exception ex) {
+                            MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
+                        }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
                         mainCanvas.Save(fd.FileName);
@@ -247,6 +249,18 @@ namespace abJournal {
             if(ofd.ShowDialog() == true) {
                 try {
 					WindowTitle = "インポート中……";
+                    if(Path.GetExtension(ofd.FileName).ToLower() == ".pdf") {
+                        try {
+                            var pdfdoc = PdfSharp.Pdf.IO.PdfReader.Open(ofd.FileName, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+                            pdfdoc.Dispose();
+                        }
+                        catch(System.Exception) {
+                            if(MessageBox.Show("このPDFファイルは使用しているPDFSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "TeX2img", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
+                                WindowTitle = null;
+                                return;
+                            }
+                        }
+                    }
                     mainCanvas.Import(ofd.FileName);
 					WindowTitle = null;
                     // Importで横幅が変わる可能性があるので，「横幅にあわせる」の場合は計算し直し．
@@ -464,7 +478,13 @@ namespace abJournal {
 
         private void mainCanvas_Drop(object sender, DragEventArgs e) {
             var files = (string[]) e.Data.GetData(DataFormats.FileDrop);
-            FileOpen(new List<string>(files));
+            var loadfiles = new List<string>();
+            foreach(var f in files) {
+                var ext = Path.GetExtension(f).ToLower();
+                if(ext == ".pdf" || ext == ".xps") mainCanvas.Import(f);
+                else loadfiles.Add(f);
+            }
+            FileOpen(loadfiles);
         }
 
         private void FileOpen(List<string> files) {

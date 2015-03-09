@@ -13,22 +13,28 @@ namespace abJournal {
         public class PDFDocument : IDisposable {
             IntPtr documentPtr;
             public string FileName { get; private set; }
+            //static int documentloadednum = 0;
             public PDFDocument(string path) {
-                documentPtr = PInvoke.FPDF_LoadDocument(path, null);
+                documentPtr = PInvoke.FPDF_LoadDocument(path, null); 
                 if(documentPtr == IntPtr.Zero) throw new System.IO.FileNotFoundException();
+                //{ ++documentloadednum; System.Diagnostics.Debug.WriteLine("PDFDocumentLoaded: " + documentloadednum.ToString()); }
                 FileName = path;
             }
+            //static int pageloadednum = 0;
             public PDFPage GetPage(int pageNum) {
                 IntPtr p = PInvoke.FPDF_LoadPage(documentPtr, pageNum);
+                //{++pageloadednum;System.Diagnostics.Debug.WriteLine("PDFPageLoadPage: " + pageloadednum.ToString());}
                 if(p == IntPtr.Zero) throw new Exception();//後で直す
                 return new PDFPage(p);
             }
             public int GetPageCount() {
                 return PInvoke.FPDF_GetPageCount(documentPtr);
             }
+            //static int documentunloadednum = 0;
             public void Dispose() {
                 if(documentPtr != IntPtr.Zero) {
                     PInvoke.FPDF_CloseDocument(documentPtr);
+                    //{ ++documentunloadednum; System.Diagnostics.Debug.WriteLine("PDFDocumentUnLoaded: " + documentunloadednum.ToString()); }
                     documentPtr = IntPtr.Zero;
                 }
             }
@@ -70,7 +76,7 @@ namespace abJournal {
                     var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
                     int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
                     PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
-                    PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
+                    PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0x1);
                     var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
                     var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
                     var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
@@ -89,8 +95,10 @@ namespace abJournal {
                 }
                 return rv;
             }
+            //static int pageunloadednum = 0;
             public void Dispose() {
                 if(pagePtr != IntPtr.Zero) {
+                    //{ ++pageunloadednum; System.Diagnostics.Debug.WriteLine("PdfPageUnloaded: " + pageunloadednum.ToString());}
                     PInvoke.FPDF_ClosePage(pagePtr);
                     pagePtr = IntPtr.Zero;
                 }

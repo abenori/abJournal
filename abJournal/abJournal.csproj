@@ -63,8 +63,11 @@
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="PdfSharp">
-      <HintPath>..\packages\PDFsharp.1.32.3057.0\lib\net20\PdfSharp.dll</HintPath>
+    <Reference Include="PdfSharp-wpf">
+      <HintPath>..\packages\PDFsharp-wpf.1.50.3638-beta\lib\net30\PdfSharp-wpf.dll</HintPath>
+    </Reference>
+    <Reference Include="PdfSharp.Charting-wpf">
+      <HintPath>..\packages\PDFsharp-wpf.1.50.3638-beta\lib\net30\PdfSharp.Charting-wpf.dll</HintPath>
     </Reference>
     <Reference Include="protobuf-net, Version=2.0.0.668, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -105,7 +108,6 @@
     <Compile Include="Converters.cs" />
     <Compile Include="FileManager.cs" />
     <Compile Include="Hotkey.cs" />
-    <Compile Include="hpdf.cs" />
     <Compile Include="Img2Cursor.cs" />
     <Compile Include="abInkCanvasCollection.cs" />
     <Compile Include="LowLevelHook.cs" />

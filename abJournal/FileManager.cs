@@ -59,6 +59,8 @@ namespace abJournal {
         public AttachedFile(string path) {
             var tmp = Path.GetTempFileName();
             File.Copy(path, tmp, true);
+            // 読み取り専用の場合解除しておく（後でFile.Deleteに失敗するため）．
+            (new FileInfo(tmp)).Attributes = FileAttributes.Normal;
             data = new FileData();
             data.FileName = tmp;
             data.OriginalFileName = Path.GetFileName(path);
@@ -131,7 +133,12 @@ namespace abJournal {
         class AttachedFileFinalizer {
             ~AttachedFileFinalizer() {
                 foreach(var d in AttachedFile.attachedFiles) {
-                    File.Delete(d.Key.FileName);
+                    try {
+                        File.Delete(d.Key.FileName);
+                    }
+                    catch(UnauthorizedAccessException e) {
+                        System.Diagnostics.Debug.WriteLine(e.Message);
+                    }
                 }
             }
         }
