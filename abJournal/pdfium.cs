@@ -57,18 +57,12 @@ namespace abJournal {
                     return sizeImpl.Value;
                 }
             }
-            class HDC : IDisposable{
-                public IntPtr hdc = IntPtr.Zero;
-                public HDC() { hdc = PInvoke.GetDC(IntPtr.Zero); }
-                ~HDC() { Dispose(); }
-                public void Dispose() { PInvoke.ReleaseDC(IntPtr.Zero, hdc); }
-            }
             public BitmapSource GetBitmapSource(Rect rect, double scale, Color background) {
                 const double scale_multiple = 2;
-                using(var hdc = new HDC()) {
-                    var desktophdc = hdc.hdc;
-                    double multx = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSX) / 96 * scale * scale_multiple;
-                    double multy = PInvoke.GetDeviceCaps(desktophdc, PInvoke.DeviceCap.LOGPIXELSY) / 96 * scale * scale_multiple;
+                var hdc = PInvoke.GetDC(IntPtr.Zero);
+                try {
+                    double multx = PInvoke.GetDeviceCaps(hdc, PInvoke.DeviceCap.LOGPIXELSX) * scale * scale_multiple / 96;
+                    double multy = PInvoke.GetDeviceCaps(hdc, PInvoke.DeviceCap.LOGPIXELSY) * scale * scale_multiple / 96;
                     int width = (int) (rect.Width * multx);
                     int height = (int) (rect.Height * multy);
                     int x = (int) (rect.Left * multx);
@@ -82,6 +76,9 @@ namespace abJournal {
                     var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
                     PInvoke.FPDFBitmap_Destroy(pdfbitmap);
                     return bitmap;
+                }
+                finally {
+                    PInvoke.ReleaseDC(IntPtr.Zero, hdc);
                 }
             }
 

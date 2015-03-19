@@ -219,6 +219,11 @@ namespace abJournal {
         }
 
         void Drawing(StylusPoint pt) {
+            // さぼることでHitTestを速くさせる．
+            if(Mode == InkManipulationMode.Selecting) {
+                var prev = StrokeDrawingVisual.PrevPoint;
+                if((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
+            }
             InkData.ProcessPointerUpdate(pt);
             if(Mode != InkManipulationMode.Erasing) {
                 StrokeDrawingVisual.AddPoint(pt);
@@ -239,8 +244,8 @@ namespace abJournal {
         }
 
         class DrawingVisualLine : DrawingVisual {
+            public StylusPoint PrevPoint;
             bool ignorePressure;
-            StylusPoint prevPoint;
 
             double dashOffset = 0;
             DrawingGroup drawingGroup = null;
@@ -269,7 +274,7 @@ namespace abJournal {
             }
             public void StartPoint(StylusPoint pt) {
                 if(ignorePressure) pathFigure.StartPoint = pt.ToPoint();
-                prevPoint = pt;
+                PrevPoint = pt;
             }
             public void AddPoint(StylusPoint pt) {
                 if(ignorePressure) {
@@ -279,14 +284,14 @@ namespace abJournal {
                     p.Thickness *= pt.PressureFactor * 2;
                     if(p.DashStyle.Dashes.Count > 0) {
                         p.DashStyle.Offset = dashOffset;
-                        dashOffset += (Math.Sqrt((prevPoint.X - pt.X) * (prevPoint.X - pt.X) + (prevPoint.Y - pt.Y) * (prevPoint.Y - pt.Y))) / pen.Thickness;
+                        dashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / pen.Thickness;
                     }
                     p.Freeze();
                     using(var dc = drawingGroup.Append()) {
-                        dc.DrawLine(p, prevPoint.ToPoint(), pt.ToPoint());
+                        dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint());
                     }
                 }
-                prevPoint = pt;
+                PrevPoint = pt;
             }
         }
         #endregion

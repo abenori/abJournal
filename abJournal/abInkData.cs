@@ -248,9 +248,9 @@ namespace abJournal {
             OnStrokeAdded(new StrokeChangedEventArgs(sc));
         }
         public void Select(StylusPointCollection spc, int percent) {
+            var watch = new Stopwatch();
             PointCollection pc = new PointCollection(spc.Select(p => p.ToPoint()));
             var changed = new StrokeDataCollection();
-            var watch = new Stopwatch();
             foreach(var s in Strokes) {
                 bool hittest = s.HitTest(pc, percent);
                 if(hittest != s.Selected) {

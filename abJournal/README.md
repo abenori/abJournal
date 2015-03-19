@@ -33,7 +33,7 @@
 
 速度はだいたい
 
-線を引くだけ > 独自アルゴリズム > Strokg.GetGeometry > Strokg.GetGeometry + 筆圧 > 独自アルゴリズム + 筆圧
+線を引くだけ > 独自アルゴリズム > Stroke.GetGeometry > Stroke.GetGeometry + 筆圧 > 独自アルゴリズム + 筆圧
 
 という感じです．特に独自アルゴリズム + 筆圧はかなり遅いです．線を引くだけ + 筆圧がどこに入るかはよくわからない，
 

@@ -29,6 +29,11 @@ namespace abJournal {
         static TempFileFinalizer finalizer = new TempFileFinalizer();
     }
 
+    // 「添付ファイル」の管理を行う．
+    // new AttachedFileでファイルを作り，いらなくなったら破棄すればよい．
+    //
+    // 保存時に参照されているファイル一覧を作ることが目的になっているけど，参照を全て見ればいい気もしてきた．
+    // まぁいいや．
     public class AttachedFile : IDisposable {
         struct FileData {
             public string FileName;
