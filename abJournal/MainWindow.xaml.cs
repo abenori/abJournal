@@ -255,7 +255,7 @@ namespace abJournal {
                             pdfdoc.Dispose();
                         }
                         catch(System.Exception) {
-                            if(MessageBox.Show("このPDFファイルは使用しているPDFSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "TeX2img", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
+                            if(MessageBox.Show("このPDFファイルは使用しているPDFSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "abJournal", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
                                 WindowTitle = null;
                                 return;
                             }
@@ -349,10 +349,6 @@ namespace abJournal {
                 double maxWidth = mainCanvas.Select(c => c.Width).Max();
                 mainCanvas.Scale = MainPanel.ActualWidth / maxWidth;
             }
-            /*
-            abmainCanvas.Width = ActualWidth;
-            abmainCanvas.Height = ActualHeight;
-             */
             mainCanvas.Scroll();
         }
         public static readonly RoutedCommand AddPage = new RoutedCommand("AddPage", typeof(MainWindow));

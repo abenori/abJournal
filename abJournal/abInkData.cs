@@ -248,7 +248,6 @@ namespace abJournal {
             OnStrokeAdded(new StrokeChangedEventArgs(sc));
         }
         public void Select(StylusPointCollection spc, int percent) {
-            var watch = new Stopwatch();
             PointCollection pc = new PointCollection(spc.Select(p => p.ToPoint()));
             var changed = new StrokeDataCollection();
             foreach(var s in Strokes) {
@@ -258,7 +257,6 @@ namespace abJournal {
                     changed.Add(s);
                 }
             }
-            watch.CheckTime("Select");
             AddUndoList(new SelectChangeCommand(changed));
             OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
         }

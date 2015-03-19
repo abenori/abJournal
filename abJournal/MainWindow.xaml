@@ -53,6 +53,7 @@
         <local:IsInkingModeConverter x:Key="IsInkingModeConverter"/>
         <local:IsErasingModeConverter x:Key="IsErasingModeConverter"/>
         <local:MakeDashArrayConverter x:Key="MakeDashArrayConverter"/>
+        <local:IsSelectingModeCnverter x:Key="IsSelectingModeConverter"/>
         <ContextMenu x:Key="CanvasCollectionMenu">
             <MenuItem Header="削除" Command="Delete"/>
             <MenuItem Header="コピー" Command="Copy"/>
@@ -150,6 +151,9 @@
                 <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
             <Image Height="18" Source="icon/eraser.png"/>
             </ToggleButton>
+                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToSelection}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsSelectingModeConverter},Mode=OneWay}">
+                    <Image Height="18" Source="icon/select.png"/>
+                </ToggleButton>
             <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
                 <ComboBoxItem>
                     <StackPanel Orientation="Horizontal">
