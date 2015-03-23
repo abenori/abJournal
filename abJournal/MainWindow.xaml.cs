@@ -100,16 +100,34 @@ namespace abJournal {
 
         BlockWndowsKey blockWindows = null;
         public MainWindow() {
+            bool topdf = false;
+            bool help = false;
             var opt = new NDesk.Options.OptionSet() {
                 {"getprotoschema","保存用.protoを作成．",var => {
                     using(var fs = new System.IO.StreamWriter(System.IO.Path.Combine(Environment.CurrentDirectory,"abJournal.proto"))){
                         fs.WriteLine(abJournalInkCanvasCollection.GetSchema());
                     }
                     Environment.Exit(0);
-                }}
+                }},
+                {"topdf","PDFファイルに変換",val => {topdf = (val != null);}},
+                {"help","ヘルプを表示",val =>{help = (val != null);}}
             };
             List<string> files = opt.Parse(Environment.GetCommandLineArgs());
             files.RemoveAt(0);
+            if(topdf) {
+                foreach(var f in files) {
+                    var pdf = Path.Combine(Path.GetDirectoryName(f), Path.GetFileNameWithoutExtension(f) + ".pdf");
+                    var c = new abJournalInkCanvasCollection();
+                    try {
+                        c.Open(f);
+                        c.SavePDF(pdf);
+                    }
+                    catch {
+                        MessageBox.Show(f + " のPDFへの変換に失敗．");
+                    }
+                }
+                Environment.Exit(0);
+            }
 
             InitializeComponent();
             DataContext = this;
