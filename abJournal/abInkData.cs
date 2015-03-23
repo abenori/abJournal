@@ -92,12 +92,14 @@ namespace abJournal {
             DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
             DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
             visual = new DrawingVisual();
+            visual.Transform = new MatrixTransform();
         }
         public StrokeData(StylusPointCollection spc, DrawingAttributes att, DrawingAttributesPlus attplus, DrawingAlgorithm algo, bool selecting = false)
             : base(spc, att.Clone()) {
             DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
             DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
             visual = new DrawingVisual();
+            visual.Transform = new MatrixTransform();
             Selected = selecting;
             drawingAttributesPlus = attplus;
             Algorithm = algo;

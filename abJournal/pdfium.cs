@@ -58,7 +58,7 @@ namespace abJournal {
                 }
             }
             public BitmapSource GetBitmapSource(Rect rect, double scale, Color background) {
-                const double scale_multiple = 2;
+                const double scale_multiple = 1.5;
                 var hdc = PInvoke.GetDC(IntPtr.Zero);
                 try {
                     double multx = PInvoke.GetDeviceCaps(hdc, PInvoke.DeviceCap.LOGPIXELSX) * scale * scale_multiple / 96;
@@ -69,13 +69,27 @@ namespace abJournal {
                     int y = (int) (rect.Top * multy);
                     var pdfbitmap = PInvoke.FPDFBitmap_Create(width, height, 0);
                     int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
-                    PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
-                    PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0x1);
-                    var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
-                    var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
-                    var bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
-                    PInvoke.FPDFBitmap_Destroy(pdfbitmap);
-                    return bitmap;
+                    try {
+                        PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
+                        PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0x1);
+                        var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
+                        var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
+                        BitmapSource bitmap = null;
+                        for(int i = 0 ; i < 2 ; ++i) {
+                            try {
+                                bitmap = BitmapSource.Create(width, height, 96 * scale_multiple, 96 * scale_multiple, PixelFormats.Bgr32, null, buf, height * stride, stride);
+                                break;
+                            }
+                            catch(OutOfMemoryException) {
+                                System.Diagnostics.Debug.WriteLine("OutOfMemory");
+                                GC.Collect();
+                            }
+                        }
+                        return bitmap;
+                    }
+                    finally {
+                        PInvoke.FPDFBitmap_Destroy(pdfbitmap);
+                    }
                 }
                 finally {
                     PInvoke.ReleaseDC(IntPtr.Zero, hdc);
@@ -84,6 +98,7 @@ namespace abJournal {
 
             public System.Windows.Media.Visual GetVisual(Rect rect, double scale,Color background) {
                 var bitmap = GetBitmapSource(rect, scale, background);
+                if(bitmap == null) return null;
                 bitmap.Freeze();
                 var rv = new System.Windows.Media.DrawingVisual();
                 using(var dc = rv.RenderOpen()) {
