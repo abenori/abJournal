@@ -130,6 +130,7 @@ namespace abJournal {
             }
 
             InitializeComponent();
+            abInkCanvas.ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
             DataContext = this;
             SetLowLevelKeyboardHook();
 
@@ -142,8 +143,6 @@ namespace abJournal {
             Panel.SetZIndex(mainCanvas, -4);
 
             ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
-            //ScaleComboBoxIndex = 3;// Scale = 1
-            //ScaleComboBoxIndex = 5;// Scale = 1
             CurrentPen = 0;
             mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
             mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
