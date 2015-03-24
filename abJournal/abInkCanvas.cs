@@ -219,9 +219,9 @@ namespace abJournal {
         }
 
         void Drawing(StylusPoint pt) {
-            // さぼることでHitTestを速くさせる．
             if(Mode == InkManipulationMode.Selecting) {
                 var prev = StrokeDrawingVisual.PrevPoint;
+	            // さぼることでHitTestを速くさせる．
                 if((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
             }
             InkData.ProcessPointerUpdate(pt);
@@ -250,46 +250,30 @@ namespace abJournal {
             double dashOffset = 0;
             DrawingGroup drawingGroup = null;
             Pen pen = null;
-
-            PathFigure pathFigure = null;
             public DrawingVisualLine(double thickness, Brush brush, DoubleCollection dash, bool ignpres) {
                 pen = new Pen(brush, thickness);
                 pen.DashStyle = new DashStyle(dash, 0);
                 pen.DashCap = PenLineCap.Flat;
                 pen.Freeze();
                 ignorePressure = ignpres;
-                if(ignorePressure) {
-                    var geom = new PathGeometry();
-                    pathFigure = new PathFigure();
-                    geom.Figures.Add(pathFigure);
-                    using(var dc = RenderOpen()) {
-                        dc.DrawGeometry(null, pen, geom);
-                    }
-                } else {
-                    drawingGroup = new DrawingGroup();
-                    using(var dc = RenderOpen()) {
-                        dc.DrawDrawing(drawingGroup);
-                    }
+                drawingGroup = new DrawingGroup();
+                using(var dc = RenderOpen()) {
+                    dc.DrawDrawing(drawingGroup);
                 }
             }
             public void StartPoint(StylusPoint pt) {
-                if(ignorePressure) pathFigure.StartPoint = pt.ToPoint();
                 PrevPoint = pt;
             }
             public void AddPoint(StylusPoint pt) {
-                if(ignorePressure) {
-                    pathFigure.Segments.Add(new LineSegment() { Point = pt.ToPoint(), IsSmoothJoin = true });
-                } else {
-                    var p = pen.Clone();
-                    p.Thickness *= pt.PressureFactor * 2;
-                    if(p.DashStyle.Dashes.Count > 0) {
-                        p.DashStyle.Offset = dashOffset;
-                        dashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / pen.Thickness;
-                    }
-                    p.Freeze();
-                    using(var dc = drawingGroup.Append()) {
-                        dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint());
-                    }
+                var p = pen.Clone();
+                if(!ignorePressure) p.Thickness *= pt.PressureFactor * 2;
+                if(p.DashStyle.Dashes.Count > 0) {
+                    p.DashStyle.Offset = dashOffset;
+                    dashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / pen.Thickness;
+                }
+                p.Freeze();
+                using(var dc = drawingGroup.Append()) {
+                    dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint());
                 }
                 PrevPoint = pt;
             }
