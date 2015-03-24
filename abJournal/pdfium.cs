@@ -152,7 +152,6 @@ namespace abJournal {
             [DllImport("pdfium.dll")]
             public static extern int FPDFBitmap_GetStride(IntPtr bitmap);
 
-
             [DllImport("user32.dll")]
             public static extern IntPtr GetDC(IntPtr hWnd);
             [DllImport("user32.dll")]

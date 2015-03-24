@@ -396,9 +396,10 @@ namespace abJournal {
                         var pt = new Point(xyohaku + hankei, yyohaku + hankei / 2);
                         double fontsize = GuessFontSize(info.Title, "游ゴシック", width, height);
                         var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
+                        var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
                         text.MaxTextWidth = width;
-                        text.MaxTextHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
-                        int n = (int) (height / text.MaxTextHeight);
+                        text.MaxTextHeight = textSize.Height;
+                        int n = (int) (textSize.Width / width) + 1;
                         pt.Y += (height - n * text.MaxTextHeight) / 2;
                         text.MaxTextHeight *= n;
                         dc.DrawText(text, pt);
@@ -480,26 +481,15 @@ namespace abJournal {
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
             var titlePath = new PdfSharp.Drawing.XGraphicsPath();
             if(info.ShowTitle) {
-                titlePath.StartFigure();
-                //titlePath.AddLine(xyohaku + hankei,yyohaku,c.Width - xyohaku - hankei, yyohaku);
-                titlePath.AddArc(c.Width - xyohaku - hankei, yyohaku, hankei, hankei, 270, 90);
-                titlePath.AddLine(c.Width - xyohaku, yyohaku + hankei, c.Width - xyohaku, yyohaku + hankei + height);
-                titlePath.AddArc(c.Width - xyohaku - hankei, yyohaku + hankei + height, hankei, hankei, 0, 90);
-                titlePath.AddLine(c.Width - xyohaku - hankei, yyohaku + 2 * hankei + height, xyohaku + hankei, yyohaku + 2 * hankei + height);
-                titlePath.AddArc(xyohaku, yyohaku + height + hankei, hankei, hankei, 90, 90);
-                titlePath.AddLine(xyohaku, yyohaku + hankei + height, xyohaku, yyohaku + hankei);
-                titlePath.AddArc(xyohaku, yyohaku, hankei, hankei, 180, 90);
-                titlePath.CloseFigure();
-                g.DrawPath(PdfSharp.Drawing.XPens.LightGray, titlePath);
-
+                g.DrawRoundedRectangle(PdfSharp.Drawing.XPens.LightGray, new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), new Size(hankei, hankei));
                 if(info.Title != null && info.Title != "") {
                     var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei / 2, c.Width - 2 * xyohaku - 2 * hankei, height);
                     double fontsize = GuessFontSize(info.Title, "游ゴシック", rect.Width, rect.Height);
                     // 真ん中に配置するための座標計算
-                    double textHeight = GetStringSize(info.Title, "游ゴシック", fontsize).Height;
-                    int n = (int) (rect.Height / textHeight);
-                    rect.Y += (rect.Height - n * textHeight) / 2;
-                    rect.Height = n * textHeight;
+                    var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
+                    int n = (int) (textSize.Width / rect.Width);
+                    rect.Y += (rect.Height - n * textSize.Height) / 2;
+                    rect.Height = n * textSize.Height;
                     var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", fontsize, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
                     var tf = new PdfSharp.Drawing.Layout.XTextFormatter(g);
                     tf.DrawString(info.Title, pdf_ja_font, PdfSharp.Drawing.XBrushes.Black, rect, PdfSharp.Drawing.XStringFormats.TopLeft);
