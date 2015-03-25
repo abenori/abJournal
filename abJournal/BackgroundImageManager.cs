@@ -67,10 +67,7 @@ namespace abJournal {
                 BackgroundPDFPage[c] = page;
                 c.ViewportChanged += Setviewport;
                 if(c.Viewport.Height != 0) {
-                    using(var pdfpage = page.GetPage()) {
-                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale,c.Info.BackgroundColor));
-                        c.Background = brush;
-                    }
+                    SetBackgroundImage(c, page);
                 } else c.Background = null;
             }
             public static void DisposeBackground(abJournalInkCanvas c){
@@ -80,16 +77,28 @@ namespace abJournal {
                 BackgroundPDFPage.Remove(c);
                 c.ViewportChanged -= Setviewport;
             }
+            static async void SetBackgroundImage(abJournalInkCanvas canvas,PDFPage page) {
+                using(var pdfpage = page.GetPage()) {
+                    double width = canvas.Width, height = canvas.Height;
+                    var backcolor = canvas.Info.BackgroundColor;
+                    canvas.Background = new SolidColorBrush(backcolor);
+                    var bitmap = await System.Threading.Tasks.Task.Run(() => {
+                        var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
+                        b.Freeze();
+                        return b;
+                    });
+                    var visual = new DrawingVisual();
+                    using(var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
+                    canvas.Background = new VisualBrush(visual);
+                }
+            }
 
             static void Setviewport(object sender, abInkCanvas.ViewportChangedEventArgs e) {                
                 //System.Diagnostics.Debug.WriteLine("page = " + BackgroundPDFPage[(abJournalInkCanvas) sender].PageNum.ToString() + ", old = " + e.OldViewport.ToString() + ", new = " + e.NewViewport.ToString());
                 if(e.OldViewport.Height == 0) {
                     if(e.NewViewport.Height != 0) {
                         var canvas = (abJournalInkCanvas) sender;
-                        using(var pdfpage = BackgroundPDFPage[canvas].GetPage()){
-                            var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, canvas.Width, canvas.Height), scale, canvas.Info.BackgroundColor));
-                            canvas.Background = brush;
-                        }
+                        SetBackgroundImage(canvas, BackgroundPDFPage[canvas]);
                     }
                 }else{
                     if(e.NewViewport.Height == 0){
@@ -106,10 +115,7 @@ namespace abJournal {
                         scale = newScale;
                         foreach(var c in BackgroundPDFPage) {
                             if(c.Key.Background != null) {
-                                using(var pdfpage = c.Value.GetPage()) {
-                                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Key.Width, c.Key.Height), scale, c.Key.Info.BackgroundColor));
-                                    c.Key.Background = brush;
-                                }
+                                SetBackgroundImage(c.Key, c.Value);
                                 //System.Diagnostics.Debug.WriteLine("Background changed because scale is changed");
                             }
                         }
