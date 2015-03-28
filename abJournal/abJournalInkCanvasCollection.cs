@@ -10,7 +10,7 @@ using System.IO.Compression;
 using System.ComponentModel;
 
 namespace abJournal {
-    public class abJournalInkCanvasCollection : abInkCanvasCollection<abJournalInkCanvas>,INotifyPropertyChanged {
+    public partial class abJournalInkCanvasCollection : abInkCanvasCollection<abJournalInkCanvas>,INotifyPropertyChanged,IDisposable {
         [ProtoContract(SkipConstructor = true)]
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
@@ -47,7 +47,7 @@ namespace abJournal {
         public abJournalInkCanvasCollection() {
             FileName = null;
             Info = new CanvasCollectionInfo() { ShowDate = true, ShowTitle = true };
-            PropertyChanged += BackgroundImageManager.PDFBackground.ScaleChanged;
+            PropertyChanged += BackgroundPDF.ScaleChanged;
         }
 
         #region Canvas追加
@@ -105,7 +105,7 @@ namespace abJournal {
                 switch(ext) {
                 case ".pdf": {
                         int oldCount = Count;
-                        BackgroundImageManager.LoadPDFFile(file, this);
+                        BackgroundPDF.LoadFile(file, this);
                         for(int i = 0 ; i < Count - oldCount ; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
                         }
@@ -113,7 +113,7 @@ namespace abJournal {
                     }
                 case ".xps": {
                         int oldCount = Count;
-                        BackgroundImageManager.LoadXPSFile(file, this);
+                        BackgroundXPS.LoadFile(file, this);
                         for(int i = 0 ; i < Count - oldCount ; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
                         }
@@ -188,7 +188,6 @@ namespace abJournal {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkData, c.Info));
             }
             data.Info = Info;
-            var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
             string tmpFile = null;
             if(File.Exists(file)) {
                 tmpFile = Path.GetTempFileName();
@@ -196,6 +195,7 @@ namespace abJournal {
                 File.Move(file, tmpFile);
             }
             try {
+                var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
                 using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
                     data.AttachedFiles = AttachedFile.Save(zip);
                     var mainEntry = zip.CreateEntry("_data.abjnt");
@@ -205,7 +205,9 @@ namespace abJournal {
                 }
             }
             catch(Exception e) {
-                File.Move(tmpFile, file);
+                System.Diagnostics.Debug.WriteLine(e.Message);
+                File.Delete(file);
+                if(tmpFile != null) File.Move(tmpFile, file);
                 throw e;
             }
 
@@ -583,5 +585,11 @@ namespace abJournal {
             }
         }
         #endregion
+
+        public void Dispose() {
+            foreach(var c in this) {
+                if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
+            }
+        }
     }
 }

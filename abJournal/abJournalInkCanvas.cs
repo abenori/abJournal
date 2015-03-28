@@ -6,9 +6,10 @@ using System.Threading.Tasks;
 using ProtoBuf;
 using System.Windows;
 using System.Windows.Media;
+using System.Text.RegularExpressions;
 
 namespace abJournal {
-    public class abJournalInkCanvas : abInkCanvas,IabInkCanvas{
+    public partial class abJournalInkCanvas : abInkCanvas,IabInkCanvas{
         // 必須
         public abJournalInkCanvas(abInkData d, double width, double height)
             : base(d, width, height) {
@@ -95,54 +96,45 @@ namespace abJournal {
             set { base.Height = value; Info.Size.Height = value; }
         }
 
-        public void SetBackground(Color color) {
-            CleanUpBrush();
-            Background = new SolidColorBrush(color);
-            Background.Freeze();
-            Info.BackgroundColor = color;
-            Info.BackgroundStr = "color";
-        }
         public void CleanUpBrush() {
-            var str = Info.BackgroundStr;
-            if(str == null) return;
-            if(str.StartsWith("image")) {
-                str = str.Substring("image:".Length);
-                if(str.StartsWith("xps:")) {
-                    BackgroundImageManager.XPSBackground.DisposeBackground(this);
-                } else if(str.StartsWith("pdf:")) {
-                    BackgroundImageManager.PDFBackground.DisposeBackground(this);
-                }
-            }
+            if(BackgroundData != null)BackgroundData.Dispose(this);
+            else Background = null;
         }
         public void SetBackgroundFromStr() {
             string str = Info.BackgroundStr;
-            if(str == null || str == "" || str == "color") SetBackground(Info.BackgroundColor);
-            else if(str.StartsWith("image:")) {
-                str = str.Substring("image:".Length);
-                if(str.StartsWith("xps:")) {
-                    str = str.Substring("xps:".Length);
-                    int r = str.IndexOf(":");
-                    try {
-                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, r))) {
-                            if(file != null) {
-                                int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
-                                BackgroundImageManager.XPSBackground.SetBackground(this, file, pageNumber);
-                            }
+            if(str == null || str == "" || str == "color") {
+                BackgroundColor.SetBackground(this, Info.BackgroundColor);
+                Info.BackgroundStr = "color";
+                return;
+            }
+            var SetBacks = new List<Tuple<Regex, Action<Match>>>(){
+                new Tuple<Regex,Action<Match>>(new Regex("^image:pdf:([^:]*):page=([0-9]+)$"),(m) =>{
+                    try { 
+                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                            int pageNumber = Int32.Parse(m.Groups[2].Value);
+                            BackgroundPDF.SetBackground(this, file, pageNumber);
                         }
                     }
-                    catch { }// file = nullなら無視する
-                } else if(str.StartsWith("pdf:")) {
-                    str = str.Substring("pdf:".Length);
-                    int r = str.IndexOf(":");
-                    try {
-                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, r))) {
-                            int pageNumber = Int32.Parse(str.Substring(r + "page=".Length + 1));
-                            BackgroundImageManager.PDFBackground.SetBackground(this, file, pageNumber);
+                    catch{}// 失敗したら無視．
+                }),
+                new Tuple<Regex,Action<Match>>(new Regex("^image:xps:([^:]*):page=([0-9]+)$"),(m) =>{
+                    try{
+                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                            int pageNumber = Int32.Parse(m.Groups[2].Value);
+                             BackgroundXPS.SetBackground(this, file, pageNumber);
                         }
                     }
-                    catch { }// file = nullなら無視する
-                } else throw new NotImplementedException();
-            } else throw new NotImplementedException();
+                    catch{}// 失敗したら無視．
+                })
+            };
+            foreach(var act in SetBacks) {
+                var m = act.Item1.Match(str);
+                if(m.Success) {
+                    act.Item2(m);
+                    return;
+                }
+            }
+            throw new NotImplementedException();
         }
         public new void RemovedFromView() {
             CleanUpBrush();
@@ -154,31 +146,31 @@ namespace abJournal {
         public abJournalInkCanvas GetPrintingCanvas(DrawingAlgorithm algo) {
             var r = new abJournalInkCanvas(InkData.Clone(), Info);
             r.InkData.DrawingAlgorithm = algo;
+            var SetBacks = new List<Tuple<Regex, Action<Match>>>(){
+                new Tuple<Regex,Action<Match>>(new Regex("^image:pdf:([^:]*):page=([0-9]+)$"),(m) =>{
+                    try { 
+                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                            int pageNumber = Int32.Parse(m.Groups[2].Value);
+                            BackgroundPDF.SetBackground_IgnoreViewport(r, file, pageNumber);
+                        }
+                    }
+                    catch{}// 失敗したら無視．
+                }),
+                new Tuple<Regex,Action<Match>>(new Regex("^image:xps:([^:]*):page=([0-9]+)$"),(m) =>{
+                    try{
+                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                            int pageNumber = Int32.Parse(m.Groups[2].Value);
+                            BackgroundXPS.SetBackground_IgnoreViewport(r, file, pageNumber);
+                        }
+                    }
+                    catch{}// 失敗したら無視．
+                })
+            };
             var str = Info.BackgroundStr;
-            if(str.StartsWith("image:")) {
-                str = str.Substring("image:".Length);
-                if(str.StartsWith("xps:")) {
-                    str = str.Substring("xps:".Length);
-                    int ri = str.IndexOf(":");
-                    try {
-                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
-                            if(file != null) {
-                                int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
-                                BackgroundImageManager.XPSBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
-                            }
-                        }
-                    }
-                    catch { }// file = nullなら無視する
-                } else if(str.StartsWith("pdf:")) {
-                    str = str.Substring("pdf:".Length);
-                    int ri = str.IndexOf(":");
-                    try {
-                        using(var file = AttachedFile.GetFileFromIdentifier(str.Substring(0, ri))) {
-                            int pageNumber = Int32.Parse(str.Substring(ri + "page=".Length + 1));
-                            BackgroundImageManager.PDFBackground.SetBackground_IgnoreViewport(r, file, pageNumber);
-                        }
-                    }
-                    catch { }// file = nullなら無視する
+            foreach(var act in SetBacks) {
+                var m = act.Item1.Match(str);
+                if(m.Success) {
+                    act.Item2(m);
                 }
             }
             r.ReDraw();

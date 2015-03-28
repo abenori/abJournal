@@ -503,7 +503,7 @@ namespace abJournal {
                 NewViewport = n;
             }
         }
-        private void OnViewportChanged(ViewportChangedEventArgs e) {
+        protected virtual void OnViewportChanged(ViewportChangedEventArgs e) {
             ViewportChanged(this, e);
             //System.Diagnostics.Debug.WriteLine("OnViewportChanged: old = " + e.OldViewport.ToString() + ", nwe = " + e.NewViewport.ToString());
         }

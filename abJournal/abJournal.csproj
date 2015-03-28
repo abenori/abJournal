@@ -104,7 +104,7 @@
     <Compile Include="AboutDialog.xaml.cs">
       <DependentUpon>AboutDialog.xaml</DependentUpon>
     </Compile>
-    <Compile Include="BackgroundImageManager.cs" />
+    <Compile Include="BackgroundManager.cs" />
     <Compile Include="Converters.cs" />
     <Compile Include="FileManager.cs" />
     <Compile Include="Hotkey.cs" />

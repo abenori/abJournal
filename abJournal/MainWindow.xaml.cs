@@ -23,7 +23,7 @@ namespace abJournal {
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged {
+    public partial class MainWindow : Window, INotifyPropertyChanged,IDisposable {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {
@@ -183,7 +183,9 @@ namespace abJournal {
         private void Window_Closing(object sender, CancelEventArgs e) {
             if(!BeforeClose()) e.Cancel = true;
         }
-
+        private void Window_Closed(object sender, EventArgs e) {
+            Dispose();
+        }
         private void Window_Loaded(object sender, RoutedEventArgs e) {
             if(mainCanvas.Count == 0)AddPage.Execute(null, this);
             mainCanvas.ClearUpdated();
@@ -550,6 +552,9 @@ namespace abJournal {
             }
             Properties.Settings.Default.Save();
             OnPropertyChanged("History");
+        }
+        public void Dispose() {
+            mainCanvas.Dispose();
         }
     }
 }
