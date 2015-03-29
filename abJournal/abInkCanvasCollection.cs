@@ -604,6 +604,11 @@ namespace abJournal {
         public void Paste() {
             CanvasCollection[CurrentPage].Paste();
         }
+        // スクリーン位置座標を渡す．
+        public void Paste(Point pt) {
+            var c = CanvasCollection[CurrentPage];
+            c.Paste(c.PointFromScreen(pt));
+        }
         public void Copy() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.Copy();
         }

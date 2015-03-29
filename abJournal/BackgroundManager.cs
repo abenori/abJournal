@@ -35,18 +35,17 @@ namespace abJournal {
         }
     }
 
+    #region PDF
     public class BackgroundPDF : BackgroundImage.BackgroundData {
         AttachedFile File = null;
         int PageNum = 0;
         BackgroundPDF(AttachedFile file, int pageNum) {
-            var doc = GetDocument(file);
             File = new AttachedFile(file);
             PageNum = pageNum;
         }
 
         static int GetPageCount(AttachedFile file) {
-            var doc = GetDocument(file);
-            return doc.GetPageCount();
+            return GetDocument(file).GetPageCount();
         }
         static pdfium.PDFDocument GetDocument(AttachedFile file) {
             if(PDFDOcuments.ContainsKey(file.FileName)) return PDFDOcuments[file.FileName];
@@ -168,6 +167,7 @@ namespace abJournal {
         }
         static Dictionary<string, pdfium.PDFDocument> PDFDOcuments = new Dictionary<string, pdfium.PDFDocument>();
     }
+    #endregion
 
     #region XPS
     public class BackgroundXPS : BackgroundImage.BackgroundData {

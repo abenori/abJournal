@@ -226,17 +226,32 @@ namespace abJournal {
                 foreach(var s in Strokes) s.Algorithm = value;
             }
         }
+        bool UpdatedUndoGroup(UndoGroup undo) {
+            foreach(var u in undo) {
+                if(UpdatedUndoCommand(u)) return true;
+            }
+            return false;
+        }
+        bool UpdatedUndoCommand(UndoCommand undo) {
+            var type = undo.GetType();
+            if(type != typeof(SelectChangeCommand)) {
+                if(type == typeof(UndoGroup)) {
+                    if(UpdatedUndoGroup((UndoGroup) undo)) return true;
+                } else return true;
+            }
+            return false;
+        }
         public bool Updated {
             get {
                 if(EditCount == 0) return false;
                 else if(EditCount > 0) {
 					for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i){
-                        if(!(UndoStack[i] is SelectChangeCommand)) return true;
+                        if(UpdatedUndoCommand(UndoStack[i])) return true;
                     }
                     return false;
                 } else {
 					for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i){
-                        if(!(RedoStack[i] is SelectChangeCommand)) return true;
+                        if(UpdatedUndoCommand(RedoStack[i])) return true;
                     }
                     return false;
                 }
@@ -259,8 +274,10 @@ namespace abJournal {
                     changed.Add(s);
                 }
             }
-            AddUndoList(new SelectChangeCommand(changed));
-            OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
+            if(changed.Count > 0) {
+                AddUndoList(new SelectChangeCommand(changed));
+                OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
+            }
         }
         public void SelectAll() {
             var changed = new StrokeDataCollection(Strokes.Where(s => {
@@ -269,8 +286,10 @@ namespace abJournal {
                     return true;
                 } else return false;
             }));
-            AddUndoList(new SelectChangeCommand(changed));
-            StrokeSelectedChanged(this, new StrokeChangedEventArgs(changed));
+            if(changed.Count > 0) {
+                AddUndoList(new SelectChangeCommand(changed));
+                StrokeSelectedChanged(this, new StrokeChangedEventArgs(changed));
+            }
         }
 
         // moveと言いながら拡大縮小もしてしまう．
@@ -289,8 +308,10 @@ namespace abJournal {
                     return true;
                 } else return false;
             }));
-            OnStrokeChanged(new StrokeChangedEventArgs(changed));
-            AddUndoList(new MoveStrokeCommand(changed, matrices));
+            if(changed.Count > 0) {
+                OnStrokeChanged(new StrokeChangedEventArgs(changed));
+                AddUndoList(new MoveStrokeCommand(changed, matrices));
+            }
         }
         public void DeleteSelected() {
             StrokeDataCollection deleted = new StrokeDataCollection();
@@ -301,8 +322,10 @@ namespace abJournal {
                 } else return false;
 
             });
-            OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
-            AddUndoList(new DeleteStrokeCommand(deleted));
+            if(deleted.Count > 0) {
+                OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
+                AddUndoList(new DeleteStrokeCommand(deleted));
+            }
         }
         public void ClearSelected() {
             var changed = new StrokeDataCollection(Strokes.Where(s => {
@@ -311,8 +334,10 @@ namespace abJournal {
                     return true;
                 }else return false;
             }));
-            OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
-            AddUndoList(new SelectChangeCommand(changed));
+            if(changed.Count > 0) {
+                OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
+                AddUndoList(new SelectChangeCommand(changed));
+            }
         }
         public StrokeDataCollection GetSelectedStrokes() {
             return new StrokeDataCollection(Strokes.Where(s => s.Selected));
@@ -436,7 +461,7 @@ namespace abJournal {
             void Combine(UndoCommand c);
         }
 
-        class UndoGroup : UndoCommand {
+        class UndoGroup : UndoCommand,IEnumerable<UndoCommand> {
             List<UndoCommand> Commands = new List<UndoCommand>();
             public int Count { get { return Commands.Count; } }
             public UndoGroup() { }
@@ -475,6 +500,8 @@ namespace abJournal {
                     else cmds.Add(undo.Commands[i]);
                 }
             }
+            public IEnumerator<UndoCommand> GetEnumerator() { return Commands.GetEnumerator(); }
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return Commands.GetEnumerator(); }
 
             // Commandも全部表示するようにしておく．Debug用．
             public override string ToString() {
@@ -636,14 +663,25 @@ namespace abJournal {
         public event UndoChainChangedEventhandelr UndoChainChanged = ((sender, t) => { });
         #endregion
 
+        public void Paste(Point pt) {
+            Paste(pt, true);
+        }
+
         public void Paste() {
+            Paste(new Point(0, 0), false);
+        }
+
+        void Paste(Point pt, bool delmargine) {
             ClearSelected();
-            Point basePoint = new Point(20, 20);
-            Matrix shift = new Matrix(1, 0, 0, 1, basePoint.X, basePoint.Y);
             //DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
+            var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
             if(Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
                 System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
                 StrokeCollection strokes = new StrokeCollection(stream);
+                if(delmargine) {
+                    var rect = strokes.GetBounds();
+                    shift.Translate(-rect.Left, -rect.Top);
+                }
                 var dattrplus = new DrawingAttributesPlus();
                 var strokeData = new StrokeDataCollection(strokes.Select(s => {
                     StrokeData sd = new StrokeData(s.StylusPoints, s.DrawingAttributes, dattrplus, DrawingAlgorithm, true);
@@ -655,6 +693,7 @@ namespace abJournal {
                 OnStrokeAdded(new StrokeChangedEventArgs(strokeData));
             }
         }
+
         public void Cut() {
             Copy();
             DeleteSelected();

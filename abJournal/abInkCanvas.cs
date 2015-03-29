@@ -449,6 +449,11 @@ namespace abJournal {
             InkData.Paste();
             InkData.EndUndoGroup();
         }
+        public void Paste(Point pt) {
+            InkData.BeginUndoGroup();
+            InkData.Paste(pt);
+            InkData.EndUndoGroup();
+        }
 
         public bool Undo() {
             return InkData.Undo();
@@ -525,6 +530,7 @@ namespace abJournal {
         void Copy();
         void Cut();
         void Paste();
+        void Paste(Point pt);
         bool Undo();
         bool Redo();
         event abInkData.UndoChainChangedEventhandelr UndoChainChanged;

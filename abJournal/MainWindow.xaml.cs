@@ -328,7 +328,11 @@ namespace abJournal {
             mainCanvas.SelectAll();
         }
         private void PasteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.Paste();
+            Point pt;
+            if(menuPosition != null)pt = menuPosition.Value;
+            else pt = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+            menuPosition = null;
+            mainCanvas.Paste(pt);
         }
         private void CopyCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.Copy();
@@ -439,7 +443,7 @@ namespace abJournal {
         private void ClearSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.ClearSelected();
         }
-
+        
         private void FirstPageExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.CurrentPage = 0;
         }
@@ -556,6 +560,12 @@ namespace abJournal {
         public void Dispose() {
             mainCanvas.Dispose();
         }
+
+        Point? menuPosition = null;
+        private void ContextMenu_Opened(object sender, RoutedEventArgs e) {
+            menuPosition = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+        }
+
     }
 }
 

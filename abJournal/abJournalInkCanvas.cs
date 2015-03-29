@@ -10,7 +10,6 @@ using System.Text.RegularExpressions;
 
 namespace abJournal {
     public partial class abJournalInkCanvas : abInkCanvas,IabInkCanvas{
-        // 必須
         public abJournalInkCanvas(abInkData d, double width, double height)
             : base(d, width, height) {
             Info = new InkCanvasInfo();
