@@ -564,6 +564,12 @@ namespace abJournal {
         Point? menuPosition = null;
         private void ContextMenu_Opened(object sender, RoutedEventArgs e) {
             menuPosition = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
+            mainCanvas.IsEnabled = false;
+        }
+
+        private void ContextMenu_Closed(object sender, RoutedEventArgs e) {
+            menuPosition = null;
+            mainCanvas.IsEnabled = true;
         }
 
     }

@@ -618,6 +618,9 @@ namespace abJournal {
         public void ClearSelected() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
         }
+        public bool IsSelected {
+            get { return SelectedRectTracker.IsVisible; }
+        }
         public bool Updated {
             get {
                 if(EditCount == 0) return false;

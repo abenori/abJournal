@@ -457,7 +457,7 @@ namespace abJournal {
         }
         interface UndoCommandComibinable : UndoCommand {
             // UndoCommand.Undoの呼び出しがかなり遅いっぽいので，
-            // undoGroupで使う場合に，くっつけられるUndoCommandはくっつけるようにする．
+            // UndoGroupで使う場合に，くっつけられるUndoCommandはくっつけるようにする．
             void Combine(UndoCommand c);
         }
 
