@@ -108,22 +108,16 @@ namespace abJournal {
             }
             var SetBacks = new List<Tuple<Regex, Action<Match>>>(){
                 new Tuple<Regex,Action<Match>>(new Regex("^image:pdf:([^:]*):page=([0-9]+)$"),(m) =>{
-                    try { 
-                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
-                            int pageNumber = Int32.Parse(m.Groups[2].Value);
-                            BackgroundPDF.SetBackground(this, file, pageNumber);
-                        }
+                    using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                        int pageNumber;
+                        if(Int32.TryParse(m.Groups[2].Value,out pageNumber)) BackgroundPDF.SetBackground(this, file, pageNumber);
                     }
-                    catch{}// 失敗したら無視．
                 }),
                 new Tuple<Regex,Action<Match>>(new Regex("^image:xps:([^:]*):page=([0-9]+)$"),(m) =>{
-                    try{
-                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
-                            int pageNumber = Int32.Parse(m.Groups[2].Value);
-                             BackgroundXPS.SetBackground(this, file, pageNumber);
-                        }
+                    using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                        int pageNumber;
+                        if(Int32.TryParse(m.Groups[2].Value, out pageNumber)) BackgroundXPS.SetBackground(this, file, pageNumber);
                     }
-                    catch{}// 失敗したら無視．
                 })
             };
             foreach(var act in SetBacks) {
@@ -147,22 +141,16 @@ namespace abJournal {
             r.InkData.DrawingAlgorithm = algo;
             var SetBacks = new List<Tuple<Regex, Action<Match>>>(){
                 new Tuple<Regex,Action<Match>>(new Regex("^image:pdf:([^:]*):page=([0-9]+)$"),(m) =>{
-                    try { 
-                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
-                            int pageNumber = Int32.Parse(m.Groups[2].Value);
-                            BackgroundPDF.SetBackground_IgnoreViewport(r, file, pageNumber);
-                        }
+                    using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                        int pageNumber;
+                        if(Int32.TryParse(m.Groups[2].Value, out pageNumber)) BackgroundPDF.SetBackground_IgnoreViewport(r, file, pageNumber);
                     }
-                    catch{}// 失敗したら無視．
                 }),
                 new Tuple<Regex,Action<Match>>(new Regex("^image:xps:([^:]*):page=([0-9]+)$"),(m) =>{
-                    try{
-                        using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
-                            int pageNumber = Int32.Parse(m.Groups[2].Value);
-                            BackgroundXPS.SetBackground_IgnoreViewport(r, file, pageNumber);
-                        }
+                    using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
+                        int pageNumber;
+                        if(Int32.TryParse(m.Groups[2].Value, out pageNumber)) BackgroundXPS.SetBackground_IgnoreViewport(r, file, pageNumber);
                     }
-                    catch{}// 失敗したら無視．
                 })
             };
             var str = Info.BackgroundStr;

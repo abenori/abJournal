@@ -127,8 +127,9 @@ namespace abJournal {
         static string GetNewIdentifier() {
             if(attachedFiles.Count == 0) return "0";
             return (attachedFiles.Select(d => {
-                try { return Int32.Parse(d.Key.Identifier); }
-                catch { return 0; }
+                int r;
+                if(Int32.TryParse(d.Key.Identifier, out r)) return r;
+                else return 0;
             }).Max() + 1).ToString();
         }
         static Dictionary<FileData, int> attachedFiles = new Dictionary<FileData, int>();

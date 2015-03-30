@@ -233,8 +233,8 @@ namespace abJournal {
                             if(r == -1) page = doc.AddPage();
                             else {
                                 var id = str.Substring(0, r);
-                                try {
-                                    var pagenum = Int32.Parse(str.Substring(r + "page=".Length + 1));
+                                int pagenum;
+                                if(Int32.TryParse(str.Substring(r + "page=".Length + 1), out pagenum)) {
                                     PdfSharp.Pdf.PdfDocument pdfdoc;
                                     if(documents.ContainsKey(id)) pdfdoc = documents[id];
                                     else {
@@ -245,8 +245,7 @@ namespace abJournal {
                                     }
                                     doc.AddPage(pdfdoc.Pages[pagenum]);
                                     page = doc.Pages[i];
-                                }
-                                catch(FormatException) {
+                                } else {
                                     page = doc.AddPage();
                                 }
                             }

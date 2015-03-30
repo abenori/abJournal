@@ -49,8 +49,9 @@ namespace abJournal {
             return (((int) value) + 1).ToString();
         }
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            try { return Int32.Parse((string) value) - 1; }
-            catch(FormatException) { return 0; }
+            int rv;
+            if(Int32.TryParse((string) value, out rv)) return rv - 1;
+            else return 0;
         }
     }
 
