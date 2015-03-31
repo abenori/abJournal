@@ -120,6 +120,7 @@
     <Compile Include="PenSetting.xaml.cs" />
     <Compile Include="RectTracker.cs" />
     <Compile Include="Settings.cs" />
+    <Compile Include="StrokeData.cs" />
     <Compile Include="SystemSetting.xaml.cs">
       <DependentUpon>SystemSetting.xaml</DependentUpon>
     </Compile>
