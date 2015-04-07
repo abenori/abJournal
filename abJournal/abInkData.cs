@@ -211,7 +211,7 @@ namespace abJournal {
         int EditCount = 0;
 
         List<UndoCommand> UndoStack = new List<UndoCommand>(), RedoStack = new List<UndoCommand>();
-        int MaxUndoSize = 1000;
+        public static int MaxUndoSize = 1000;
         void AddUndoList(UndoCommand undo) {
             if(undo is UndoGroup) {
                 if(((UndoGroup) undo).Count == 0) return;

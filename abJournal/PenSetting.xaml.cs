@@ -38,6 +38,7 @@ namespace abJournal {
             AddThicksToComboBox(Pen6Thickness_ComboBox);
             AddThicksToComboBox(Pen7Thickness_ComboBox);
         }
+
         private void AddThicksToComboBox(System.Windows.Controls.ComboBox combo) {
             for(int i = 0 ; i < thicks.Count() ; ++i) combo.Items.Add(thicks[i]);
         }

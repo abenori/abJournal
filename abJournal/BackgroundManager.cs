@@ -145,16 +145,14 @@ namespace abJournal {
             double scale = (double) 254 * Paper.mmToSize / (double) 720;
             //pageCount = 2;
             for(int i = 0 ; i < pageCount ; ++i) {
-                collection.AddCanvas();
-                var c = collection[collection.Count - 1];
                 var page = new BackgroundPDF(file, i);
                 using(var pdfpage = page.GetPage()) {
                     var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    c.Width = size.Width;
-                    c.Height = size.Height;
+                    collection.AddCanvas(new abInkData(),size,collection.Info.InkCanvasInfo.BackgroundColor);
                 }
+                var c = collection[collection.Count - 1];
                 SetBackground(c, page);
             }
         }
@@ -250,16 +248,13 @@ namespace abJournal {
             double scale = (double) 25.4 / (double) 96 * Paper.mmToSize;
             //pageCount = 2;
             for(int i = 0 ; i < pageCount ; ++i) {
-                collection.AddCanvas();
-                var c = collection[collection.Count - 1];
                 var page = new BackgroundXPS(file, i);
                 using(var pagedoc = page.GetPage()) {
                     var size = new Size(pagedoc.Size.Width * scale, pagedoc.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    c.Width = size.Width;
-                    c.Height = size.Height;
-                    SetBackground(c, page);
+                    collection.AddCanvas(new abInkData(),size,collection.Info.InkCanvasInfo.BackgroundColor);
+                    SetBackground(collection[collection.Count - 1], page);
                 }
             }
         }
@@ -271,6 +266,7 @@ namespace abJournal {
                 }
             }
         }
+
         static Dictionary<string, XpsDocument> XPSDocuments = new Dictionary<string, XpsDocument>();
     }
     #endregion

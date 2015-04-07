@@ -268,7 +268,6 @@ namespace abJournal {
         }
         public void InsertCanvas(abInkCanvasClass canvas, int index) {
             canvas.PropertyChanged += canvas_PropertyChanged;
-
             CanvasCollection.Insert(index, canvas);
             canvas.UndoChainChanged += InkCanvasCollection_UndoChainChanged;
             canvas.InkData.StrokeSelectedChanged += ((s, e) => { InkData_StrokeSelectedChanged(canvas, e); });
@@ -287,6 +286,7 @@ namespace abJournal {
             canvas.AddedToView();
             VerticalArrangeCanvas();
             Canvas.SetLeft(canvas, -canvas.Width / 2);
+            innerCanvas.Width = Math.Max(canvas.Width, innerCanvas.Width);
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
             if(CurrentPage == -1) CurrentPage = 0;
@@ -306,6 +306,7 @@ namespace abJournal {
             case "Width":
                 var c = (abInkCanvasClass)sender;
                 Canvas.SetLeft(c, -c.Width / 2);
+                innerCanvas.Width = CanvasCollection.Select(d => d.Width).Max();
                 break;
             default:
                 break;
@@ -315,11 +316,15 @@ namespace abJournal {
         public void DeleteCanvas(int index) {
             if(index < 0 || index >= CanvasCollection.Count) return;
             abInkCanvasClass ic = CanvasCollection[index];
+            ic.PropertyChanged -= canvas_PropertyChanged;
             CanvasCollection.RemoveAt(index);
             innerCanvas.Children.Remove(ic);
             ic.RemovedFromView();
             AddUndoChain(new DeleteCanvasCommand(ic, index));
             VerticalArrangeCanvas();
+            CalculateCurrentPage(true);
+            if(Count == 0) innerCanvas.Width = 0;
+            else innerCanvas.Width = CanvasCollection.Select(c => c.Width).Max();
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
             return;
@@ -544,6 +549,7 @@ namespace abJournal {
 
         List<UndoCommand> UndoStack = new List<UndoCommand>(), RedoStack = new List<UndoCommand>();
         int EditCount = 0;
+        public static int MaxUndoSize = 1000;
 
         void InkCanvasCollection_UndoChainChanged(object sender, EventArgs e) {
             AddUndoChain(new CanvasUndoCommand((abInkCanvasClass) sender));
@@ -557,7 +563,7 @@ namespace abJournal {
             UndoStack.Add(c);
             ++EditCount;
             OnUndoChainChanged(new UndoChainChangedEventArgs());
-            if(UndoStack.Count > 1000) UndoStack.RemoveAt(0);
+            if(UndoStack.Count > MaxUndoSize) UndoStack.RemoveAt(0);
         }
         public void ClearUndoChain() {
             RedoStack.Clear();
@@ -659,7 +665,7 @@ namespace abJournal {
 
         void CalculateCurrentPage(bool callSetPort) {
             if(Count == 0) {
-                currentPage = -1;
+                currentPage = 0;
                 return;
             }
             if(currentPage < 0) currentPage = 0;

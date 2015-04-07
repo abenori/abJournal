@@ -89,6 +89,7 @@ namespace abJournal {
             return null;
         }
         public void Dispose() {
+            if(data.FileName == null) throw new ObjectDisposedException("AttachedFile");
             --attachedFiles[data];
             data.FileName = null;
             data.OriginalFileName = null;
