@@ -14,7 +14,6 @@ namespace abJournal {
         [System.STAThreadAttribute()]
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static void Main() {
-            using(new BackgroundPDF.Finalizer())
             using(new BackgroundXPS.Finalizer()) {
                 abJournal.App app = new abJournal.App();
                 app.InitializeComponent();

@@ -45,19 +45,15 @@ namespace abJournal {
         }
 
         static int GetPageCount(AttachedFile file) {
-            return GetDocument(file).GetPageCount();
-        }
-        static pdfium.PDFDocument GetDocument(AttachedFile file) {
-            if(PDFDOcuments.ContainsKey(file.FileName)) return PDFDOcuments[file.FileName];
-            else {
-                var doc = new pdfium.PDFDocument(file.FileName);
-                PDFDOcuments[file.FileName] = doc;
-                return doc;
+            using(var doc = new pdfium.PDFDocument(file.FileName)) {
+                return doc.GetPageCount();
             }
         }
-
-        pdfium.PDFPage GetPage() {
-            return GetDocument(File).GetPage(PageNum);
+        pdfium.PDFDocument GetDoc() {
+            return new pdfium.PDFDocument(File.FileName);
+        }
+        pdfium.PDFPage GetPage(pdfium.PDFDocument doc) {
+            return doc.GetPage(PageNum);
         }
 
         static double scale = 1;
@@ -71,8 +67,9 @@ namespace abJournal {
                     scale = newScale;
                     foreach(var c in collection) {
                         if(c.Background != null) {
-                            if(c.BackgroundData is BackgroundPDF) {
-                                ((BackgroundPDF) c.BackgroundData).SetBackgroundImage(c);
+                            var bd = c.BackgroundData as BackgroundPDF;
+                            if(bd != null) { 
+                                bd.SetBackgroundImage(c);
                             }
                         }
                     }
@@ -89,18 +86,20 @@ namespace abJournal {
         }
 
         async void SetBackgroundImage(abJournalInkCanvas c) {
-            using(var pdfpage = GetPage()) {
-                double width = c.Width, height = c.Height;
-                var backcolor = c.Info.BackgroundColor;
-                var bitmap = await System.Threading.Tasks.Task.Run(() => {
-                    var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
-                    b.Freeze();
-                    return b;
-                });
-                var visual = new DrawingVisual();
-                using(var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
-                c.Background = new VisualBrush(visual);
-            }
+            double width = c.Width, height = c.Height;
+            var backcolor = c.Info.BackgroundColor;
+            var bitmap = await System.Threading.Tasks.Task.Run(() => {
+                using(var doc = GetDoc()) {
+                    using(var pdfpage = GetPage(doc)) {
+                        var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
+                        b.Freeze();
+                        return b;
+                    }
+                }
+            });
+            var visual = new DrawingVisual();
+            using(var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
+            c.Background = new VisualBrush(visual);
         }
 
         public void Dispose(abJournalInkCanvas c) {
@@ -131,9 +130,11 @@ namespace abJournal {
             BackgroundPDF page = null;
             try {
                 page = new BackgroundPDF(file, pageNum);
-                using(var pdfpage = page.GetPage()) {
-                    var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale, c.Info.BackgroundColor));
-                    c.Background = brush;
+                using(var doc = page.GetDoc()) {
+                    using(var pdfpage = page.GetPage(doc)) {
+                        var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale, c.Info.BackgroundColor));
+                        c.Background = brush;
+                    }
                 }
             }
             finally {
@@ -141,21 +142,24 @@ namespace abJournal {
             }
         }
         public static void LoadFile(AttachedFile file, abJournalInkCanvasCollection collection) {
-            int pageCount = BackgroundPDF.GetPageCount(file);
-            double scale = (double) 254 * Paper.mmToSize / (double) 720;
-            //pageCount = 2;
-            for(int i = 0 ; i < pageCount ; ++i) {
-                var page = new BackgroundPDF(file, i);
-                using(var pdfpage = page.GetPage()) {
-                    var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
-                    var ps = Paper.GetPaperSize(size);
-                    if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    collection.AddCanvas(new abInkData(),size,collection.Info.InkCanvasInfo.BackgroundColor);
+            using(var doc = new pdfium.PDFDocument(file.FileName)) {
+                int pageCount = doc.GetPageCount();
+                double scale = (double) 254 * Paper.mmToSize / (double) 720;
+                //pageCount = 2;
+                for(int i = 0 ; i < pageCount ; ++i) {
+                    var page = new BackgroundPDF(file, i);
+                    using(var pdfpage = doc.GetPage(i)){
+                        var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
+                        var ps = Paper.GetPaperSize(size);
+                        if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
+                        collection.AddCanvas(new abInkData(), size, collection.Info.InkCanvasInfo.BackgroundColor);
+                    }
+                    var c = collection[collection.Count - 1];
+                    SetBackground(c, page);
                 }
-                var c = collection[collection.Count - 1];
-                SetBackground(c, page);
             }
         }
+        /*
         public class Finalizer : IDisposable{
             public void Dispose() {
                 foreach(var doc in PDFDOcuments) {
@@ -164,6 +168,7 @@ namespace abJournal {
             }
         }
         static Dictionary<string, pdfium.PDFDocument> PDFDOcuments = new Dictionary<string, pdfium.PDFDocument>();
+         */ 
     }
     #endregion
 

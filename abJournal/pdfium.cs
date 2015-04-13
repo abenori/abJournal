@@ -22,10 +22,7 @@ namespace abJournal {
             }
             //static int pageloadednum = 0;
             public PDFPage GetPage(int pageNum) {
-                IntPtr p = PInvoke.FPDF_LoadPage(documentPtr, pageNum);
-                //{++pageloadednum;System.Diagnostics.Debug.WriteLine("PDFPageLoadPage: " + pageloadednum.ToString());}
-                if(p == IntPtr.Zero) throw new Exception();//後で直す
-                return new PDFPage(p);
+                return new PDFPage(documentPtr, pageNum);
             }
             public int GetPageCount() {
                 return PInvoke.FPDF_GetPageCount(documentPtr);
@@ -44,7 +41,11 @@ namespace abJournal {
             ~PDFDocument() { Dispose(); }
         }
         public class PDFPage : IDisposable {
-            public PDFPage(IntPtr p) {
+            public PDFPage(IntPtr doc, int pageNum) {
+                pagePtr = IntPtr.Zero;
+                IntPtr p = PInvoke.FPDF_LoadPage(doc, pageNum);
+                //{++pageloadednum;System.Diagnostics.Debug.WriteLine("PDFPageLoadPage: " + pageloadednum.ToString());}
+                if(p == IntPtr.Zero) throw new Exception();//後で直す
                 pagePtr = p;
             }
             IntPtr pagePtr;
@@ -71,7 +72,7 @@ namespace abJournal {
                     int col = (background.A << 24) | (background.R << 16) | (background.G << 8) | (background.B);
                     try {
                         PInvoke.FPDFBitmap_FillRect(pdfbitmap, 0, 0, width, height, (uint) col);
-                        PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0x1);
+                        PInvoke.FPDF_RenderPageBitmap(pdfbitmap, pagePtr, -x, -y, x + width, y + height, 0, 0);
                         var stride = PInvoke.FPDFBitmap_GetStride(pdfbitmap);
                         var buf = PInvoke.FPDFBitmap_GetBuffer(pdfbitmap);
                         BitmapSource bitmap = null;
