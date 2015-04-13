@@ -477,6 +477,49 @@ namespace abJournal {
         public event UndoChainChangedEventhandelr UndoChainChanged = ((sender, t) => { });
         #endregion
 
+        [Serializable]
+        struct StylusPointForCopy {
+            public double X, Y;
+            public float PressureFactor;
+        }
+        [Serializable]
+        class StrokeDataForCopy {
+            public List<StylusPointForCopy> StylusPoints = new List<StylusPointForCopy>();
+            public byte Red, Blue, Green, Alpha;
+            public double Width, Height;
+            public double[] DashArray;
+            public DrawingAlgorithm Algorithm;
+
+            public StrokeDataForCopy(StrokeData sdc) {
+                foreach(var pt in sdc.StylusPoints) {
+                    StylusPoints.Add(new StylusPointForCopy() { X = pt.X, Y = pt.Y, PressureFactor = pt.PressureFactor });
+                }
+                Red = sdc.DrawingAttributes.Color.R;
+                Blue = sdc.DrawingAttributes.Color.B;
+                Green = sdc.DrawingAttributes.Color.G;
+                Alpha = sdc.DrawingAttributes.Color.A;
+                Width = sdc.DrawingAttributes.Width;
+                Height = sdc.DrawingAttributes.Height;
+                DashArray = new double[sdc.DrawingAttributesPlus.DashArray.Count];
+                for(int i = 0 ; i < DashArray.Count() ; ++i) {
+                    DashArray[i] = sdc.DrawingAttributesPlus.DashArray[i];
+                }
+                Algorithm = sdc.algorithm;
+            }
+            public StrokeData ToOriginalType() {
+                var spc = new StylusPointCollection(StylusPoints.Select(s => new StylusPoint(s.X, s.Y, s.PressureFactor)));
+                var attr = new DrawingAttributes() {
+                    Color = Color.FromArgb(this.Alpha, this.Red, this.Green, this.Blue),
+                    Width = this.Width,
+                    Height = this.Height
+                };
+                var attrplus = new DrawingAttributesPlus() {
+                    DashArray = new DoubleCollection(this.DashArray)
+                };
+                return new StrokeData(spc,attr,attrplus,this.Algorithm);
+            }
+        }
+
         public void Paste(Point pt) {
             Paste(pt, true);
         }
@@ -489,7 +532,18 @@ namespace abJournal {
             ClearSelected();
             //DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
             var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
-            if(Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
+            StrokeDataCollection strokeData = null;
+            var dataObj = Clipboard.GetDataObject();
+            if(dataObj != null && dataObj.GetDataPresent(typeof(List<StrokeDataForCopy>))){
+                var data = (List<StrokeDataForCopy>) dataObj.GetData(typeof(List<StrokeDataForCopy>));
+                strokeData = new StrokeDataCollection(data.Select(d => d.ToOriginalType()));
+                if(delmargine) {
+                    var rect = strokeData.GetBounds();
+                    shift.Translate(-rect.Left, -rect.Top);
+                }
+                foreach(var s in strokeData) s.Transform(shift, true);
+            } else return;
+            if(strokeData == null && Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
                 System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
                 StrokeCollection strokes = new StrokeCollection(stream);
                 if(delmargine) {
@@ -497,11 +551,13 @@ namespace abJournal {
                     shift.Translate(-rect.Left, -rect.Top);
                 }
                 var dattrplus = new DrawingAttributesPlus();
-                var strokeData = new StrokeDataCollection(strokes.Select(s => {
+                strokeData = new StrokeDataCollection(strokes.Select(s => {
                     StrokeData sd = new StrokeData(s.StylusPoints, s.DrawingAttributes, dattrplus, DrawingAlgorithm, true);
                     sd.Transform(shift, true);
                     return sd;
                 }));
+            }
+            if(strokeData != null) {
                 Strokes.AddRange(strokeData);
                 AddUndoList(new AddStrokeCommand(strokeData));
                 OnStrokeAdded(new StrokeChangedEventArgs(strokeData));
@@ -514,14 +570,12 @@ namespace abJournal {
         }
         public void Copy() {
             System.IO.MemoryStream stream = new System.IO.MemoryStream();
-            StrokeCollection sc = new StrokeCollection();
-            foreach(var s in Strokes) {
-                if(s.Selected) {
-                    sc.Add(new Stroke(s.StylusPoints, s.DrawingAttributes));
-                }
-            }
+            StrokeCollection sc = new StrokeCollection(Strokes.Where(s => s.Selected).Select(s => new Stroke(s.StylusPoints, s.DrawingAttributes)));
             sc.Save(stream);
             DataObject obj = new DataObject(StrokeCollection.InkSerializedFormat, stream);
+
+            var sdc = new List<StrokeDataForCopy>(Strokes.Select(d => new StrokeDataForCopy(d)));
+            obj.SetData(typeof(List<StrokeDataForCopy>), sdc);
             Clipboard.SetDataObject(obj, true);
         }
 

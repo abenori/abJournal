@@ -359,89 +359,6 @@ namespace abJournal {
         }
     }
 
-    /*
-    partial class StrokeData {
-        // ベジェ曲線の制御点を返す関数．
-        // 中身は適当で，x,y座標がともにtの関数としてC^2になるようになっているだけ．
-        // 後は端点の2次導関数 = 0
-        // Stroke.GetGeometryで十分なので削除．
-        public void GetBezierControlPoint(out PointCollection pt1, out PointCollection pt2) {
-            
-            if(BezierControlPoints1 != null) {
-                pt1 = BezierControlPoints1;
-                pt2 = BezierControlPoints2;
-                return;
-            }
-            // 連立一次方程式を解いて，右側の点を計算していく
-            // こんなんだと思う
-            // 係数行列：
-            //  1 2/7
-            //  1   4   1
-            //  1   4   1
-            //  .....
-            //  1   4   1
-            //  1   2
-            //
-            // 右辺は点のx座標をx0,,,,x_Nとして
-            // (x0 + 8*x1)/7
-            // 2*x1 + 4*x2
-            // 2*x2 + 4*x3
-            // ....
-            // 2*x(N - 2) + 4*x(N - 1)
-            // xN + 2*x(N - 1)
-            // 
-            // y座標も同様
-            int N = StylusPoints.Count - 1;// 全部でN+1点
-            if(N == 0) {
-                pt1 = new PointCollection();
-                pt2 = new PointCollection();
-                return;
-            } else if(N == 1) {
-                pt1 = new PointCollection();
-                pt2 = new PointCollection();
-                pt1.Add(new Point((2 * StylusPoints[0].X + StylusPoints[1].X) / 3, (2 * StylusPoints[0].Y + StylusPoints[1].Y) / 3));
-                pt2.Add(new Point((StylusPoints[0].X + 2 * StylusPoints[1].X) / 3, (StylusPoints[0].Y + 2 * StylusPoints[1].Y) / 3));
-                return;
-            }
-            Point[] ctrlpt = new Point[StylusPoints.Count - 1];
-            double[] a = new double[StylusPoints.Count - 1];
-            ctrlpt[0].X = (StylusPoints[0].X + 8 * StylusPoints[1].X) / 7;
-            ctrlpt[0].Y = (StylusPoints[0].Y + 8 * StylusPoints[1].Y) / 7;
-            for(int i = 1 ; i <= N - 2 ; ++i) {
-                ctrlpt[i].X = 2 * StylusPoints[i].X + 4 * StylusPoints[i + 1].X;
-                ctrlpt[i].Y = 2 * StylusPoints[i].Y + 4 * StylusPoints[i + 1].Y;
-            }
-            ctrlpt[N - 1].X = 2 * StylusPoints[N - 1].X + StylusPoints[N].X;
-            ctrlpt[N - 1].Y = 2 * StylusPoints[N - 1].Y + StylusPoints[N].Y;
-            a[0] = 2.0 / 7;
-            for(int i = 0 ; i < N - 2 ; ++i) {
-                a[i + 1] = 1 / (4 - a[i]);
-                ctrlpt[i + 1].X = a[i + 1] * (ctrlpt[i + 1].X - ctrlpt[i].X);
-                ctrlpt[i + 1].Y = a[i + 1] * (ctrlpt[i + 1].Y - ctrlpt[i].Y);
-            }
-            a[N - 1] = 1 / (2 - a[N - 2]);
-            ctrlpt[N - 1].X = a[N - 1] * (ctrlpt[N - 1].X - ctrlpt[N - 2].X);
-            ctrlpt[N - 1].Y = a[N - 1] * (ctrlpt[N - 1].Y - ctrlpt[N - 2].Y);
-            for(int i = N - 2 ; i >= 0 ; --i) {
-                ctrlpt[i].X = ctrlpt[i].X - a[i] * ctrlpt[i + 1].X; 
-                ctrlpt[i].Y = ctrlpt[i].Y - a[i] * ctrlpt[i + 1].Y;
-            }
-            pt2 = new PointCollection(ctrlpt);
-            // もう一つ点は，今得た点をp，もう一つをqとした時
-            // p(i - 1) + qi = 2*xi ( 1 <= i <= N - 1)
-            // p0 - 2*q0 = -x0
-            // で計算する
-            for(int i = N - 1 ; i >= 1 ; --i) {
-                ctrlpt[i].X = 2 * StylusPoints[i].X - ctrlpt[i - 1].X;
-                ctrlpt[i].Y = 2 * StylusPoints[i].Y - ctrlpt[i - 1].Y;
-            }
-            ctrlpt[0].X = (ctrlpt[0].X + StylusPoints[0].X) / 2;
-            ctrlpt[0].Y = (ctrlpt[0].Y + StylusPoints[0].Y) / 2;
-            pt1 = new PointCollection(ctrlpt);
-            return;
-        }
-    }
-     */
     #endregion
 
     [ProtoContract]
@@ -449,6 +366,14 @@ namespace abJournal {
         public StrokeDataCollection() { }
         public StrokeDataCollection(int capacity) : base(capacity) { }
         public StrokeDataCollection(IEnumerable<StrokeData> collection) : base(collection) { }
+        public Rect GetBounds() {
+            if(Count == 0) return new Rect();
+            var rv = this[0].GetBounds();
+            for(int i = 1 ; i < Count ; ++i) {
+                rv.Union(this[i].GetBounds());
+            }
+            return rv;
+        }
     }
 
 
