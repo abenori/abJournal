@@ -39,20 +39,6 @@ namespace abJournal {
             }
         }
 
-        bool ignorePressure;
-        public bool IgnorePressure {
-            get { return ignorePressure; }
-            set {
-                if(PenID == 0) {
-                    if(ignorePressure != value) {
-                        ignorePressure = value;
-                        StrokeDrawingAttributes.IgnorePressure = value;
-                        foreach(var s in InkData.Strokes) s.DrawingAttributes.IgnorePressure = value;
-                    }
-                    OnPropertyChanged("IgnorePressure");
-                }
-            }
-        }
         DrawingAttributes StrokeDrawingAttributes = new DrawingAttributes();
         SolidColorBrush StrokeBrush = Brushes.Black;
         public Color PenColor {
@@ -150,7 +136,7 @@ namespace abJournal {
             InkData = d;
             Width = width; Height = height;
             PenThickness = 2;
-            ignorePressure = true;
+            InkData.IgnorePressure = true;
             PenColor = Colors.Black;
             Mode = InkManipulationMode.Inking;
             Background = Brushes.White;
@@ -526,7 +512,6 @@ namespace abJournal {
         DoubleCollection PenDashArray { get; set; }
         Color PenColor { get; set; }
         InkManipulationMode Mode { get; set; }
-        bool IgnorePressure { get; set; }
         void Copy();
         void Cut();
         void Paste();

@@ -108,7 +108,7 @@ namespace abJournal {
             set {
                 ignorePressure = value;
                 foreach(var c in CanvasCollection) {
-                    c.IgnorePressure = value;
+                    c.InkData.IgnorePressure = value;
                     c.ReDraw();
                 }
                 OnPropertyChanged("IgnorePressure");
@@ -295,7 +295,7 @@ namespace abJournal {
             d.DrawingAlgorithm = DrawingAlgorithm;
             //abInkCanvasClass canvas = new abInkCanvasClass(d, size.Width, size.Height);
             abInkCanvasClass canvas = (abInkCanvasClass) Activator.CreateInstance(typeof(abInkCanvasClass), d, size.Width, size.Height);
-            canvas.IgnorePressure = ignorePressure;
+            canvas.InkData.IgnorePressure = ignorePressure;
             canvas.Background = new SolidColorBrush(background);
             canvas.Background.Freeze();
             InsertCanvas(canvas, index);

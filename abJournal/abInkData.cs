@@ -22,7 +22,11 @@ namespace abJournal {
     public enum DrawingAlgorithm { dotNet = 0, Type1 = 1, Type1WithHosei = 2, Line = 3 };
 
     [ProtoContract]
-    public class abInkData {
+    public class abInkData : System.ComponentModel.INotifyPropertyChanged{
+        public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged = (s, e) => { };
+        private void OnPropertyChanged(string name) {
+            PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
+        }
         [ProtoMember(1)]
         public StrokeDataCollection Strokes { get; set; }
         [ProtoMember(2)]
@@ -36,8 +40,22 @@ namespace abJournal {
         public DrawingAlgorithm DrawingAlgorithm {
             get { return drawingAlgorithm; }
             set {
-                drawingAlgorithm = value;
-                foreach(var s in Strokes) s.Algorithm = value;
+                if(drawingAlgorithm != value) {
+                    drawingAlgorithm = value;
+                    foreach(var s in Strokes) s.Algorithm = value;
+                    OnPropertyChanged("DrawingAlgorithm");
+                }
+            }
+        }
+        bool ignorePressure = false;
+        public bool IgnorePressure {
+            get { return ignorePressure; }
+            set {
+                if(ignorePressure != value){
+                    ignorePressure = value;
+                    foreach(var s in Strokes) s.DrawingAttributes.IgnorePressure = value;
+                    OnPropertyChanged("IgnorePressure");
+                }
             }
         }
         bool UpdatedUndoGroup(UndoGroup undo) {
@@ -166,6 +184,7 @@ namespace abJournal {
         public void ProcessPointerDown(InkManipulationMode mode, DrawingAttributes attr, DrawingAttributesPlus dattrplus, StylusPoint point) {
             ProcessStylusPointCollection = new StylusPointCollection(point.Description); ;
             ProcessDrawingAttributes = attr.Clone();
+            ProcessDrawingAttributes.IgnorePressure = ignorePressure;
             ProcessMode = mode;
             ProcessDrawingAttributesPlus = dattrplus.Clone();
             ProcessUndoGroup = new UndoGroup();
@@ -488,7 +507,6 @@ namespace abJournal {
             public byte Red, Blue, Green, Alpha;
             public double Width, Height;
             public double[] DashArray;
-            public DrawingAlgorithm Algorithm;
 
             public StrokeDataForCopy(StrokeData sdc) {
                 foreach(var pt in sdc.StylusPoints) {
@@ -504,19 +522,19 @@ namespace abJournal {
                 for(int i = 0 ; i < DashArray.Count() ; ++i) {
                     DashArray[i] = sdc.DrawingAttributesPlus.DashArray[i];
                 }
-                Algorithm = sdc.algorithm;
             }
-            public StrokeData ToOriginalType() {
+            public StrokeData ToOriginalType(bool ignorePressure,DrawingAlgorithm algo) {
                 var spc = new StylusPointCollection(StylusPoints.Select(s => new StylusPoint(s.X, s.Y, s.PressureFactor)));
                 var attr = new DrawingAttributes() {
                     Color = Color.FromArgb(this.Alpha, this.Red, this.Green, this.Blue),
                     Width = this.Width,
-                    Height = this.Height
+                    Height = this.Height,
+                    IgnorePressure = ignorePressure
                 };
                 var attrplus = new DrawingAttributesPlus() {
                     DashArray = new DoubleCollection(this.DashArray)
                 };
-                return new StrokeData(spc,attr,attrplus,this.Algorithm);
+                return new StrokeData(spc, attr, attrplus, algo);
             }
         }
 
@@ -536,7 +554,11 @@ namespace abJournal {
             var dataObj = Clipboard.GetDataObject();
             if(dataObj != null && dataObj.GetDataPresent(typeof(List<StrokeDataForCopy>))){
                 var data = (List<StrokeDataForCopy>) dataObj.GetData(typeof(List<StrokeDataForCopy>));
-                strokeData = new StrokeDataCollection(data.Select(d => d.ToOriginalType()));
+                strokeData = new StrokeDataCollection(data.Select(d => {
+                    var r = d.ToOriginalType(IgnorePressure, DrawingAlgorithm);
+                    r.Selected = true;
+                    return r;
+                }));
                 if(delmargine) {
                     var rect = strokeData.GetBounds();
                     shift.Translate(-rect.Left, -rect.Top);
