@@ -549,7 +549,6 @@ namespace abJournal {
         void Paste(Point pt, bool delmargine) {
             ClearSelected();
             //DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
-            var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
             StrokeDataCollection strokeData = null;
             var dataObj = Clipboard.GetDataObject();
             if(dataObj != null && dataObj.GetDataPresent(typeof(List<StrokeDataForCopy>))){
@@ -559,27 +558,23 @@ namespace abJournal {
                     r.Selected = true;
                     return r;
                 }));
+            }
+            if(strokeData == null && Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
+                System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
+                StrokeCollection strokes = new StrokeCollection(stream);
+                var dattrplus = new DrawingAttributesPlus();
+                strokeData = new StrokeDataCollection(strokes.Select(s => {
+                    StrokeData sd = new StrokeData(s.StylusPoints, s.DrawingAttributes, dattrplus, DrawingAlgorithm, true);
+                    return sd;
+                }));
+            }
+            if(strokeData != null) {
+	            var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
                 if(delmargine) {
                     var rect = strokeData.GetBounds();
                     shift.Translate(-rect.Left, -rect.Top);
                 }
                 foreach(var s in strokeData) s.Transform(shift, true);
-            } else return;
-            if(strokeData == null && Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
-                System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
-                StrokeCollection strokes = new StrokeCollection(stream);
-                if(delmargine) {
-                    var rect = strokes.GetBounds();
-                    shift.Translate(-rect.Left, -rect.Top);
-                }
-                var dattrplus = new DrawingAttributesPlus();
-                strokeData = new StrokeDataCollection(strokes.Select(s => {
-                    StrokeData sd = new StrokeData(s.StylusPoints, s.DrawingAttributes, dattrplus, DrawingAlgorithm, true);
-                    sd.Transform(shift, true);
-                    return sd;
-                }));
-            }
-            if(strokeData != null) {
                 Strokes.AddRange(strokeData);
                 AddUndoList(new AddStrokeCommand(strokeData));
                 OnStrokeAdded(new StrokeChangedEventArgs(strokeData));

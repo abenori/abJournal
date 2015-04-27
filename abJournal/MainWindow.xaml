@@ -63,6 +63,9 @@
             <MenuItem Header="選択を解除" Command="{x:Static local:MainWindow.ClearSelection}"/>
         </ContextMenu>
     </Window.Resources>
+    <Window.InputBindings>
+        <KeyBinding Gesture="Esc" Command="{x:Static local:MainWindow.FullScreen}"/>
+    </Window.InputBindings>
     <DockPanel x:Name="MainPanel" Height="Auto" Width="Auto">
         <DockPanel DockPanel.Dock="Top" Panel.ZIndex="100" Background="{DynamicResource {x:Static SystemColors.ControlBrushKey}}">
         <Menu DockPanel.Dock="Top">
