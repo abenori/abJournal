@@ -604,15 +604,21 @@ namespace abJournal {
         public void Delete() {
             foreach(var c in CanvasCollection) c.InkData.DeleteSelected();
         }
+        public void SelectAll(int page) {
+            CanvasCollection[page].InkData.SelectAll();
+        }
         public void SelectAll() {
-            CanvasCollection[CurrentPage].InkData.SelectAll();
+            SelectAll(CurrentPage);
+        }
+        public void Paste(int page) {
+            CanvasCollection[page].Paste();
         }
         public void Paste() {
-            CanvasCollection[CurrentPage].Paste();
+            Paste(CurrentPage);
         }
         // スクリーン位置座標を渡す．
-        public void Paste(Point pt) {
-            var c = CanvasCollection[CurrentPage];
+        public void Paste(int page,Point pt) {
+            var c = CanvasCollection[page];
             c.Paste(c.PointFromScreen(pt));
         }
         public void Copy() {
@@ -655,6 +661,18 @@ namespace abJournal {
                 innerCanvas.Children.Remove(c);
             }
             CanvasCollection.Clear();
+        }
+
+        int GetPageFromClientPoint(Point pt) {
+            if(Count == 0) return 0;
+            var transpt = innerCanvas.RenderTransform.Inverse.Transform(pt);
+            for(int i = 1 ; i < Count ; ++i) {
+                if(transpt.Y < Canvas.GetTop(CanvasCollection[i])) return i - 1;
+            }
+            return Count - 1;
+        }
+        public int GetPageFromScreenPoint(Point pt) {
+            return GetPageFromClientPoint(innerCanvas.PointFromScreen(pt));
         }
 
         int currentPage = -1;

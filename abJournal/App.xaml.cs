@@ -14,10 +14,21 @@ namespace abJournal {
         [System.STAThreadAttribute()]
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static void Main() {
-            using(new BackgroundXPS.Finalizer()) {
-                abJournal.App app = new abJournal.App();
-                app.InitializeComponent();
-                app.Run();
+            try {
+                using(new BackgroundXPS.Finalizer()) {
+                    abJournal.App app = new abJournal.App();
+                    app.InitializeComponent();
+                    app.Run();
+                }
+            }
+            catch(Exception e) {
+                string me = System.IO.Path.GetFullPath(System.Reflection.Assembly.GetExecutingAssembly().Location).ToLower();
+                string outlog = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(me),System.IO.Path.GetFileNameWithoutExtension(me) + "_log.txt");
+                using(var fs = new System.IO.StreamWriter(outlog)) {
+                    fs.WriteLine("Message: " + e.Message);
+                    fs.WriteLine(e.StackTrace);
+                }
+                throw;
             }
         }
     }

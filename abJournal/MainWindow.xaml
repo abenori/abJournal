@@ -43,6 +43,7 @@
         <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToEraser}" Executed="ModeChangeToEraserCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.ModeChangeToSelection}" Executed="ModeChangeToSelectionCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.ClearSelection}" Executed="ClearSelectionCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.SelectAll}" Executed="SelectAllCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.OpenHistory}" Executed="OpenHistoryCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.ShowAboutDialog}" Executed="ShowAboutDialogCommandExecuted"/>
         <CommandBinding Command="{x:Static local:MainWindow.Import}" Executed="ImportCommandExecuted"/>
@@ -60,6 +61,7 @@
             <MenuItem Header="切り取り" Command="Cut"/>
             <MenuItem Header="貼り付け" Command="Paste"/>
             <MenuItem Header="新しいページ" Command="{x:Static local:MainWindow.AddPage}"/>
+            <MenuItem Header="現在のページを選択" Command="{x:Static local:MainWindow.SelectAll}"/>
             <MenuItem Header="選択を解除" Command="{x:Static local:MainWindow.ClearSelection}"/>
         </ContextMenu>
     </Window.Resources>

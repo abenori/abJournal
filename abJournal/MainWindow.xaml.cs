@@ -80,6 +80,9 @@ namespace abJournal {
                 else rv = System.IO.Path.GetFileName(mainCanvas.FileName);
                 if(mainCanvas.Updated) rv += " （更新）";
                 rv += "  abJournal";
+#if DEBUG
+                rv += " (Debug)";
+#endif
                 return rv;
             }
         }
@@ -324,15 +327,22 @@ namespace abJournal {
         private void CloseCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(BeforeClose()) Close();
         }
+        public static readonly RoutedCommand SelectAll = new RoutedCommand("SelectAll", typeof(MainWindow));
         private void SelectAllCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.SelectAll();
+            int page;
+            if(menuPosition != null) {
+                page = mainCanvas.GetPageFromScreenPoint(menuPosition.Value);
+                menuPosition = null;
+            } else page = mainCanvas.CurrentPage;
+            mainCanvas.SelectAll(page);
         }
         private void PasteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             Point pt;
             if(menuPosition != null)pt = menuPosition.Value;
             else pt = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
             menuPosition = null;
-            mainCanvas.Paste(pt);
+            var page = mainCanvas.GetPageFromScreenPoint(pt);
+            mainCanvas.Paste(mainCanvas.GetPageFromScreenPoint(pt), pt);
         }
         private void CopyCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.Copy();
@@ -443,7 +453,6 @@ namespace abJournal {
         private void ClearSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.ClearSelected();
         }
-        
         private void FirstPageExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.CurrentPage = 0;
         }
