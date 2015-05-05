@@ -341,7 +341,6 @@ namespace abJournal {
             if(menuPosition != null)pt = menuPosition.Value;
             else pt = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
             menuPosition = null;
-            var page = mainCanvas.GetPageFromScreenPoint(pt);
             mainCanvas.Paste(mainCanvas.GetPageFromScreenPoint(pt), pt);
         }
         private void CopyCommandExecuted(object sender, ExecutedRoutedEventArgs e) {

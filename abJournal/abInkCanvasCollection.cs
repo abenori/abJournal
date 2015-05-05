@@ -665,9 +665,8 @@ namespace abJournal {
 
         int GetPageFromClientPoint(Point pt) {
             if(Count == 0) return 0;
-            var transpt = innerCanvas.RenderTransform.Inverse.Transform(pt);
             for(int i = 1 ; i < Count ; ++i) {
-                if(transpt.Y < Canvas.GetTop(CanvasCollection[i])) return i - 1;
+                if(pt.Y < Canvas.GetTop(CanvasCollection[i])) return i - 1;
             }
             return Count - 1;
         }
