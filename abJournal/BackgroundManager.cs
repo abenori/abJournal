@@ -54,14 +54,13 @@ namespace abJournal {
                 var doc = new pdfium.PDFDocument(File.FileName);
                 PDFDOcuments[File.FileName] = doc;
                 return doc;
-            } else return PDFDOcuments[File.FileName];
+            }else return PDFDOcuments[File.FileName];
         }
         pdfium.PDFPage GetPage(pdfium.PDFDocument doc) {
             return doc.GetPage(PageNum);
         }
 
         static double scale = 1;
-
         public static void ScaleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
             if(e.PropertyName == "Scale") {
                 //System.Diagnostics.Debug.WriteLine("ScaleChanged");
@@ -86,13 +85,13 @@ namespace abJournal {
             c.BackgroundData = page;
         }
 
-        //static object lockObj = new object();
+        static object lockObj = new object();
         async void SetBackgroundImage(abJournalInkCanvas c) {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
-                var doc = GetDoc();
-                lock(doc) {
+                lock(lockObj){
+                    var doc = GetDoc();
                     using(var pdfpage = GetPage(doc)) {
                         var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
                         b.Freeze();
@@ -170,7 +169,6 @@ namespace abJournal {
                 }
             }
         }
-
         static Dictionary<string, pdfium.PDFDocument> PDFDOcuments = new Dictionary<string, pdfium.PDFDocument>();
     }
     #endregion
