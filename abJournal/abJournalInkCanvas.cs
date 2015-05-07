@@ -63,8 +63,9 @@ namespace abJournal {
             [ProtoMember(4)]
             public Color BackgroundColor { get; set; }
 
-            // Backgroundの種別を記述する．この操作はabInkCanvasManager内で完結させる．
+            // Backgroundの種別を記述する．この操作はabJournalInkCanvasCollection内で完結させる．
             // "color": BackgroundColor（から作られたSolidBrush）
+            // "image:pdf:(識別子):page=(ページ)": pdfファイルから作られたVisualBrush，ファイル名は(識別子)で管理される
             // "image:xps:(識別子):page=(ページ)": xpsファイルから作られたVisualBrush，ファイル名は(識別子)で管理される
             [ProtoMember(5)]
             public string BackgroundStr { get; set; }

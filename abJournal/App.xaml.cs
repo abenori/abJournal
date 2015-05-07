@@ -15,6 +15,7 @@ namespace abJournal {
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static void Main() {
             try {
+                using(new BackgroundPDF.Finalizer())
                 using(new BackgroundXPS.Finalizer()) {
                     abJournal.App app = new abJournal.App();
                     app.InitializeComponent();
@@ -22,13 +23,17 @@ namespace abJournal {
                 }
             }
             catch(Exception e) {
+#if DEBUG
                 string me = System.IO.Path.GetFullPath(System.Reflection.Assembly.GetExecutingAssembly().Location).ToLower();
                 string outlog = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(me),System.IO.Path.GetFileNameWithoutExtension(me) + "_log.txt");
-                using(var fs = new System.IO.StreamWriter(outlog)) {
+                MessageBox.Show("例外発生，" + outlog + "にログを出力します．");
+                using(var fs = new System.IO.StreamWriter(outlog,true)) {
+                    fs.WriteLine("時刻：" + DateTime.Now.ToString());
                     fs.WriteLine("Message: " + e.Message);
                     fs.WriteLine(e.StackTrace);
                 }
                 throw;
+#endif
             }
         }
     }

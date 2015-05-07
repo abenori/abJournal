@@ -50,7 +50,11 @@ namespace abJournal {
             }
         }
         pdfium.PDFDocument GetDoc() {
-            return new pdfium.PDFDocument(File.FileName);
+            if(!PDFDOcuments.ContainsKey(File.FileName)) {
+                var doc = new pdfium.PDFDocument(File.FileName);
+                PDFDOcuments[File.FileName] = doc;
+                return doc;
+            } else return PDFDOcuments[File.FileName];
         }
         pdfium.PDFPage GetPage(pdfium.PDFDocument doc) {
             return doc.GetPage(PageNum);
@@ -79,17 +83,16 @@ namespace abJournal {
 
         static void SetBackground(abJournalInkCanvas c, BackgroundPDF page) {
             if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
-            if(c.Viewport.Height != 0) {
-                page.SetBackgroundImage(c);
-            } else c.Background = null;
             c.BackgroundData = page;
         }
 
+        //static object lockObj = new object();
         async void SetBackgroundImage(abJournalInkCanvas c) {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
-                using(var doc = GetDoc()) {
+                var doc = GetDoc();
+                lock(doc) {
                     using(var pdfpage = GetPage(doc)) {
                         var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
                         b.Freeze();
@@ -159,7 +162,7 @@ namespace abJournal {
                 }
             }
         }
-        /*
+
         public class Finalizer : IDisposable{
             public void Dispose() {
                 foreach(var doc in PDFDOcuments) {
@@ -167,8 +170,8 @@ namespace abJournal {
                 }
             }
         }
+
         static Dictionary<string, pdfium.PDFDocument> PDFDOcuments = new Dictionary<string, pdfium.PDFDocument>();
-         */ 
     }
     #endregion
 
