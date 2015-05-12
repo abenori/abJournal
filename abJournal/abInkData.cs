@@ -476,9 +476,10 @@ namespace abJournal {
             public StrokeChangedEventArgs(IEnumerable<StrokeData> sdc) { Strokes = new StrokeDataCollection(sdc); }
         }
         public delegate void StrokeChangedEventHandler(object sender, StrokeChangedEventArgs e);
-        public event StrokeChangedEventHandler StrokeDeleted = ((sender, s) => { });
+        // Strokeが（例えば移動なので）変化した時に呼ばれる（StrokeCollectin.StrokeChangedとはちょっと違う．）
         public event StrokeChangedEventHandler StrokeChanged = ((sender, s) => { });
         public event StrokeChangedEventHandler StrokeAdded = ((sender, s) => { });
+        public event StrokeChangedEventHandler StrokeDeleted = ((sender, s) => { });
         public event StrokeChangedEventHandler StrokeSelectedChanged = ((sender, s) => { });
 
         public class TextChangedEventArgs : EventArgs {
@@ -600,13 +601,30 @@ namespace abJournal {
         }
         public void LoadSavingData(abJournal.Saving.InkData data) {
             Strokes = data.Strokes.ToOriginalType();
-            foreach(var s in Strokes) {
+            //foreach(var s in Strokes) {
                 //s.DrawingAttributesPlus.DashArray.Clear();
-            }
+            //}
             Texts = data.Texts.ToOriginalType();
         }
 
+        public void DrawTransparentText(PdfSharp.Drawing.XGraphics g, ContextNode node) {
+            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            if(node.Type == ContextNodeType.InkWord) {
+                var rect = node.Location.GetBounds();
+                var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", rect.Height, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
+                g.DrawString(((InkWordNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Transparent, rect.Left, rect.Bottom);
+            }
+            foreach(var n in node.SubNodes) DrawTransparentText(g, n);
+        }
+
         public void AddPdfGraphic(PdfSharp.Drawing.XGraphics g) {
+            var analyzer = new InkAnalyzer();
+            var strokes = new StrokeCollection(Strokes.Select(s => (Stroke) s));
+            analyzer.AddStrokes(strokes);
+            //analyzer.SetStrokesType(strokes, StrokeType.Writing);
+            analyzer.Analyze();
+            DrawTransparentText(g, analyzer.RootNode);
+
             foreach(var s in Strokes) {
                 var pen = new PdfSharp.Drawing.XPen(
                     PdfSharp.Drawing.XColor.FromArgb(
@@ -619,7 +637,7 @@ namespace abJournal {
                     pen.DashPattern = s.DrawingAttributesPlus.DashArray.ToArray();
                 }
                 pen.LineCap = PdfSharp.Drawing.XLineCap.Round;
-                g.DrawPath(pen, s.GetPDFPath());                
+                g.DrawPath(pen, s.GetPDFPath());           
             }
         }
 
@@ -753,7 +771,7 @@ namespace abJournal {
     }
 
     namespace Saving {
-        // 保存用のデータ構造
+        // 保存用のデータ構造（obsolete）
         public class StylusPoint {
             public float PressureFactor;
             public double X, Y;

@@ -15,7 +15,6 @@ namespace abJournal {
         [System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public static void Main() {
             try {
-                using(new BackgroundPDF.Finalizer())
                 using(new BackgroundXPS.Finalizer()) {
                     abJournal.App app = new abJournal.App();
                     app.InitializeComponent();
@@ -32,8 +31,8 @@ namespace abJournal {
                     fs.WriteLine("Message: " + e.Message);
                     fs.WriteLine(e.StackTrace);
                 }
-                throw;
 #endif
+                throw;
             }
         }
     }

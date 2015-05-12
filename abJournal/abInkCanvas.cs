@@ -76,6 +76,8 @@ namespace abJournal {
         }
         #endregion
 
+        
+
         // 一時退避
         InkManipulationMode SavedMode;
         void SaveMode() {
@@ -124,6 +126,7 @@ namespace abJournal {
                 SetCursor(Cursors.Cross); break;
             }
         }
+        // Curosr = とすればいいんだけど，気分的にSetCursor経由でカーソルの設定はすることにしたい．
         void SetCursor(Cursor c) {
             if(c != Cursor) Cursor = c;
         }
@@ -229,6 +232,7 @@ namespace abJournal {
             InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
         }
 
+		// ペンを走らせている時の描画を担当するクラス．
         class DrawingVisualLine : DrawingVisual {
             public StylusPoint PrevPoint;
             bool ignorePressure;
@@ -431,14 +435,10 @@ namespace abJournal {
         }
 
         public void Paste() {
-            InkData.BeginUndoGroup();
             InkData.Paste();
-            InkData.EndUndoGroup();
         }
         public void Paste(Point pt) {
-            InkData.BeginUndoGroup();
             InkData.Paste(pt);
-            InkData.EndUndoGroup();
         }
 
         public bool Undo() {
@@ -448,13 +448,15 @@ namespace abJournal {
         public bool Redo() {
             return InkData.Redo();
         }
+        
         public void ClearSelected() {
             InkData.ClearSelected();
         }
 
         #region FrameworkElementでの描画のため
-        VisualCollection StrokeChildren;
-        public VisualCollection Children;
+        // StrokeChldrenがChildrenより前に描画される．
+        VisualCollection StrokeChildren; // Stroke描画オブジェトをと入れる
+        public VisualCollection Children; // それ以外の描画オブジェクトを入れる．外部公開．
         Brush background;
         public Brush Background {
             get { return background; }

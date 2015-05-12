@@ -49,6 +49,7 @@ namespace abJournal {
                 return doc.GetPageCount();
             }
         }
+        /*
         pdfium.PDFDocument GetDoc() {
             if(!PDFDOcuments.ContainsKey(File.FileName)) {
                 var doc = new pdfium.PDFDocument(File.FileName);
@@ -58,7 +59,7 @@ namespace abJournal {
         }
         pdfium.PDFPage GetPage(pdfium.PDFDocument doc) {
             return doc.GetPage(PageNum);
-        }
+        }*/
 
         static double scale = 1;
         public static void ScaleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
@@ -90,12 +91,14 @@ namespace abJournal {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
+            	// 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
                 lock(lockObj){
-                    var doc = GetDoc();
-                    using(var pdfpage = GetPage(doc)) {
-                        var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
-                        b.Freeze();
-                        return b;
+                    using(var doc = new pdfium.PDFDocument(File.FileName)) {
+                        using(var pdfpage = doc.GetPage(PageNum)){
+                            var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
+                            b.Freeze();
+                            return b;
+                        }
                     }
                 }
             });
@@ -132,8 +135,8 @@ namespace abJournal {
             BackgroundPDF page = null;
             try {
                 page = new BackgroundPDF(file, pageNum);
-                using(var doc = page.GetDoc()) {
-                    using(var pdfpage = page.GetPage(doc)) {
+                using(var doc = new pdfium.PDFDocument(file.FileName)){
+                    using(var pdfpage = doc.GetPage(pageNum)){
                         var brush = new VisualBrush(pdfpage.GetVisual(new Rect(0, 0, c.Width, c.Height), scale, c.Info.BackgroundColor));
                         c.Background = brush;
                     }
@@ -162,6 +165,7 @@ namespace abJournal {
             }
         }
 
+        /*
         public class Finalizer : IDisposable{
             public void Dispose() {
                 foreach(var doc in PDFDOcuments) {
@@ -170,6 +174,7 @@ namespace abJournal {
             }
         }
         static Dictionary<string, pdfium.PDFDocument> PDFDOcuments = new Dictionary<string, pdfium.PDFDocument>();
+         */
     }
     #endregion
 

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="abJournal.MainWindow" 
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Height="auto" Width="auto"
+        Height="auto" Width="auto" MinHeight="100"
         Stylus.IsTapFeedbackEnabled="False" Stylus.IsPressAndHoldEnabled="False"
         Stylus.IsTouchFeedbackEnabled="False" Stylus.IsFlicksEnabled="False"
         SizeChanged="Window_SizeChanged"

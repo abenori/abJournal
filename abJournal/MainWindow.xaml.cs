@@ -218,12 +218,14 @@ namespace abJournal {
             if(fd.ShowDialog() == true) {
                 try {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
+                    WindowTitle = "保存中……";
                     if(ext == ".pdf") {
                         try {
                             mainCanvas.SavePDF(fd.FileName);
                         }
                         catch(Exception ex) {
                             MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
+                            WindowTitle = null;
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
@@ -231,9 +233,11 @@ namespace abJournal {
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
+                    WindowTitle = null;
                 }
                 catch(System.IO.IOException) {
                     MessageBox.Show("他のアプリケーションが\n" + fd.FileName + "\nを開いているようです．","abJournal");
+                    WindowTitle = null;
                 } 
                 OnPropertyChanged("abmainCanvas");
             }
