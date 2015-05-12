@@ -613,11 +613,13 @@ namespace abJournal {
                 var rect = node.Location.GetBounds();
                 var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", rect.Height, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
                 g.DrawString(((InkWordNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Transparent, rect.Left, rect.Bottom);
+                //g.DrawString(((InkWordNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Red, rect.Left, rect.Top);
             }
             foreach(var n in node.SubNodes) DrawTransparentText(g, n);
         }
 
         public void AddPdfGraphic(PdfSharp.Drawing.XGraphics g) {
+            if(Strokes.Count == 0) return;
             var analyzer = new InkAnalyzer();
             var strokes = new StrokeCollection(Strokes.Select(s => (Stroke) s));
             analyzer.AddStrokes(strokes);

@@ -371,6 +371,7 @@ namespace abJournal {
         #endregion
 
         #region タイトルとか描くやつ（PDF含）
+        // 周りの円弧を除いた部分がtitleheightになる．
         static void GetYohakuHankei(abInkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
             yyohaku = c.Width * 0.03;
@@ -391,11 +392,10 @@ namespace abJournal {
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
                 if(info.ShowTitle) {
                     dc.DrawRoundedRectangle(null, new Pen(Brushes.LightGray, 1), new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), hankei, hankei);
-
                     if(info.Title != null && info.Title != "") {
                         double width = c.Width - 2 * xyohaku - 2 * hankei;
-                        var pt = new Point(xyohaku + hankei, yyohaku + hankei / 2);
-                        double fontsize = GuessFontSize(info.Title, "游ゴシック", width, height);
+                        var pt = new Point(xyohaku + hankei, yyohaku + hankei);
+                        double fontsize = GuessFontSize(info.Title, "游ゴシック", width, height + hankei);
                         var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
                         var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
                         text.MaxTextWidth = width;
@@ -484,11 +484,11 @@ namespace abJournal {
             if(info.ShowTitle) {
                 g.DrawRoundedRectangle(PdfSharp.Drawing.XPens.LightGray, new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), new Size(hankei, hankei));
                 if(info.Title != null && info.Title != "") {
-                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei / 2, c.Width - 2 * xyohaku - 2 * hankei, height);
+                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei, c.Width - 2 * xyohaku - 2 * hankei, height);
                     double fontsize = GuessFontSize(info.Title, "游ゴシック", rect.Width, rect.Height);
                     // 真ん中に配置するための座標計算
                     var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
-                    int n = (int) (textSize.Width / rect.Width);
+                    int n = (int) (textSize.Width / rect.Width) + 1;
                     rect.Y += (rect.Height - n * textSize.Height) / 2;
                     rect.Height = n * textSize.Height;
                     var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", fontsize, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
