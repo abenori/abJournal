@@ -225,7 +225,6 @@ namespace abJournal {
                         }
                         catch(Exception ex) {
                             MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
-                            WindowTitle = null;
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
@@ -233,12 +232,13 @@ namespace abJournal {
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
-                    WindowTitle = null;
                 }
                 catch(System.IO.IOException) {
                     MessageBox.Show("他のアプリケーションが\n" + fd.FileName + "\nを開いているようです．","abJournal");
+                }
+                finally {
                     WindowTitle = null;
-                } 
+                }
                 OnPropertyChanged("abmainCanvas");
             }
         }

@@ -607,25 +607,39 @@ namespace abJournal {
             Texts = data.Texts.ToOriginalType();
         }
 
-        public void DrawTransparentText(PdfSharp.Drawing.XGraphics g, ContextNode node) {
-            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
-            if(node.Type == ContextNodeType.InkWord) {
-                var rect = node.Location.GetBounds();
-                var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", rect.Height, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
-                g.DrawString(((InkWordNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Transparent, rect.Left, rect.Bottom);
-                //g.DrawString(((InkWordNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Red, rect.Left, rect.Top);
-            }
-            foreach(var n in node.SubNodes) DrawTransparentText(g, n);
+        /*
+        void ShowNodes(ContextNode node, System.IO.StreamWriter fs, int indent) {
+            fs.WriteLine(new string('\t', indent) + node.ToString());
+            foreach(var n in node.SubNodes) ShowNodes(n, fs, indent + 1);
         }
+        */
 
         public void AddPdfGraphic(PdfSharp.Drawing.XGraphics g) {
             if(Strokes.Count == 0) return;
-            var analyzer = new InkAnalyzer();
-            var strokes = new StrokeCollection(Strokes.Select(s => (Stroke) s));
-            analyzer.AddStrokes(strokes);
-            //analyzer.SetStrokesType(strokes, StrokeType.Writing);
-            analyzer.Analyze();
-            DrawTransparentText(g, analyzer.RootNode);
+            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            using(var analyzer = new InkAnalyzer()) {
+                var strokes = new StrokeCollection(Strokes.Select(s => (Stroke) s));
+                analyzer.AddStrokes(strokes);
+                //analyzer.SetStrokesType(strokes, StrokeType.Writing);
+                analyzer.Analyze();
+                /*
+                using(var fs = new System.IO.StreamWriter(@"C:\Users\Abe_Noriyuki\Documents\vs\abJournal\abJournal\bin\Debug\test.txt")){
+                    ShowNodes(analyzer.RootNode, fs, 0);
+                }*/
+                var nodes = analyzer.FindNodesOfType(ContextNodeType.Line);
+                foreach(var node in nodes) {
+                    var rect = node.Location.GetBounds();
+                    var str = ((LineNode) node).GetRecognizedString();
+                    var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", rect.Height, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
+                    var size = g.MeasureString(str, pdf_ja_font);
+                    if(size.Width > rect.Width) {
+                        pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", rect.Height * rect.Width / size.Width, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
+                    }
+                    g.DrawString(((LineNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Transparent, new PdfSharp.Drawing.XRect(rect), PdfSharp.Drawing.XStringFormats.Center);
+                    //g.DrawString(((LineNode) node).GetRecognizedString(), pdf_ja_font, PdfSharp.Drawing.XBrushes.Red, new PdfSharp.Drawing.XRect(rect), PdfSharp.Drawing.XStringFormats.Center);
+                    //g.DrawRectangle(PdfSharp.Drawing.XPens.Blue,new PdfSharp.Drawing.XRect(rect));
+                }
+            }
 
             foreach(var s in Strokes) {
                 var pen = new PdfSharp.Drawing.XPen(

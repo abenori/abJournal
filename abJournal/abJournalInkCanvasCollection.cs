@@ -394,14 +394,14 @@ namespace abJournal {
                     dc.DrawRoundedRectangle(null, new Pen(Brushes.LightGray, 1), new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), hankei, hankei);
                     if(info.Title != null && info.Title != "") {
                         double width = c.Width - 2 * xyohaku - 2 * hankei;
-                        var pt = new Point(xyohaku + hankei, yyohaku + hankei);
+                        var pt = new Point(xyohaku + hankei, yyohaku);
                         double fontsize = GuessFontSize(info.Title, "游ゴシック", width, height + hankei);
                         var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
                         var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
                         text.MaxTextWidth = width;
                         text.MaxTextHeight = textSize.Height;
                         int n = (int) (textSize.Width / width) + 1;
-                        pt.Y += (height - n * text.MaxTextHeight) / 2;
+                        pt.Y += (height + hankei - n * text.MaxTextHeight) / 2;
                         text.MaxTextHeight *= n;
                         dc.DrawText(text, pt);
                     }
@@ -567,10 +567,17 @@ namespace abJournal {
         }
 
         public static double GuessFontSize(string str, string fontname, double width, double height) {
-            var size = GetStringSize(str, fontname, 10);
+            var size = GetStringSize(str, fontname, 100);
             int n = (int) Math.Sqrt(height * size.Width / (width * size.Height));
             // はみ出ることがあったので1ひいておく．
-            return 10 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height)) - 1;
+            var f = 100 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height));
+            // 必ずおさまるように……
+            while(f > 0) {
+                size = GetStringSize(str, fontname, f);
+                if(size.Width > width * n || n * size.Height > height) --f;
+                else return f;
+            }
+            return f + 1;
         }
         #endregion
 
