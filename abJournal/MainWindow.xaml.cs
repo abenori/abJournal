@@ -493,6 +493,8 @@ namespace abJournal {
         public static readonly RoutedCommand OpenHistory = new RoutedCommand("OpenHistory", typeof(MainWindow));
         private void OpenHistoryCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             string f = (string) e.Parameter;
+            f = f.Substring(f.IndexOf("(") + 1);
+            f = f.Substring(0, f.Length - 1);
             if(f != null) FileOpen(new List<string>() { f });
         }
         public static readonly RoutedCommand ShowAboutDialog = new RoutedCommand("ShowAboutDialog", typeof(MainWindow));

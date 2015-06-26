@@ -76,8 +76,6 @@ namespace abJournal {
         }
         #endregion
 
-        
-
         // 一時退避
         InkManipulationMode SavedMode;
         void SaveMode() {
@@ -277,6 +275,7 @@ namespace abJournal {
         const int TOUCH = 2;
         const int MOUSE = 3;
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
+            return;
             if(PenID != 0) return;
             if(TouchType != 0) return;
             var pt = e.GetPosition(this);
@@ -317,7 +316,7 @@ namespace abJournal {
             if(TouchType != 0) return;
             var pt = e.GetTouchPoint(this);
             //System.Diagnostics.Debug.WriteLine(pt.Size);
-            if(pt.Size.Width < 5 && pt.Size.Height < 5) {
+            if(pt.Size.Width < 5 && pt.Size.Height < 5) { // サイズが小さければペンだろう
                 DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
                 PenID = e.TouchDevice.Id;
                 TouchType = TOUCH;
@@ -345,6 +344,14 @@ namespace abJournal {
         }
         protected override void OnStylusInAirMove(StylusEventArgs e) {
             SetCursor();
+        }
+        protected override void OnStylusOutOfRange(StylusEventArgs e) {
+            SetCursor(null);
+            base.OnStylusOutOfRange(e);
+        }
+        protected override void OnStylusInRange(StylusEventArgs e) {
+            SetCursor();
+            base.OnStylusInRange(e);
         }
         protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
             if(PenID != 0) return;

@@ -55,6 +55,7 @@
         <local:IsErasingModeConverter x:Key="IsErasingModeConverter"/>
         <local:MakeDashArrayConverter x:Key="MakeDashArrayConverter"/>
         <local:IsSelectingModeCnverter x:Key="IsSelectingModeConverter"/>
+        <local:FileNameConverter x:Key="FileNameConverter"/>
         <ContextMenu x:Key="CanvasCollectionMenu" Opened="ContextMenu_Opened" Closed="ContextMenu_Closed">
             <MenuItem Header="削除" Command="Delete"/>
             <MenuItem Header="コピー" Command="Copy"/>
@@ -78,7 +79,7 @@
                     <MenuItem Header="名前をつけて保存(_A)" Command="SaveAs"/>
                     <MenuItem Header="インポート(_I)" Command="{x:Static local:MainWindow.Import}"/>
                     <MenuItem Header="印刷(_P)" Command="Print"/>
-                    <MenuItem Header="履歴(_L)" ItemsSource="{Binding History}" Command="{x:Static local:MainWindow.OpenHistory}">
+                    <MenuItem Header="履歴(_L)" ItemsSource="{Binding History,Converter={StaticResource FileNameConverter}}" Command="{x:Static local:MainWindow.OpenHistory}">
                         <MenuItem.ItemContainerStyle>
                             <Style TargetType="{x:Type MenuItem}">
                                 <Setter Property="Command" Value="{x:Static local:MainWindow.OpenHistory}"/>

@@ -74,4 +74,18 @@ namespace abJournal {
             throw new NotImplementedException();
         }
     }
+
+    class FileNameConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            var v = (System.Collections.Specialized.StringCollection) value;
+            var r = new System.Collections.Specialized.StringCollection();
+            for(int i = 1 ; i < v.Count ; ++i){
+                r.Add(System.IO.Path.GetFileNameWithoutExtension(v[i]) + " (" + v[i] + ")");
+            }
+            return r;
+        }
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            throw new NotImplementedException();
+        }
+    }
 }
