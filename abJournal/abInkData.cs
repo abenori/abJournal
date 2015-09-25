@@ -616,7 +616,8 @@ namespace abJournal {
 
         public void AddTextToPDFGrahic(PdfSharp.Drawing.XGraphics g) {
             if(Strokes.Count == 0) return;
-            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            //var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode);
             using(var analyzer = new InkAnalyzer()) {
                 var strokes = new StrokeCollection(Strokes.Select(s => (Stroke) s));
                 analyzer.AddStrokes(strokes);

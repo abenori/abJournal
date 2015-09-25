@@ -70,11 +70,13 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files\Reference Assemblies\Microsoft\Tablet PC\v1.7\IAWinFX.dll</HintPath>
     </Reference>
-    <Reference Include="PdfSharp-wpf">
-      <HintPath>..\packages\PDFsharp-wpf.1.50.3638-beta\lib\net30\PdfSharp-wpf.dll</HintPath>
+    <Reference Include="PdfSharp-wpf, Version=1.50.3915.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\PDFsharp-wpf.1.50.3915-beta2\lib\net30\PdfSharp-wpf.dll</HintPath>
+      <Private>True</Private>
     </Reference>
-    <Reference Include="PdfSharp.Charting-wpf">
-      <HintPath>..\packages\PDFsharp-wpf.1.50.3638-beta\lib\net30\PdfSharp.Charting-wpf.dll</HintPath>
+    <Reference Include="PdfSharp.Charting-wpf, Version=1.50.3915.0, Culture=neutral, PublicKeyToken=f94615aa0424f9eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\PDFsharp-wpf.1.50.3915-beta2\lib\net30\PdfSharp.Charting-wpf.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="protobuf-net, Version=2.0.0.668, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>

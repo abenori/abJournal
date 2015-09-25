@@ -479,7 +479,8 @@ namespace abJournal {
         }
 
         public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, abJournalInkCanvas c, CanvasCollectionInfo info) {
-            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            //var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
+            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode);
 
             double xyohaku, yyohaku, height, hankei;
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
