@@ -614,7 +614,7 @@ namespace abJournal {
         }
         */
 
-        public void AddPdfGraphic(PdfSharp.Drawing.XGraphics g) {
+        public void AddTextToPDFGrahic(PdfSharp.Drawing.XGraphics g) {
             if(Strokes.Count == 0) return;
             var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
             using(var analyzer = new InkAnalyzer()) {
@@ -641,6 +641,10 @@ namespace abJournal {
                 }
             }
 
+        }
+
+        public void AddPdfGraphic(PdfSharp.Drawing.XGraphics g) {
+            if(Strokes.Count == 0) return;
             foreach(var s in Strokes) {
                 var pen = new PdfSharp.Drawing.XPen(
                     PdfSharp.Drawing.XColor.FromArgb(

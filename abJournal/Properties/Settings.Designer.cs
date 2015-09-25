@@ -93,5 +93,17 @@ namespace abJournal.Properties {
                 this["IgnorePressure"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("True")]
+        public bool SaveTextToPDF {
+            get {
+                return ((bool)(this["SaveTextToPDF"]));
+            }
+            set {
+                this["SaveTextToPDF"] = value;
+            }
+        }
     }
 }

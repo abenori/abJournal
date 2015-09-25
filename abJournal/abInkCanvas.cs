@@ -150,6 +150,12 @@ namespace abJournal {
             InkData.StrokeChanged += InkData_StrokeChanged;
             InkData.StrokeSelectedChanged += InkData_StrokeSelectedChanged;
             InkData.UndoChainChanged += InkData_UndoChainChanged;
+
+            MouseLeftButtonDown += ((s, e) => { e.Handled = true; });
+            TouchDown += ((s, e) => {
+                var pt = e.GetTouchPoint(this);
+                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+            });
         }
 
         #region InkDataからの通知を受け取る
@@ -274,8 +280,11 @@ namespace abJournal {
         const int STYLUS = 1;
         const int TOUCH = 2;
         const int MOUSE = 3;
+        public new event MouseButtonEventHandler MouseLeftButtonDown = ((s, e) => { });
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
-            return;
+			base.OnMouseLeftButtonDown(e);
+            if(!e.Handled) MouseLeftButtonDown(this,e);
+            if(e.Handled) return;
             if(PenID != 0) return;
             if(TouchType != 0) return;
             var pt = e.GetPosition(this);
@@ -284,7 +293,11 @@ namespace abJournal {
             TouchType = MOUSE;
             e.Handled = true;
         }
+        public new event MouseEventHandler MouseMove = ((s, e) => { });
         protected override void OnMouseMove(MouseEventArgs e) {
+			base.OnMouseMove(e);
+            if(!e.Handled) MouseMove(this, e);
+            if(e.Handled) return;
             if(TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
                 var pt = e.GetPosition(this);
                 Drawing(new StylusPoint(pt.X, pt.Y));
@@ -293,7 +306,11 @@ namespace abJournal {
                 if(e.StylusDevice == null) SetCursor(null);
             }
         }
+        public new event MouseButtonEventHandler MouseLeftButtonUp = ((s, e) => { });
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
+            base.OnMouseLeftButtonUp(e);
+            if(!e.Handled) MouseLeftButtonUp(this, e);
+            if(e.Handled) return;
             if(TouchType != MOUSE) return;
             var pt = e.GetPosition(this);
             DrawingEnd(new StylusPoint(pt.X, pt.Y));
@@ -301,7 +318,11 @@ namespace abJournal {
             TouchType = 0;
             SetCursor(null);
         }
+        public new event MouseEventHandler MouseLeave = ((s, e) => { });
         protected override void OnMouseLeave(MouseEventArgs e) {
+            base.OnMouseLeave(e);
+            if(!e.Handled) MouseLeave(this, e);
+            if(e.Handled) return;
             if(e.LeftButton == MouseButtonState.Pressed) {
                 if(TouchType != MOUSE) return;
                 var pt = e.GetPosition(this);
@@ -310,27 +331,33 @@ namespace abJournal {
                 TouchType = 0;
             }
         }
+        public new event EventHandler<TouchEventArgs> TouchDown = ((s, e) => { });
         protected override void OnTouchDown(TouchEventArgs e) {
+            base.OnTouchDown(e);
+            if(!e.Handled) TouchDown(this, e);
+            if(e.Handled) { e.Handled = false; return; }
             SetCursor();
             if(PenID != 0) return;
             if(TouchType != 0) return;
             var pt = e.GetTouchPoint(this);
             //System.Diagnostics.Debug.WriteLine(pt.Size);
-            if(pt.Size.Width < 5 && pt.Size.Height < 5) { // サイズが小さければペンだろう
-                DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
-                PenID = e.TouchDevice.Id;
-                TouchType = TOUCH;
-                e.Handled = true;
-            }
+            DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
+            PenID = e.TouchDevice.Id;
+            TouchType = TOUCH;
+            e.Handled = true;
         }
+        public new event EventHandler<TouchEventArgs> TouchMove = ((s, e) => { });
         protected override void OnTouchMove(TouchEventArgs e) {
+            base.OnTouchMove(e);
+            if(!e.Handled) TouchMove(this, e);
+            if(e.Handled) return;
             if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
                 var pt = e.GetTouchPoint(this);
                 Drawing(new StylusPoint(pt.Position.X, pt.Position.Y));
                 e.Handled = true;
             }
         }
-        protected override void OnTouchUp(TouchEventArgs e) {
+        void OnTouchUpLeave(TouchEventArgs e) {
             if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
                 var pt = e.GetTouchPoint(this);
                 DrawingEnd(new StylusPoint(pt.Position.X, pt.Position.Y));
@@ -339,21 +366,46 @@ namespace abJournal {
                 e.Handled = true;
             }
         }
+        public new event EventHandler<TouchEventArgs> TouchUp = ((s, e) => { });
+        protected override void OnTouchUp(TouchEventArgs e) {
+            base.OnTouchUp(e);
+            if(!e.Handled) TouchUp(this, e);
+            if(e.Handled) return;
+            OnTouchUpLeave(e);
+        }
+        public new event EventHandler<TouchEventArgs> TouchLeave = ((s, e) => { });
         protected override void OnTouchLeave(TouchEventArgs e) {
-            OnTouchUp(e);
+            base.OnTouchLeave(e);
+            if(!e.Handled) TouchLeave(this, e);
+            if(e.Handled) return;
+            OnTouchUpLeave(e);
         }
+        public new event StylusEventHandler StylusInAirMove = ((s, e) => { });
         protected override void OnStylusInAirMove(StylusEventArgs e) {
+            base.OnStylusInAirMove(e);
+            if(!e.Handled) StylusInAirMove(this, e);
+            if(e.Handled) return;
             SetCursor();
         }
+        public new event StylusEventHandler StylusOutOfRange = ((s, e) => { });
         protected override void OnStylusOutOfRange(StylusEventArgs e) {
-            SetCursor(null);
             base.OnStylusOutOfRange(e);
+            if(!e.Handled) StylusOutOfRange(this, e);
+            if(e.Handled) return;
+            SetCursor(null);
         }
+        public new event StylusEventHandler StylusInRange = ((s, e) => { });
         protected override void OnStylusInRange(StylusEventArgs e) {
-            SetCursor();
             base.OnStylusInRange(e);
+            if(!e.Handled) StylusInRange(this, e);
+            if(e.Handled) return;
+            SetCursor();
         }
+        public new event StylusDownEventHandler StylusDown = ((s, e) => { });
         protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
+            base.OnStylusDown(e);
+            if(!e.Handled) StylusDown(this, e);
+            if(e.Handled) return;
             if(PenID != 0) return;
             if(TouchType != 0) return;
             //base.OnStylusDown(e);
@@ -377,7 +429,11 @@ namespace abJournal {
             DrawingStart(e.GetStylusPoints(this)[0]);
         }
 
+        public new event StylusEventHandler StylusMove = ((s, e) => { });
         protected override void OnStylusMove(System.Windows.Input.StylusEventArgs e) {
+            base.OnStylusMove(e);
+            if(!e.Handled) StylusMove(this, e);
+            if(e.Handled) return;
             if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
                 /*
                 System.Diagnostics.Debug.WriteLine("TouchMove");
@@ -392,7 +448,7 @@ namespace abJournal {
             Drawing(pt);
         }
 
-        protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+        void OnStylusUpLeave(System.Windows.Input.StylusEventArgs e) {
             if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
             if(PenID != e.StylusDevice.Id) return;
             if(TouchType != STYLUS) return;
@@ -401,8 +457,19 @@ namespace abJournal {
             DrawingEnd(e.GetStylusPoints(this)[0]);
             RestoreMode();
         }
+        public new event StylusEventHandler StylusUp = ((s, e) => { });
+        protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+            base.OnStylusUp(e);
+            if(!e.Handled) StylusUp(this, e);
+            if(e.Handled) return;
+            OnStylusUpLeave(e);
+        }
+        public new event StylusEventHandler StylusLeave = ((s, e) => { });
         protected override void OnStylusLeave(System.Windows.Input.StylusEventArgs e) {
-            OnStylusUp(e);
+            base.OnStylusLeave(e);
+            if(!e.Handled) StylusLeave(this, e);
+            if(e.Handled) return;
+            OnStylusUpLeave(e);
         }
         #endregion
 

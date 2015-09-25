@@ -104,7 +104,6 @@ namespace abJournal {
         // VisualはこのStrokeDataが生きている間有効
         // 各種データの変更により描画の結果は変わりうる．
         DrawingVisual visual;
-        static DrawingVisual testvisual = new DrawingVisual();
         public DrawingVisual Visual {
             get { UpdateVisual(); return visual; }
         }

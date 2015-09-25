@@ -174,7 +174,8 @@ namespace abJournal {
                 blockWindows = null;
             }
         }
-		class BlockWndowsKey : LowLevelKeyboardHook {
+
+        class BlockWndowsKey : LowLevelKeyboardHook {
 	        protected override void OnKeyDown(object sender, LowLevelKeyEventArgs e) {
 	            if(e.Key == Key.LWin) e.Handled = true;
 	        }

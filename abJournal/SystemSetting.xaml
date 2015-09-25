@@ -8,6 +8,7 @@
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
+            <RowDefinition Height="1*"/>
         </Grid.RowDefinitions>
         
         <StackPanel Grid.Row="0">
@@ -29,8 +30,9 @@
             </Grid>
         </StackPanel>
         <CheckBox Grid.Row="1" IsChecked="{Binding IgnorePressure}">筆圧を無視する（描画時）</CheckBox>
-        <CheckBox Grid.Row="2" IsChecked="{Binding IsBlockWindowsKey}">（左の）Windowsキーを無効化する</CheckBox>
-        <Grid Grid.Row="3">
+        <CheckBox Grid.Row="2" IsChecked="{Binding IsBlockWindowsKey}">（左の）Windows キーを無効化する</CheckBox>
+        <CheckBox Grid.Row="3" IsChecked="{Binding SaveTextToPDF}">PDF にテキスト情報を保存する</CheckBox>
+        <Grid Grid.Row="4">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>

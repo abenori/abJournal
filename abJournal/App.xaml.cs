@@ -25,12 +25,13 @@ namespace abJournal {
 #if DEBUG
                 string me = System.IO.Path.GetFullPath(System.Reflection.Assembly.GetExecutingAssembly().Location).ToLower();
                 string outlog = System.IO.Path.Combine(System.IO.Path.GetDirectoryName(me),System.IO.Path.GetFileNameWithoutExtension(me) + "_log.txt");
-                MessageBox.Show("例外発生，" + outlog + "にログを出力します．");
                 using(var fs = new System.IO.StreamWriter(outlog,true)) {
                     fs.WriteLine("時刻：" + DateTime.Now.ToString());
                     fs.WriteLine("Message: " + e.Message);
                     fs.WriteLine(e.StackTrace);
+                    fs.WriteLine("");
                 }
+                MessageBox.Show("例外発生，" + outlog + "にログを出力しました．");
 #endif
                 throw;
             }

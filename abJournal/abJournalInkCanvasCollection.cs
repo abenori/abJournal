@@ -287,6 +287,7 @@ namespace abJournal {
                         g.ScaleTransform(scale);
                         if(i == 0) DrawNoteContents(g, this[i], Info);
                         DrawRules(g, this[i], this[i].Info.HorizontalRule, this[i].Info.VerticalRule, (i == 0 && Info.ShowTitle));
+                        if(Properties.Settings.Default.SaveTextToPDF) this[i].InkData.AddTextToPDFGrahic(g);
                         this[i].InkData.AddPdfGraphic(g);
                     }
                     doc.Info.Creator = "abJournal";
