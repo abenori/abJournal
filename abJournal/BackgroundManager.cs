@@ -105,7 +105,7 @@ namespace abJournal {
             });
             var visual = new DrawingVisual();
             using(var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
-            c.Background = new VisualBrush(visual);
+            if (c.Viewport.Height != 0) c.Background = new VisualBrush(visual);
         }
 
         public void Dispose(abJournalInkCanvas c) {
