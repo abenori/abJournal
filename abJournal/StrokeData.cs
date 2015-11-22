@@ -345,17 +345,18 @@ namespace abJournal {
             ctrlpt2.Add(Points.Last().ToPoint());
         }
 
-        public PdfSharp.Drawing.XGraphicsPath GetPDFPath() {
-            var path = new PdfSharp.Drawing.XGraphicsPath();
+        public void DrawPath(iTextSharp.text.pdf.PdfWriter writer,double scale) {
             StylusPointCollection pts = MabikiPointsType1(StylusPoints, DrawingAttributes);
             PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
             GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
-            path.StartFigure();
-            for(int i = 0 ; i < pts.Count - 1 ; ++i) {
-                path.AddBezier(pts[i].X, pts[i].Y, cpt1[i].X, cpt1[i].Y, cpt2[i].X, cpt2[i].Y, pts[i + 1].X, pts[i + 1].Y);
+            writer.DirectContent.MoveTo(scale * pts[0].X, writer.PageSize.Height - scale * pts[0].Y);
+            for (int i = 0; i < pts.Count - 1; ++i) {
+                writer.DirectContent.CurveTo(scale*cpt1[i].X, writer.PageSize.Height - scale * cpt1[i].Y,
+                    scale * cpt2[i].X, writer.PageSize.Height - scale * cpt2[i].Y,
+                    scale * pts[i + 1].X, writer.PageSize.Height - scale * pts[i + 1].Y);
             }
-            return path;
-        }
+            writer.DirectContent.Stroke();
+       }
     }
 
     #endregion

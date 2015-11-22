@@ -10,7 +10,7 @@ using System.IO.Compression;
 using System.ComponentModel;
 
 namespace abJournal {
-    public partial class abJournalInkCanvasCollection : abInkCanvasCollection<abJournalInkCanvas>,INotifyPropertyChanged,IDisposable {
+    public partial class abJournalInkCanvasCollection : abInkCanvasCollection<abJournalInkCanvas>, INotifyPropertyChanged, IDisposable {
         [ProtoContract(SkipConstructor = true)]
         public class CanvasCollectionInfo {
             public CanvasCollectionInfo() {
@@ -37,7 +37,7 @@ namespace abJournal {
                 rv.ShowDate = ShowDate;
                 rv.ShowTitle = ShowTitle;
                 rv.InkCanvasInfo = InkCanvasInfo.DeepCopy();
-                if(Title != null) rv.Title = (string) Title.Clone();
+                if (Title != null) rv.Title = (string)Title.Clone();
                 return rv;
             }
         }
@@ -69,16 +69,16 @@ namespace abJournal {
         public void InsertCanvas(abInkData d, CanvasCollectionInfo info, abJournalInkCanvas.InkCanvasInfo inkcanvasinfo, int index) {
             var canvas = new abJournalInkCanvas(d, inkcanvasinfo);
             base.InsertCanvas(canvas, index);
-            if(index == 0) DrawNoteContents(canvas, info);
+            if (index == 0) DrawNoteContents(canvas, info);
             DrawRules(canvas, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
 
         public void ReDraw() {
-            for(int i = 0 ; i < Count ; ++i) {
+            for (int i = 0; i < Count; ++i) {
                 var c = this[i];
                 c.CleanUpBrush();
                 c.SetBackgroundFromStr();
-                if(i == 0) DrawNoteContents(c, Info);
+                if (i == 0) DrawNoteContents(c, Info);
                 DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
                 c.ReDraw();
             }
@@ -87,7 +87,7 @@ namespace abJournal {
 
         #region background関連
         public void SetBackgroundFromStr() {
-            foreach(var c in this) c.SetBackgroundFromStr();
+            foreach (var c in this) c.SetBackgroundFromStr();
         }
         #endregion
 
@@ -95,26 +95,28 @@ namespace abJournal {
         public void Import(string path) {
             // 全く更新がない時はインポートしたページのみにする
             bool newImport = false;
-            if(!Updated && FileName == null) {
+            if (!Updated && FileName == null) {
                 DeleteCanvas(0);
                 Info.ShowTitle = false;
                 newImport = true;
             }
-            using(var file = new AttachedFile(path)) {
+            using (var file = new AttachedFile(path)) {
                 var ext = System.IO.Path.GetExtension(path);
-                switch(ext) {
-                case ".pdf": {
+                switch (ext) {
+                case ".pdf":
+                    {
                         int oldCount = Count;
                         BackgroundPDF.LoadFile(file, this);
-                        for(int i = 0 ; i < Count - oldCount ; ++i) {
+                        for (int i = 0; i < Count - oldCount; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
                         }
                         break;
                     }
-                case ".xps": {
+                case ".xps":
+                    {
                         int oldCount = Count;
                         BackgroundXPS.LoadFile(file, this);
-                        for(int i = 0 ; i < Count - oldCount ; ++i) {
+                        for (int i = 0; i < Count - oldCount; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
                         }
                         break;
@@ -123,7 +125,7 @@ namespace abJournal {
                     throw new NotImplementedException();
                 }
             }
-            if(newImport) {
+            if (newImport) {
                 ClearUndoChain();
                 ClearUpdated();
             }
@@ -184,30 +186,30 @@ namespace abJournal {
         }
         public void Save(string file) {
             ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
-            foreach(var c in this) {
+            foreach (var c in this) {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkData, c.Info));
             }
             data.Info = Info;
             string tmpFile = null;
-            if(File.Exists(file)) {
+            if (File.Exists(file)) {
                 tmpFile = Path.GetTempFileName();
                 File.Delete(tmpFile);
                 File.Move(file, tmpFile);
             }
             try {
                 var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
-                using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
+                using (var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
                     data.AttachedFiles = AttachedFile.Save(zip);
                     var mainEntry = zip.CreateEntry("_data.abjnt");
-                    using(var ws = mainEntry.Open()) {
+                    using (var ws = mainEntry.Open()) {
                         model.Serialize(ws, data);
                     }
                 }
             }
-            catch(Exception e) {
+            catch (Exception e) {
                 System.Diagnostics.Debug.WriteLine(e.Message);
                 File.Delete(file);
-                if(tmpFile != null) File.Move(tmpFile, file);
+                if (tmpFile != null) File.Move(tmpFile, file);
                 throw e;
             }
 
@@ -216,117 +218,120 @@ namespace abJournal {
                 //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
                 model.Serialize(wfs, data);
             }*/
-            if(tmpFile != null) File.Delete(tmpFile);
+            if (tmpFile != null) File.Delete(tmpFile);
             FileName = file;
         }
 
         public void SavePDF(string file) {
-            double scale = (double) 720 / (double) 254 / Paper.mmToSize;
-            var documents = new Dictionary<string, PdfSharp.Pdf.PdfDocument>();
+            double scale = (double)720 / (double)254 / Paper.mmToSize;
+            var documents = new Dictionary<string, iTextSharp.text.pdf.PdfReader>();
+            FileStream fw = null;
+            iTextSharp.text.Document doc = null;
+            iTextSharp.text.pdf.PdfWriter writer = null;
             try {
-                using(var doc = new PdfSharp.Pdf.PdfDocument()) {
-                    for(int i = 0 ; i < Count ; ++i) {
-                        PdfSharp.Pdf.PdfPage page;
-                        if(this[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
-                            var str = this[i].Info.BackgroundStr.Substring("image:pdf:".Length);
-                            var r = str.IndexOf(":");
-                            if(r == -1) page = doc.AddPage();
-                            else {
-                                var id = str.Substring(0, r);
-                                int pagenum;
-                                if(Int32.TryParse(str.Substring(r + "page=".Length + 1), out pagenum)) {
-                                    PdfSharp.Pdf.PdfDocument pdfdoc;
-                                    if(documents.ContainsKey(id)) pdfdoc = documents[id];
-                                    else {
-                                        using(var f = AttachedFile.GetFileFromIdentifier(id)) {
-                                            pdfdoc = PdfSharp.Pdf.IO.PdfReader.Open(f.FileName, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
-                                            documents[id] = pdfdoc;
-                                        }
-                                    }
-                                    doc.AddPage(pdfdoc.Pages[pagenum]);
-                                    page = doc.Pages[i];
-                                } else {
-                                    page = doc.AddPage();
-                                }
-                            }
-                        }else page = doc.AddPage();
-                        var ps = Paper.GetPaperSize(new Size(this[i].Width, this[i].Height));
-                        // 1 = 1/72インチ = 25.4/72 mm
-                        switch(ps) {
-                        case Paper.PaperSize.A0: page.Size = PdfSharp.PageSize.A0; break;
-                        case Paper.PaperSize.A1: page.Size = PdfSharp.PageSize.A1; break;
-                        case Paper.PaperSize.A2: page.Size = PdfSharp.PageSize.A2; break;
-                        case Paper.PaperSize.A3: page.Size = PdfSharp.PageSize.A3; break;
-                        case Paper.PaperSize.A4: page.Size = PdfSharp.PageSize.A4; break;
-                        case Paper.PaperSize.A5: page.Size = PdfSharp.PageSize.A5; break;
-                        case Paper.PaperSize.B0: page.Size = PdfSharp.PageSize.B0; break;
-                        case Paper.PaperSize.B1: page.Size = PdfSharp.PageSize.B1; break;
-                        case Paper.PaperSize.B2: page.Size = PdfSharp.PageSize.B2; break;
-                        case Paper.PaperSize.B3: page.Size = PdfSharp.PageSize.B3; break;
-                        case Paper.PaperSize.B4: page.Size = PdfSharp.PageSize.B4; break;
-                        case Paper.PaperSize.B5: page.Size = PdfSharp.PageSize.B5; break;
-                        case Paper.PaperSize.Letter: page.Size = PdfSharp.PageSize.Letter; break;
-                        case Paper.PaperSize.Tabloid: page.Size = PdfSharp.PageSize.Tabloid; break;
-                        case Paper.PaperSize.Ledger: page.Size = PdfSharp.PageSize.Ledger; break;
-                        case Paper.PaperSize.Legal: page.Size = PdfSharp.PageSize.Legal; break;
-                        case Paper.PaperSize.Folio: page.Size = PdfSharp.PageSize.Folio; break;
-                        case Paper.PaperSize.Quarto: page.Size = PdfSharp.PageSize.Quarto; break;
-                        case Paper.PaperSize.Executive: page.Size = PdfSharp.PageSize.Executive; break;
-                        case Paper.PaperSize.Statement: page.Size = PdfSharp.PageSize.Statement; break;
-                        case Paper.PaperSize.Other:
-                            page.Width = this[i].Width * scale;
-                            page.Height = this[i].Height * scale;
-                            break;
-                        default:
-                            var s = Paper.GetmmSize(ps);
-                            page.Width = s.Width * 720 / 254;
-                            page.Height = s.Height * 720 / 254;
-                            break;
-                        }
-                        var g = PdfSharp.Drawing.XGraphics.FromPdfPage(page);
-                        g.ScaleTransform(scale);
-                        if(i == 0) DrawNoteContents(g, this[i], Info);
-                        DrawRules(g, this[i], this[i].Info.HorizontalRule, this[i].Info.VerticalRule, (i == 0 && Info.ShowTitle));
-                        if(Properties.Settings.Default.SaveTextToPDF) this[i].InkData.AddTextToPDFGrahic(g);
-                        this[i].InkData.AddPdfGraphic(g);
+                fw = new FileStream(file, FileMode.Create, FileAccess.Write);
+                for (int i = 0; i < Count; ++i) {
+                    var ps = Paper.GetPaperSize(new Size(this[i].Width, this[i].Height));
+                    iTextSharp.text.Rectangle pagesize;
+                    // 1 = 1/72インチ = 25.4/72 mm
+                    switch (ps) {
+                    case Paper.PaperSize.A0: pagesize = iTextSharp.text.PageSize.A0; break;
+                    case Paper.PaperSize.A1: pagesize = iTextSharp.text.PageSize.A1; break;
+                    case Paper.PaperSize.A2: pagesize = iTextSharp.text.PageSize.A2; break;
+                    case Paper.PaperSize.A3: pagesize = iTextSharp.text.PageSize.A3; break;
+                    case Paper.PaperSize.A4: pagesize = iTextSharp.text.PageSize.A4; break;
+                    case Paper.PaperSize.A5: pagesize = iTextSharp.text.PageSize.A5; break;
+                    case Paper.PaperSize.B0: pagesize = iTextSharp.text.PageSize.B0; break;
+                    case Paper.PaperSize.B1: pagesize = iTextSharp.text.PageSize.B1; break;
+                    case Paper.PaperSize.B2: pagesize = iTextSharp.text.PageSize.B2; break;
+                    case Paper.PaperSize.B3: pagesize = iTextSharp.text.PageSize.B3; break;
+                    case Paper.PaperSize.B4: pagesize = iTextSharp.text.PageSize.B4; break;
+                    case Paper.PaperSize.B5: pagesize = iTextSharp.text.PageSize.B5; break;
+                    case Paper.PaperSize.Letter: pagesize = iTextSharp.text.PageSize.LETTER; break;
+                    case Paper.PaperSize.Tabloid: pagesize = iTextSharp.text.PageSize.TABLOID; break;
+                    case Paper.PaperSize.Ledger: pagesize = iTextSharp.text.PageSize.LEDGER; break;
+                    case Paper.PaperSize.Legal: pagesize = iTextSharp.text.PageSize.LEGAL; break;
+                    //case Paper.PaperSize.Folio: pagesize = iTextSharp.text.PageSize.; break;
+                    //case Paper.PaperSize.Quarto: pagesize = iTextSharp.text.PageSize.QUARTO; break;
+                    case Paper.PaperSize.Executive: pagesize = iTextSharp.text.PageSize.EXECUTIVE; break;
+                    //case Paper.PaperSize.Statement: pagesize = iTextSharp.text.PageSize.STATEMENT; break;
+                    case Paper.PaperSize.Other:
+                        pagesize = new iTextSharp.text.Rectangle((float)(this[i].Width * scale), (float)(this[i].Height * scale));
+                        break;
+                    default:
+                        var s = Paper.GetmmSize(ps);
+                        pagesize = new iTextSharp.text.Rectangle((float)s.Width * 720 / 254, (float)s.Height * 720 / 254);
+                        break;
                     }
-                    doc.Info.Creator = "abJournal";
-                    doc.Info.Title = Info.Title;
-                    doc.Info.CreationDate = Info.Date;
-                    doc.Info.ModificationDate = DateTime.Now;
-                    doc.Save(new System.IO.FileStream(file, System.IO.FileMode.Create));
+                    if (doc == null) {
+                        doc = new iTextSharp.text.Document(pagesize);
+                        writer = iTextSharp.text.pdf.PdfWriter.GetInstance(doc, fw);
+                        doc.Open();
+                    } else doc.SetPageSize(pagesize);
+                    if (this[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
+                        var str = this[i].Info.BackgroundStr.Substring("image:pdf:".Length);
+                        var r = str.IndexOf(":");
+                        if (r != -1) {
+                            var id = str.Substring(0, r);
+                            int pagenum;
+                            if (Int32.TryParse(str.Substring(r + "page=".Length + 1), out pagenum)) {
+                                iTextSharp.text.pdf.PdfReader pdfdoc;
+                                if (documents.ContainsKey(id)) pdfdoc = documents[id];
+                                else {
+                                    using (var f = AttachedFile.GetFileFromIdentifier(id)) {
+                                        pdfdoc = new iTextSharp.text.pdf.PdfReader(f.FileName);
+                                        documents[id] = pdfdoc;
+                                    }
+                                }
+                                var page = writer.GetImportedPage(pdfdoc, pagenum + 1);
+                                writer.DirectContent.AddTemplate(page, 0, 0);
+                            }
+                        }
+                    }
+                    if (i == 0) DrawNoteContents(writer, this[i], Info, scale);
+                    DrawRules(writer, this[i], this[i].Info.HorizontalRule, this[i].Info.VerticalRule, (i == 0 && Info.ShowTitle),scale);
+                    this[i].InkData.AddPdfGarphic(writer, scale);
+                    if (Properties.Settings.Default.SaveTextToPDF) this[i].InkData.AddTextToPDFGraphic(writer, scale);
+                    if (i != Count - 1) doc.NewPage();
                 }
+                doc.AddCreator("abJournal");
+                doc.AddTitle(Info.Title);
+                writer.Info.Put(new iTextSharp.text.pdf.PdfName("CreationDate"), new iTextSharp.text.pdf.PdfDate(Info.Date));
+                writer.Info.Put(new iTextSharp.text.pdf.PdfName("ModificationDate"), new iTextSharp.text.pdf.PdfDate(DateTime.Now));
             }
             finally {
-                foreach(var d in documents) {
-                    d.Value.Dispose();
+                doc?.Close();
+                writer?.Close();
+                fw?.Close();
+                foreach (var d in documents) {
+                    d.Value.Close();
                 }
             }
         }
 
         public void Open(string file) {
             var watch = new Stopwatch();
-            using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
+            using (var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
                 var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create());
                 ablibInkCanvasCollectionSavingProtobufData protodata = null;
                 try {
-                    using(var zip = new ZipArchive(fs)) {
+                    using (var zip = new ZipArchive(fs)) {
                         var data = zip.GetEntry("_data.abjnt");
-                        using(var reader = data.Open()) {
-                            protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
+                        using (var reader = data.Open()) {
+                            protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
                         }
                         AttachedFile.Open(zip, protodata.AttachedFiles);
                     }
                 }
-                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
                 // protobufデシリアライズ
-                if(protodata == null) {
-                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData) model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                    catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                if (protodata == null) {
+                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                    catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
                 }
-                if(protodata != null) {
+                if (protodata != null) {
                     Clear();
-                    foreach(var d in protodata.Data) {
+                    foreach (var d in protodata.Data) {
                         AddCanvas(d.Data, protodata.Info, d.Info);
                     }
                     Info = protodata.Info;
@@ -335,18 +340,18 @@ namespace abJournal {
                     var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
                     ablibInkCanvasCollectionSavingData data = null;
                     // gzip解凍+XMLデシリアライズ
-                    using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
-                        try { data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(zs); }
-                        catch(System.IO.InvalidDataException) { }
+                    using (var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
+                        try { data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(zs); }
+                        catch (System.IO.InvalidDataException) { }
 
                     }
                     // 単なるXMLデシリアライズ
-                    if(data == null) {
-                        data = (ablibInkCanvasCollectionSavingData) xml.Deserialize(fs);
+                    if (data == null) {
+                        data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(fs);
                     }
 
                     Clear();
-                    foreach(var d in data.Data) {
+                    foreach (var d in data.Data) {
                         abInkData id = new abInkData();
                         id.LoadSavingData(d.Data);
                         AddCanvas(id, data.Info, d.Info);
@@ -354,7 +359,7 @@ namespace abJournal {
                     Info = data.Info;
                 }
             }
-            if(Count == 0) AddCanvas();
+            if (Count == 0) AddCanvas();
             FileName = file;
             SetBackgroundFromStr();
             InvalidateVisual();
@@ -372,6 +377,7 @@ namespace abJournal {
         #endregion
 
         #region タイトルとか描くやつ（PDF含）
+        static readonly string pdfFontName = "游ゴシック";
         // 周りの円弧を除いた部分がtitleheightになる．
         static void GetYohakuHankei(abInkCanvas c, out double xyohaku, out double yyohaku, out double titleheight, out double hankei) {
             xyohaku = c.Width * 0.03;
@@ -384,33 +390,33 @@ namespace abJournal {
             DrawNoteContents(c, Info);
         }
         public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
-            if(noteContents.ContainsKey(c)) {
+            if (noteContents.ContainsKey(c)) {
                 c.Children.Remove(noteContents[c]);
             }
             var visual = new DrawingVisual();
-            using(var dc = visual.RenderOpen()) {
+            using (var dc = visual.RenderOpen()) {
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-                if(info.ShowTitle) {
+                if (info.ShowTitle) {
                     dc.DrawRoundedRectangle(null, new Pen(Brushes.LightGray, 1), new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), hankei, hankei);
-                    if(info.Title != null && info.Title != "") {
+                    if (info.Title != null && info.Title != "") {
                         double textheight = height + 2 * hankei;
-                        if(info.ShowDate) textheight -= 20;
+                        if (info.ShowDate) textheight -= 20;
                         double width = c.Width - 2 * xyohaku - 2 * hankei;
                         var pt = new Point(xyohaku + hankei, yyohaku);
-                        double fontsize = GuessFontSize(info.Title, "游ゴシック", width, textheight);
-                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), fontsize, Brushes.Black);
-                        var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
+                        double fontsize = GuessFontSize(info.Title, pdfFontName, width, textheight);
+                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), fontsize, Brushes.Black);
+                        var textSize = GetStringSize(info.Title, pdfFontName, fontsize);
                         text.MaxTextWidth = width;
                         text.MaxTextHeight = textSize.Height;
-                        int n = (int) (textSize.Width / width) + 1;
+                        int n = (int)(textSize.Width / width) + 1;
                         pt.Y += (textheight - n * text.MaxTextHeight) / 2;
                         text.MaxTextHeight *= n;
                         dc.DrawText(text, pt);
                     }
 
-                    if(info.ShowDate) {
-                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface("游ゴシック"), 12, Brushes.Gray);
+                    if (info.ShowDate) {
+                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), 12, Brushes.Gray);
                         dc.DrawText(text, new Point(c.Width - xyohaku - text.Width - hankei, yyohaku + 2 * hankei + height - text.Height - 4));
 
                         var pen = new Pen(Brushes.LightGray, 1);
@@ -432,24 +438,24 @@ namespace abJournal {
             DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, showTitle);
         }
         public static void DrawRules(abJournalInkCanvas c, abJournalInkCanvas.Rule Horizontal, abJournalInkCanvas.Rule Vertical, bool showTitle) {
-            if(rules.ContainsKey(c)) {
+            if (rules.ContainsKey(c)) {
                 c.Children.Remove(rules[c]);
             }
             var visual = new DrawingVisual();
-            using(var dc = visual.RenderOpen()) {
+            using (var dc = visual.RenderOpen()) {
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-                if(Horizontal.Show) {
+                if (Horizontal.Show) {
                     double d = Horizontal.Interval;
-                    if(showTitle && !Horizontal.Show) d += yyohaku + height + 2 * hankei;
+                    if (showTitle && !Horizontal.Show) d += yyohaku + height + 2 * hankei;
                     var brush = new SolidColorBrush(Horizontal.Color);
                     brush.Freeze();
                     var pen = new Pen(brush, Horizontal.Thickness);
                     pen.DashStyle = new DashStyle(Horizontal.DashArray, 0);
                     pen.DashCap = PenLineCap.Flat;
                     pen.Freeze();
-                    for( ; d < c.Height ; d += Horizontal.Interval) {
-                        if(showTitle && yyohaku < d && d < yyohaku + height) {
+                    for (; d < c.Height; d += Horizontal.Interval) {
+                        if (showTitle && yyohaku < d && d < yyohaku + height) {
                             dc.DrawLine(pen, new Point(0, d), new Point(xyohaku, d));
                             dc.DrawLine(pen, new Point(c.Width - xyohaku, d), new Point(c.Width, d));
                         } else {
@@ -457,15 +463,15 @@ namespace abJournal {
                         }
                     }
                 }
-                if(Vertical.Show) {
+                if (Vertical.Show) {
                     var brush = new SolidColorBrush(Vertical.Color);
                     brush.Freeze();
                     var pen = new Pen(brush, Vertical.Thickness);
                     pen.DashStyle = new DashStyle(Vertical.DashArray, 0);
                     pen.DashCap = PenLineCap.Flat;
                     pen.Freeze();
-                    for(double d = Vertical.Interval ; d < c.Width ; d += Vertical.Interval) {
-                        if(showTitle && xyohaku < d && d < c.Width - xyohaku) {
+                    for (double d = Vertical.Interval; d < c.Width; d += Vertical.Interval) {
+                        if (showTitle && xyohaku < d && d < c.Width - xyohaku) {
                             dc.DrawLine(pen, new Point(d, 0), new Point(d, yyohaku));
                             dc.DrawLine(pen, new Point(d, yyohaku + height + 2 * hankei), new Point(d, c.Height));
                         } else {
@@ -478,86 +484,118 @@ namespace abJournal {
             c.Children.Add(visual);
         }
 
-        public static void DrawNoteContents(PdfSharp.Drawing.XGraphics g, abJournalInkCanvas c, CanvasCollectionInfo info) {
-            //var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode, PdfSharp.Pdf.PdfFontEmbedding.Always);
-            var pdf_ja_font_options = new PdfSharp.Drawing.XPdfFontOptions(PdfSharp.Pdf.PdfFontEncoding.Unicode);
-
+        public static void DrawNoteContents(iTextSharp.text.pdf.PdfWriter writer, abJournalInkCanvas c, CanvasCollectionInfo info, double scale) {
             double xyohaku, yyohaku, height, hankei;
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            var titlePath = new PdfSharp.Drawing.XGraphicsPath();
-            if(info.ShowTitle) {
-                g.DrawRoundedRectangle(PdfSharp.Drawing.XPens.LightGray, new Rect(xyohaku, yyohaku, c.Width - 2 * xyohaku, height + 2 * hankei), new Size(hankei, hankei));
-                if(info.Title != null && info.Title != "") {
-                    var rect = new PdfSharp.Drawing.XRect(xyohaku + hankei, yyohaku + hankei, c.Width - 2 * xyohaku - 2 * hankei, height);
-                    double fontsize = GuessFontSize(info.Title, "游ゴシック", rect.Width, rect.Height);
-                    // 真ん中に配置するための座標計算
-                    var textSize = GetStringSize(info.Title, "游ゴシック", fontsize);
-                    int n = (int) (textSize.Width / rect.Width) + 1;
-                    rect.Y += (rect.Height - n * textSize.Height) / 2;
-                    rect.Height = n * textSize.Height;
-                    var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", fontsize, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
-                    var tf = new PdfSharp.Drawing.Layout.XTextFormatter(g);
-                    tf.DrawString(info.Title, pdf_ja_font, PdfSharp.Drawing.XBrushes.Black, rect, PdfSharp.Drawing.XStringFormats.TopLeft);
-                }
-
-                if(info.ShowDate) {
-                    var textSize = GetStringSize(info.Date.ToLongDateString(), "游ゴシック", 12);
-                    var pdf_ja_font = new PdfSharp.Drawing.XFont("游ゴシック", 12, PdfSharp.Drawing.XFontStyle.Regular, pdf_ja_font_options);
-                    g.DrawString(
+            if (info.ShowTitle) {
+                writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.LIGHT_GRAY);
+                writer.DirectContent.SetLineDash(0);
+                writer.DirectContent.RoundRectangle(scale * xyohaku, writer.PageSize.Height - scale * (height + 2 * hankei + yyohaku), scale * (c.Width - 2 * xyohaku), scale * (height + 2 * hankei), scale * hankei);
+                writer.DirectContent.Stroke();
+                double dateTextHeight = 0;
+                if (info.ShowDate) {
+                    var textSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
+                    var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * 12)).BaseFont;
+                    writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.LIGHT_GRAY);
+                    writer.DirectContent.SetLineDash(new double[] { 3, 3 }, 0);
+                    writer.DirectContent.MoveTo(scale * (xyohaku + hankei),
+                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - textSize.Height - 8));
+                    writer.DirectContent.LineTo(
+                        scale * (c.Width - xyohaku - hankei),// 破線がかっこ悪いので調整
+                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - textSize.Height - 8));
+                    writer.DirectContent.Stroke();
+                    writer.DirectContent.SetLineDash(0);
+                    writer.DirectContent.BeginText();
+                    writer.DirectContent.SetFontAndSize(font, (float)(scale * 12));
+                    writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.GRAY);
+                    writer.DirectContent.ShowTextAligned(
+                        iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT,
                         info.Date.ToLongDateString(),
-                        pdf_ja_font,
-                        PdfSharp.Drawing.XBrushes.Gray,
-                        c.Width - xyohaku - textSize.Width - hankei,
-                        yyohaku + 2 * hankei + height - textSize.Height - 4,
-                        PdfSharp.Drawing.XStringFormats.TopLeft);
+                        (float)(scale * (c.Width - xyohaku - textSize.Width - hankei)),
+                        writer.PageSize.Height - (float)(scale * (yyohaku + 2 * hankei + height - 8)), 0);
+                    writer.DirectContent.EndText();
+                    dateTextHeight = textSize.Height + 8;
+                }
+                if (info.Title != null && info.Title != "") {
+                    var rect = new iTextSharp.text.Rectangle(
+                        (float)(scale * (xyohaku + hankei)),
+                        (float)(writer.PageSize.Height - scale * (yyohaku + height + 2*hankei - dateTextHeight)),
+                        (float)(scale * (c.Width - xyohaku - hankei)),
+                        (float)(writer.PageSize.Height - scale * yyohaku));
+                    //writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.BLACK);
+                    //writer.DirectContent.Rectangle(rect.Left,rect.Bottom,rect.Width,rect.Height);
+                    //writer.DirectContent.Stroke();
+                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.Width / scale, rect.Height / scale);
+                    var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * fontsize));
+                    writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.BLACK);
+                    // 調整
+                    var column = new iTextSharp.text.pdf.ColumnText(writer.DirectContent);
+                    column.Alignment = iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT;
+                    column.AddText(new iTextSharp.text.Phrase(info.Title, font));
+                    column.SetSimpleColumn(rect);
+                    column.Go(true);
+                    var y = column.YLine;
 
-                    var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColors.LightGray, 1);
-                    pen.DashPattern = new double[] { 3, 3 };
-                    g.DrawLine(pen,
-                        xyohaku + hankei,
-                        yyohaku + 2 * hankei + height - textSize.Height - 8,
-                        c.Width - xyohaku - hankei - 1,// 破線がかっこ悪いので調整
-                        yyohaku + 2 * hankei + height - textSize.Height - 8);
+                    rect = new iTextSharp.text.Rectangle(rect.Left, rect.Bottom, rect.Right, rect.Top - (y - rect.Bottom) / 2);
+                    column = new iTextSharp.text.pdf.ColumnText(writer.DirectContent);
+                    column.Alignment = iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT;
+                    column.AddText(new iTextSharp.text.Phrase(info.Title, font));
+                    column.SetSimpleColumn(rect);
+                    column.Go(false);
                 }
             }
-        }
+       }
 
-        public static void DrawRules(PdfSharp.Drawing.XGraphics g, abJournalInkCanvas c, abJournalInkCanvas.Rule HorizontalRule, abJournalInkCanvas.Rule VerticalRule, bool showTitle) {
+        public static void DrawRules(iTextSharp.text.pdf.PdfWriter writer, abJournalInkCanvas c, abJournalInkCanvas.Rule HorizontalRule, abJournalInkCanvas.Rule VerticalRule, bool showTitle, double scale) {
             double xyohaku, yyohaku, height, hankei;
             GetYohakuHankei(c, out xyohaku, out yyohaku, out height, out hankei);
-            if(HorizontalRule.Show) {
-                double d = HorizontalRule.Interval;
-                if(showTitle && !HorizontalRule.Show) d += yyohaku + height + 2 * hankei;
-                var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColor.FromArgb(
-                    HorizontalRule.Color.A,
+            if (HorizontalRule.Show) {
+                writer.DirectContent.SetLineDash(HorizontalRule.DashArray.ToArray(), 0);
+                writer.DirectContent.SetColorStroke(new iTextSharp.text.BaseColor(
                     HorizontalRule.Color.R,
                     HorizontalRule.Color.G,
-                    HorizontalRule.Color.B), HorizontalRule.Thickness);
-                pen.DashPattern = HorizontalRule.DashArray.ToArray();
-                for( ; d < c.Height ; d += HorizontalRule.Interval) {
-                    if(showTitle && yyohaku < d && d < yyohaku + height) {
-                        g.DrawLine(pen, 0, d, xyohaku, d);
-                        g.DrawLine(pen, c.Width - xyohaku, d, c.Width, d);
+                    HorizontalRule.Color.B,
+                    HorizontalRule.Color.A));
+                double d = HorizontalRule.Interval;
+                if (showTitle && !HorizontalRule.Show) d += yyohaku + height + 2 * hankei;
+                for (; d < c.Height; d += HorizontalRule.Interval) {
+                    if (showTitle && yyohaku < d && d < yyohaku + height) {
+                        writer.DirectContent.MoveTo(0, writer.PageSize.Height - scale * d);
+                        writer.DirectContent.LineTo(scale * xyohaku, writer.PageSize.Height - scale * d);
+                        writer.DirectContent.Stroke();
+                        writer.DirectContent.MoveTo(scale * (c.Width - xyohaku), writer.PageSize.Height - scale * d); ;
+                        writer.DirectContent.LineTo(scale * c.Width, writer.PageSize.Height - scale * d);
+                        writer.DirectContent.Stroke();
                     } else {
-                        g.DrawLine(pen, 0, d, c.Width, d);
+                        writer.DirectContent.MoveTo(0, writer.PageSize.Height - scale * d);
+                        writer.DirectContent.LineTo(scale * c.Width, writer.PageSize.Height - scale * d);
+                        writer.DirectContent.Stroke();
                     }
                 }
+                writer.DirectContent.SetLineDash(0);
             }
-            if(VerticalRule.Show) {
-                var pen = new PdfSharp.Drawing.XPen(PdfSharp.Drawing.XColor.FromArgb(
-                    VerticalRule.Color.A,
+            if (VerticalRule.Show) {
+                writer.DirectContent.SetColorStroke(new iTextSharp.text.BaseColor(
                     VerticalRule.Color.R,
                     VerticalRule.Color.G,
-                    VerticalRule.Color.B), VerticalRule.Thickness);
-                pen.DashPattern = VerticalRule.DashArray.ToArray();
-                for(double d = VerticalRule.Interval ; d < c.Width ; d += VerticalRule.Interval) {
-                    if(showTitle && xyohaku < d && d < c.Width - xyohaku) {
-                        g.DrawLine(pen, d, 0, d, yyohaku);
-                        g.DrawLine(pen, d, yyohaku + height + 2 * hankei, d, c.Height);
+                    VerticalRule.Color.B,
+                    VerticalRule.Color.A));
+                writer.DirectContent.SetLineDash(VerticalRule.DashArray.ToArray(), 0);
+                for (double d = VerticalRule.Interval; d < c.Width; d += VerticalRule.Interval) {
+                    if (showTitle && xyohaku < d && d < c.Width - xyohaku) {
+                        writer.DirectContent.MoveTo(scale * d, writer.PageSize.Height);
+                        writer.DirectContent.LineTo(scale * d, writer.PageSize.Height - scale * yyohaku);
+                        writer.DirectContent.Stroke();
+                        writer.DirectContent.MoveTo(scale * d, writer.PageSize.Height - scale * (yyohaku + height + 2 * hankei));
+                        writer.DirectContent.LineTo(scale * d, writer.PageSize.Height - scale * c.Height);
+                        writer.DirectContent.Stroke();
                     } else {
-                        g.DrawLine(pen, d, 0, d, c.Height);
+                        writer.DirectContent.MoveTo(scale * d, 0);
+                        writer.DirectContent.LineTo(scale * d, writer.PageSize.Height - scale * c.Height);
+                        writer.DirectContent.Stroke();
                     }
                 }
+                writer.DirectContent.SetLineDash(0);
             }
         }
 
@@ -598,7 +636,7 @@ namespace abJournal {
 
         public void Dispose() {
             foreach(var c in this) {
-                if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
+                c.BackgroundData?.Dispose(c);
             }
         }
     }

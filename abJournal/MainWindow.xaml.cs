@@ -103,6 +103,7 @@ namespace abJournal {
 
         BlockWndowsKey blockWindows = null;
         public MainWindow() {
+            iTextSharp.text.FontFactory.RegisterDirectory(Environment.SystemDirectory.Replace("system32", "fonts"));
             bool topdf = false;
             bool help = false;
             var opt = new NDesk.Options.OptionSet() {
@@ -221,12 +222,12 @@ namespace abJournal {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     WindowTitle = "保存中……";
                     if(ext == ".pdf") {
-                        try {
+      //                  try {
                             mainCanvas.SavePDF(fd.FileName);
-                        }
-                        catch(Exception ex) {
-                            MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
-                        }
+    //                    }
+//                        catch(Exception ex) {
+  //                          MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message + "\n" + ex.StackTrace);
+   //                     }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
                         mainCanvas.Save(fd.FileName);
@@ -278,11 +279,10 @@ namespace abJournal {
 					WindowTitle = "インポート中……";
                     if(Path.GetExtension(ofd.FileName).ToLower() == ".pdf") {
                         try {
-                            var pdfdoc = PdfSharp.Pdf.IO.PdfReader.Open(ofd.FileName, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
-                            pdfdoc.Dispose();
+                            using (var pdfdoc = new iTextSharp.text.pdf.PdfReader(ofd.FileName)) { }
                         }
                         catch(System.Exception) {
-                            if(MessageBox.Show("このPDFファイルは使用しているPDFSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "abJournal", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
+                            if(MessageBox.Show("このPDFファイルは使用しているiTextSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "abJournal", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
                                 WindowTitle = null;
                                 return;
                             }
