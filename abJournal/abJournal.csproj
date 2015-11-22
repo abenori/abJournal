@@ -63,9 +63,6 @@
     <NoWin32Manifest>true</NoWin32Manifest>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="IALoader">
-      <HintPath>..\..\..\..\..\..\Program Files\Microsoft SDKs\Windows\v6.0\Bin\IALoader.dll</HintPath>
-    </Reference>
     <Reference Include="IAWinFX, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files\Reference Assemblies\Microsoft\Tablet PC\v1.7\IAWinFX.dll</HintPath>

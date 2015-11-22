@@ -18,13 +18,14 @@
 ## 動作条件
 * Windows 8.1以降
 * .NET Framework 4.5以降
+* PDF作成時に文字を認識させる場合は，IAWinFX.dll （Windows SDK for Vistaに入っています）
 
 ## 使い方
 適当に使えると思います．自分が必要な機能しか無いため，あまり色々はできません．
 
 ## PDF変換
 保存の時に拡張子をpdfにするとPDFに変換されます．背景はもともとがPDFのもの以外無視されます．
-文字列を認識し，透明テキストとして書き込みます．変換には時間がかかります．
+文字列を認識し，透明テキストとして書き込みます．変換には時間がかかります．またIAWinFX.dllが必要です．
 
 ## 描画アルゴリズム
 設定から選べますが，場合によっては無視されます．具体的には
@@ -47,8 +48,8 @@ zipでアーカイブされていて，解凍すると
 attachedの中が，このファイルに付随するファイルたちです（たとえば背景に使われている画像とか）．
 
 ## 謝辞
-* PDFへの変換はPDFSharpを使っています．
-  <http://www.pdfsharp.net/>
+* PDFへの変換はiTextSharpを使っています．
+  <http://sourceforge.net/projects/itextsharp/>
 * PDFの描画はPDFiumを使っています．
   <https://code.google.com/p/pdfium/>
 * Protocol Buffersへの（デ）シリアル化はProtobuf-netを使っています．

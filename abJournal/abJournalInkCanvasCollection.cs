@@ -493,28 +493,10 @@ namespace abJournal {
                 writer.DirectContent.RoundRectangle(scale * xyohaku, writer.PageSize.Height - scale * (height + 2 * hankei + yyohaku), scale * (c.Width - 2 * xyohaku), scale * (height + 2 * hankei), scale * hankei);
                 writer.DirectContent.Stroke();
                 double dateTextHeight = 0;
+                Size datetextSize = new Size();
                 if (info.ShowDate) {
-                    var textSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
-                    var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * 12)).BaseFont;
-                    writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.LIGHT_GRAY);
-                    writer.DirectContent.SetLineDash(new double[] { 3, 3 }, 0);
-                    writer.DirectContent.MoveTo(scale * (xyohaku + hankei),
-                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - textSize.Height - 8));
-                    writer.DirectContent.LineTo(
-                        scale * (c.Width - xyohaku - hankei),// 破線がかっこ悪いので調整
-                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - textSize.Height - 8));
-                    writer.DirectContent.Stroke();
-                    writer.DirectContent.SetLineDash(0);
-                    writer.DirectContent.BeginText();
-                    writer.DirectContent.SetFontAndSize(font, (float)(scale * 12));
-                    writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.GRAY);
-                    writer.DirectContent.ShowTextAligned(
-                        iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT,
-                        info.Date.ToLongDateString(),
-                        (float)(scale * (c.Width - xyohaku - textSize.Width - hankei)),
-                        writer.PageSize.Height - (float)(scale * (yyohaku + 2 * hankei + height - 8)), 0);
-                    writer.DirectContent.EndText();
-                    dateTextHeight = textSize.Height + 8;
+                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
+                    dateTextHeight = datetextSize.Height + 8;
                 }
                 if (info.Title != null && info.Title != "") {
                     var rect = new iTextSharp.text.Rectangle(
@@ -542,6 +524,27 @@ namespace abJournal {
                     column.AddText(new iTextSharp.text.Phrase(info.Title, font));
                     column.SetSimpleColumn(rect);
                     column.Go(false);
+                }
+                if (info.ShowTitle) {
+                    var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * 12)).BaseFont;
+                    writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.LIGHT_GRAY);
+                    writer.DirectContent.SetLineDash(new double[] { 3, 3 }, 0);
+                    writer.DirectContent.MoveTo(scale * (xyohaku + hankei),
+                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - datetextSize.Height - 8));
+                    writer.DirectContent.LineTo(
+                        scale * (c.Width - xyohaku - hankei),
+                        writer.PageSize.Height - scale * (yyohaku + 2 * hankei + height - datetextSize.Height - 8));
+                    writer.DirectContent.Stroke();
+                    writer.DirectContent.SetLineDash(0);
+                    writer.DirectContent.BeginText();
+                    writer.DirectContent.SetFontAndSize(font, (float)(scale * 12));
+                    writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.GRAY);
+                    writer.DirectContent.ShowTextAligned(
+                        iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT,
+                        info.Date.ToLongDateString(),
+                        (float)(scale * (c.Width - xyohaku - datetextSize.Width - hankei)),
+                        writer.PageSize.Height - (float)(scale * (yyohaku + 2 * hankei + height - 8)), 0);
+                    writer.DirectContent.EndText();
                 }
             }
        }

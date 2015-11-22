@@ -121,13 +121,14 @@ namespace abJournal {
             if(topdf) {
                 foreach(var f in files) {
                     var pdf = Path.Combine(Path.GetDirectoryName(f), Path.GetFileNameWithoutExtension(f) + ".pdf");
+                    pdf = Path.GetFullPath(pdf);
                     var c = new abJournalInkCanvasCollection();
                     try {
                         c.Open(f);
                         c.SavePDF(pdf);
                     }
-                    catch {
-                        MessageBox.Show(f + " のPDFへの変換に失敗．");
+                    catch(Exception e) {
+                        MessageBox.Show(f + " のPDFへの変換に失敗．\n" + e.Message + "\n" + e.StackTrace);
                     }
                 }
                 Environment.Exit(0);
@@ -222,12 +223,12 @@ namespace abJournal {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     WindowTitle = "保存中……";
                     if(ext == ".pdf") {
-      //                  try {
+                        try {
                             mainCanvas.SavePDF(fd.FileName);
-    //                    }
-//                        catch(Exception ex) {
-  //                          MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message + "\n" + ex.StackTrace);
-   //                     }
+                        }
+                        catch(Exception ex) {
+                            MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
+                        }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
                         mainCanvas.Save(fd.FileName);
