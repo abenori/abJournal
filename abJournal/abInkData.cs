@@ -619,7 +619,7 @@ namespace abJournal {
             var gstate = new iTextSharp.text.pdf.PdfGState();
             gstate.FillOpacity = 0;
             gstate.StrokeOpacity = 0;
-            var font = iTextSharp.text.FontFactory.GetFont("游ゴシック", iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.NOT_EMBEDDED, 16).BaseFont;
+            var font = iTextSharp.text.FontFactory.GetFont("游ゴシック", iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.NOT_EMBEDDED, 16);
             using (var analyzer = new InkAnalyzer()) {
                 var strokes = new StrokeCollection(Strokes.Select(s => (Stroke)s));
                 analyzer.AddStrokes(strokes);
@@ -628,12 +628,11 @@ namespace abJournal {
                 foreach (var node in nodes) {
                     var rect = node.Location.GetBounds();
                     var str = ((LineNode)node).GetRecognizedString();
-                    //var font = iTextSharp.text.pdf.BaseFont.CreateFont("游ゴシック", iTextSharp.text.pdf.BaseFont.IDENTITY_H, true);
                     writer.DirectContent.SaveState();
                     writer.DirectContent.SetGState(gstate);
                     writer.DirectContent.BeginText();
-                    writer.DirectContent.SetFontAndSize(font, (float)(scale * rect.Height));
-                    writer.DirectContent.ShowTextAligned(iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT, str, (float)rect.Left, (float)(writer.PageSize.Height - rect.Top), 0);
+                    writer.DirectContent.SetFontAndSize(font.BaseFont, (float)(scale * rect.Height));
+                    writer.DirectContent.ShowTextAligned(iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT, str, (float)rect.Left, (float)(writer.PageSize.Height - rect.Bottom), 0);
                     writer.DirectContent.EndText();
                     writer.DirectContent.RestoreState();
                 }

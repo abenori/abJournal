@@ -82,7 +82,7 @@ namespace abJournal {
         }
 
         static void SetBackground(abJournalInkCanvas c, BackgroundPDF page) {
-            if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
+            c.BackgroundData?.Dispose(c);
             c.BackgroundData = page;
             if(c.Viewport.Height != 0) page.SetBackgroundImage(c);
         }

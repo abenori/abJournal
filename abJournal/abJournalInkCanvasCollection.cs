@@ -101,7 +101,7 @@ namespace abJournal {
                 newImport = true;
             }
             using (var file = new AttachedFile(path)) {
-                var ext = System.IO.Path.GetExtension(path);
+                var ext = System.IO.Path.GetExtension(path).ToLower();
                 switch (ext) {
                 case ".pdf":
                     {

@@ -51,8 +51,8 @@ attachedの中が，このファイルに付随するファイルたちです（
 * PDFへの変換はiTextSharpを使っています．
   <http://sourceforge.net/projects/itextsharp/>
 * PDFの描画はPDFiumを使っています．
-  <https://code.google.com/p/pdfium/>
+  <https://pdfium.googlesource.com/pdfium/>
 * Protocol Buffersへの（デ）シリアル化はProtobuf-netを使っています．
-  <http://code.google.com/p/protobuf-net/>
+  <https://github.com/mgravell/protobuf-net>
 * Option解析にはNDesk.Optionsを使っています．
   <http://www.ndesk.org/Options>
