@@ -517,6 +517,7 @@ namespace abJournal {
                 InkCanvas.RemovedFromView();
                 icc.CalculateCurrentPage(true);
                 icc.VerticalArrangeCanvas();
+                icc.OnPropertyChanged("Count");
             }
             public void Redo(abInkCanvasCollection<abInkCanvasClass> icc) {
                 icc.CanvasCollection.Insert(index, InkCanvas);
@@ -524,6 +525,7 @@ namespace abJournal {
                 InkCanvas.AddedToView();
                 icc.CalculateCurrentPage(true);
                 icc.VerticalArrangeCanvas();
+                icc.OnPropertyChanged("Count");
             }
         }
         class DeleteCanvasCommand : UndoCommand {
@@ -536,6 +538,7 @@ namespace abJournal {
                 InkCanvas.AddedToView();
                 icc.CalculateCurrentPage(true);
                 icc.VerticalArrangeCanvas();
+                icc.OnPropertyChanged("Count");
             }
             public void Redo(abInkCanvasCollection<abInkCanvasClass> icc) {
                 icc.CanvasCollection.RemoveAt(index);
@@ -543,6 +546,7 @@ namespace abJournal {
                 InkCanvas.RemovedFromView();
                 icc.CalculateCurrentPage(true);
                 icc.VerticalArrangeCanvas();
+                icc.OnPropertyChanged("Count");
             }
 
         }
