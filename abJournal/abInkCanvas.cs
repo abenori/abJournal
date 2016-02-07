@@ -496,7 +496,6 @@ namespace abJournal {
             return;
         }
 
-        // Canvasに入る/から出る時にabInkCanvasCollectionから呼び出される．
         public void RemovedFromView() { }
         public void AddedToView() { }
 
@@ -596,6 +595,7 @@ namespace abJournal {
         bool Redo();
         event abInkData.UndoChainChangedEventhandelr UndoChainChanged;
         void SetViewport(Rect rc);
+        // Canvasに入る/から出る時にabInkCanvasCollectionから呼び出される．
         void RemovedFromView();
         void AddedToView();
         void ReDraw();
