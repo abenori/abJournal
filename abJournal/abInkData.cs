@@ -632,7 +632,7 @@ namespace abJournal {
                     writer.DirectContent.SetGState(gstate);
                     writer.DirectContent.BeginText();
                     writer.DirectContent.SetFontAndSize(font.BaseFont, (float)(scale * rect.Height));
-                    writer.DirectContent.ShowTextAligned(iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT, str, (float)rect.Left, (float)(writer.PageSize.Height - rect.Bottom), 0);
+                    writer.DirectContent.ShowTextAligned(iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT, str, (float)(scale * rect.Left), (float)(writer.PageSize.Height - scale * rect.Bottom), 0);
                     writer.DirectContent.EndText();
                     writer.DirectContent.RestoreState();
                 }
