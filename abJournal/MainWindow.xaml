@@ -15,6 +15,7 @@
         <CommandBinding Command="Save" Executed="SaveCommandExecuted"/>
         <CommandBinding Command="SaveAs" Executed="SaveAsCommandExecuted"/>
         <CommandBinding Command="Open" Executed="OpenCommandExecuted"/>
+        <CommandBinding Command="{x:Static local:MainWindow.ReOpen}" Executed="ReOpenCommandExecuted"/>
         <CommandBinding Command="Delete" Executed="DeleteCommandExecuted"/>
         <CommandBinding Command="Print" Executed="PrintCommandExecuted"/>
         <CommandBinding Command="Close" Executed="CloseCommandExecuted"/>
@@ -75,6 +76,7 @@
                 <MenuItem Header="ファイル(_F)">
                     <MenuItem Header="新しいノート(_N)" Command="New"/>
                     <MenuItem Header="開く(_O)" Command="Open"/>
+                    <MenuItem Header="閉じて開く" Command="{x:Static local:MainWindow.ReOpen}"/>
                     <MenuItem Header="保存(_S)" Command="Save"/>
                     <MenuItem Header="名前をつけて保存(_A)" Command="SaveAs"/>
                     <MenuItem Header="インポート(_I)" Command="{x:Static local:MainWindow.Import}"/>

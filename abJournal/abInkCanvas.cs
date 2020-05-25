@@ -151,10 +151,10 @@ namespace abJournal {
             InkData.StrokeSelectedChanged += InkData_StrokeSelectedChanged;
             InkData.UndoChainChanged += InkData_UndoChainChanged;
 
-            MouseLeftButtonDown += ((s, e) => { e.Handled = true; });
             TouchDown += ((s, e) => {
-                var pt = e.GetTouchPoint(this);
-                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+//                var pt = e.GetTouchPoint(this);
+//                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+                e.Handled = true;
             });
         }
 
@@ -282,7 +282,7 @@ namespace abJournal {
         const int MOUSE = 3;
         public new event MouseButtonEventHandler MouseLeftButtonDown = ((s, e) => { });
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
-			base.OnMouseLeftButtonDown(e);
+            base.OnMouseLeftButtonDown(e);
             if(!e.Handled) MouseLeftButtonDown(this,e);
             if(e.Handled) return;
             if(PenID != 0) return;

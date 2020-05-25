@@ -79,7 +79,7 @@ namespace abJournal {
             data.Identifier = file.Identifier;
             ++attachedFiles[data];
         }
-        public static  AttachedFile GetFileFromIdentifier(string id) {
+        public static AttachedFile GetFileFromIdentifier(string id) {
             foreach(var d in attachedFiles) {
                 if(d.Key.Identifier == id) {
                     ++attachedFiles[d.Key];

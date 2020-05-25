@@ -330,6 +330,16 @@ namespace abJournal {
             return;
         }
 
+        #region 移動
+        public void MovePage(int page) {
+            if(page < 0 || page >= Count) return;
+            var c = CanvasCollection[page];
+            var transform = innerCanvas.RenderTransform;
+            var targetRect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
+            Scroll(new Vector(0, -targetRect.Top));
+        }
+        #endregion
+
         #region 選択関係
         void innerCanvas_TouchDown(object sender, TouchEventArgs e) {
             if(SelectedRectTracker.Visibility == Visibility.Visible) {

@@ -431,7 +431,6 @@ namespace abJournal {
             c.Children.Add(visual);
             noteContents[c] = visual;
         }
-
         static Dictionary<abInkCanvas, Visual> rules = new Dictionary<abInkCanvas, Visual>();
 
         public void DrawRules(abJournalInkCanvas c, bool showTitle) {
@@ -527,6 +526,7 @@ namespace abJournal {
                 }
                 if (info.ShowTitle) {
                     var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * 12)).BaseFont;
+                    if (font == null) throw new Exception("Font " + pdfFontName + " is not found");
                     writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.LIGHT_GRAY);
                     writer.DirectContent.SetLineDash(new double[] { 3, 3 }, 0);
                     writer.DirectContent.MoveTo(scale * (xyohaku + hankei),

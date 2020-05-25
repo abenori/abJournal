@@ -216,6 +216,7 @@ namespace abJournal {
         }
         private void SaveAsCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new SaveFileDialog();
+            fd.InitialDirectory = System.IO.Path.GetDirectoryName(mainCanvas.FileName);
             fd.FileName = System.IO.Path.GetFileName(mainCanvas.FileName);
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|PDF ファイル (*.pdf)|*.pdf|全てのファイル|*.*";
             if(fd.ShowDialog() == true) {
@@ -269,6 +270,20 @@ namespace abJournal {
                 FileOpen(new List<string>() { fd.FileName });
                 OnPropertyChanged("abmainCanvas");
             }
+        }
+        public static readonly RoutedCommand ReOpen = new RoutedCommand("ReOpen", typeof(MainWindow));
+        private void ReOpenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
+            var file = mainCanvas.FileName;
+            var page = mainCanvas.CurrentPage;
+            if(file == null) {
+                SaveAsCommandExecuted(sender, e);
+                return;
+            }
+            if(!BeforeClose()) return;
+            mainCanvas.Clear();
+            mainCanvas.Open(file);
+            mainCanvas.MovePage(page);
+
         }
         public static readonly RoutedCommand Import = new RoutedCommand("Import", typeof(MainWindow));
         private void ImportCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
@@ -588,6 +603,10 @@ namespace abJournal {
             mainCanvas.IsEnabled = true;
         }
 
+        private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
+        {
+
+        }
     }
 }
 

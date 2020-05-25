@@ -8,7 +8,7 @@
     <Setting Name="DrawingAlgorithm" Type="abJournal.DrawingAlgorithm" Scope="User">
       <Value Profile="(Default)">dotNet</Value>
     </Setting>
-    <Setting Name="PrintDrawingAlgorithm" Type="ablib.DrawingAlgorithm" Scope="User">
+    <Setting Name="PrintDrawingAlgorithm" Type="abJournal.DrawingAlgorithm" Scope="User">
       <Value Profile="(Default)">dotNet</Value>
     </Setting>
     <Setting Name="History" Type="System.Collections.Specialized.StringCollection" Scope="User">
