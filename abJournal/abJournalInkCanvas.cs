@@ -25,7 +25,8 @@ namespace abJournal {
         [ProtoContract]
         public class Rule {
             public Rule() {
-                DashArray = new DoubleCollection();
+                //DashArray = new DoubleCollection();
+                DashArray = new List<double>();
                 Color = Colors.LightBlue;
                 Interval = 80;
                 Thickness = 2;
@@ -34,7 +35,8 @@ namespace abJournal {
             [ProtoMember(1)]
             public Color Color { get; set; }
             [ProtoMember(2)]
-            public DoubleCollection DashArray { get; set; }
+            //public DoubleCollection DashArray { get; set; }
+            public List<double> DashArray { get; set; }
             [ProtoMember(3)]
             public double Interval { get; set; }
             [ProtoMember(4)]
