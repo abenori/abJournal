@@ -160,7 +160,7 @@ namespace abJournal {
         }
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData2 {
-            [ProtoContract]
+            [ProtoContract(SkipConstructor = true)]
             public class CanvasData {
                 public CanvasData(abInkData d, abJournalInkCanvas.InkCanvasInfo i) {
                     Info = i.DeepCopy();
@@ -168,17 +168,28 @@ namespace abJournal {
                 }
                 [ProtoMember(1)]
                 public abJournalInkCanvas.InkCanvasInfo Info;
-                [ProtoContract]
+                [ProtoContract(SkipConstructor = true)]
                 public class InkData {
-                    [ProtoContract]
+                    [ProtoContract(SkipConstructor = true)]
                     public class StrokeData {
+						[ProtoMember(1)]
                         public System.Windows.Input.StylusPointCollection StylusPoints { get; set; }
+						[ProtoMember(2)]
                         public System.Windows.Ink.DrawingAttributes DrawingAttributes { get; set; }
+						[ProtoMember(3)]
                         public DrawingAttributesPlus DrawingAttributesPlus { get; set; }
                         public StrokeData(abJournal.StrokeData stroke) {
                             StylusPoints = stroke.StylusPoints;
                             DrawingAttributes = stroke.DrawingAttributes;
                             DrawingAttributesPlus = stroke.DrawingAttributesPlus;
+                        }
+                        public abJournal.StrokeData ToStrokeData() {
+                            return new abJournal.StrokeData(
+                                StylusPoints,
+                                DrawingAttributes,
+                                DrawingAttributesPlus,
+                                abJournal.Properties.Settings.Default.DrawingAlgorithm
+                            );
                         }
                     }
                     public InkData(abInkData d) {
@@ -229,26 +240,28 @@ namespace abJournal {
         }
         public static string GetSchema() {
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
-            return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
+            //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
+            return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData2));
         }
         public void Save() {
             Save(FileName);
         }
         public void Save(string file) {
-            
+            /*
             ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
             foreach (var c in this) {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData.CanvasData(c.InkData, c.Info));
             }
-          
-            /*var data = new ablibInkCanvasCollectionSavingProtobufData2();
+            */
+            var data = new ablibInkCanvasCollectionSavingProtobufData2();
+            data.Data.Capacity = this.Count;
             foreach(var c in this) {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData2.CanvasData(c.InkData, c.Info));
-            }*/
+            }
             data.Info = Info;
             SaveProc(data, file);
         }
-        public void SaveProc(ablibInkCanvasCollectionSavingProtobufData data, string file) {
+        public void SaveProc(ablibInkCanvasCollectionSavingProtobufData2 data, string file) {
             string tmpFile = null;
             if(File.Exists(file)) {
                 tmpFile = Path.GetTempFileName();
@@ -256,7 +269,8 @@ namespace abJournal {
                 File.Move(file, tmpFile);
             }
             try {
-                var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create());
+                var model = abInkData.SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel.Create());
+
                 using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
                     data.AttachedFiles = AttachedFile.Save(zip);
                     var mainEntry = zip.CreateEntry("_data.abjnt");
@@ -368,57 +382,105 @@ namespace abJournal {
             }
         }
 
+        private bool LoadProtoBuf(System.IO.FileStream fs) {
+            fs.Seek(0,SeekOrigin.Begin);
+            var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create());
+            ablibInkCanvasCollectionSavingProtobufData protodata = null;
+            try {
+                var zip = new ZipArchive(fs);
+                var data = zip.GetEntry("_data.abjnt");
+                using(var reader = data.Open()) {
+                    protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
+                }
+                AttachedFile.Open(zip, protodata.AttachedFiles);
+            }
+            catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+            // protobufデシリアライズ
+            if(protodata == null) {
+                try { protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+            }
+            if(protodata != null) {
+                Clear();
+                foreach(var d in protodata.Data) {
+                    AddCanvas(d.Data, protodata.Info, d.Info);
+                }
+                Info = protodata.Info;
+                return true;
+            } else {
+                return false;
+            }
+        }
+        private bool LoadProtoBuf2(System.IO.FileStream fs) {
+            var model = abInkData.SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel.Create());
+            ablibInkCanvasCollectionSavingProtobufData2 protodata = null;
+            try {
+                var zip = new ZipArchive(fs);
+                var data = zip.GetEntry("_data.abjnt");
+                using(var reader = data.Open()) {
+                    protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData2(), typeof(ablibInkCanvasCollectionSavingProtobufData2));
+                }
+                AttachedFile.Open(zip, protodata.AttachedFiles);
+            }
+            catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+            // protobufデシリアライズ
+            if(protodata == null) {
+                try { protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData2)); }
+                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+            }
+            if(protodata != null) {
+                Clear();
+                foreach(var d in protodata.Data) {
+                    var abinkdata = new abInkData();
+                    abinkdata.Strokes.Capacity = d.Data.Strokes.Count;
+                    foreach(var s in d.Data.Strokes) {
+                        abinkdata.Strokes.Add(s.ToStrokeData());
+                    }
+                    abinkdata.Texts = d.Data.Texts;
+                    AddCanvas(abinkdata, protodata.Info, d.Info);
+                }
+                Info = protodata.Info;
+                return true;
+            } else {
+                return false;
+            }
+        }
+
+
+        private bool LoadXML(System.IO.FileStream fs) {
+            var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
+            ablibInkCanvasCollectionSavingData data = null;
+            // gzip解凍+XMLデシリアライズ
+            using(var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
+                try { data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(zs); }
+                catch(System.IO.InvalidDataException) { }
+
+            }
+            // 単なるXMLデシリアライズ
+            if(data == null) {
+                data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(fs);
+            }
+
+            if(data != null) {
+                Clear();
+                foreach(var d in data.Data) {
+                    abInkData id = new abInkData();
+                    id.LoadSavingData(d.Data);
+                    AddCanvas(id, data.Info, d.Info);
+                }
+                Info = data.Info;
+                return true;
+            } else return false;
+        }
+
+
         public void Open(string file) {
             var watch = new Stopwatch();
-            using (var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
-                var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create());
-                ablibInkCanvasCollectionSavingProtobufData protodata = null;
-                try {
-                    using (var zip = new ZipArchive(fs)) {
-                        var data = zip.GetEntry("_data.abjnt");
-                        using (var reader = data.Open()) {
-                            protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(),typeof(ablibInkCanvasCollectionSavingProtobufData));
-                        }
-                        AttachedFile.Open(zip, protodata.AttachedFiles);
-                    }
-                }
-                catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                // protobufデシリアライズ
-                if (protodata == null) {
-                    try { protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(),typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                    catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
-                }
-                if (protodata != null) {
-                    Clear();
-                    foreach (var d in protodata.Data) {
-                        AddCanvas(d.Data, protodata.Info, d.Info);
-                    }
-                    Info = protodata.Info;
-                } else {
-                    System.Diagnostics.Debug.WriteLine("Protobufデシリアライズでエラー");
-                    var xml = new System.Xml.Serialization.XmlSerializer(typeof(ablibInkCanvasCollectionSavingData));
-                    ablibInkCanvasCollectionSavingData data = null;
-                    // gzip解凍+XMLデシリアライズ
-                    using (var zs = new System.IO.Compression.GZipStream(fs, System.IO.Compression.CompressionMode.Decompress)) {
-                        try { data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(zs); }
-                        catch (System.IO.InvalidDataException) { }
-
-                    }
-                    // 単なるXMLデシリアライズ
-                    if (data == null) {
-                        data = (ablibInkCanvasCollectionSavingData)xml.Deserialize(fs);
-                    }
-
-                    Clear();
-                    foreach (var d in data.Data) {
-                        abInkData id = new abInkData();
-                        id.LoadSavingData(d.Data);
-                        AddCanvas(id, data.Info, d.Info);
-                    }
-                    Info = data.Info;
-                }
+            bool succ = false;
+            using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
+                if(LoadProtoBuf2(fs) || LoadProtoBuf(fs) || LoadXML(fs)) { }
             }
-            if (Count == 0) AddCanvas();
+            if(Count == 0) AddCanvas();
             FileName = file;
             SetBackgroundFromStr();
             InvalidateVisual();

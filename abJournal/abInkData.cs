@@ -773,6 +773,24 @@ namespace abJournal {
             model.Add(typeof(FontWeight), false).SetSurrogate(typeof(ProtoFontWeight));
             return model;
         }
+        public static ProtoBuf.Meta.RuntimeTypeModel SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel model) {
+            model.Add(typeof(Color), true);
+            model[typeof(Color)].Add("A", "R", "G", "B");
+            model.Add(typeof(Size), true);
+            model[typeof(Size)].Add("Height", "Width");
+            model.Add(typeof(StylusPoint), true);
+            model[typeof(StylusPoint)].Add("X", "Y", "PressureFactor");
+            model.Add(typeof(StylusPointCollection), false).SetSurrogate(typeof(ProtoStylusPointCollection));
+            model.Add(typeof(DrawingAttributes), true);
+            model[typeof(DrawingAttributes)].Add("Color", "FitToCurve", "Height", "IgnorePressure", "IsHighlighter", "StylusTip", "Width");
+            model.Add(typeof(Rect), true);
+            model[typeof(Rect)].Add("X", "Y", "Width", "Height");
+            model.Add(typeof(FontFamily), false).SetSurrogate(typeof(ProtoFontFamily));
+            model.Add(typeof(FontStyle), false).SetSurrogate(typeof(ProtoFontStyle));
+            model.Add(typeof(FontWeight), false).SetSurrogate(typeof(ProtoFontWeight));
+            return model;
+        }
+
         #endregion
 
         public abInkData Clone() {

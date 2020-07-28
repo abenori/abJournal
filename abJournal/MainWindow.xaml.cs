@@ -547,8 +547,8 @@ namespace abJournal {
                             AddHistory(files[0]);
                             files.RemoveAt(0);
                         }
-                        catch(InvalidOperationException) {
-                            MessageBox.Show(files[0] + " は正しいフォーマットではありません．");
+                        catch(InvalidOperationException e) {
+                            MessageBox.Show(files[0] + " は正しいフォーマットではありません．" + e.Message);
                             files.RemoveAt(0);
                             continue;
                         }
