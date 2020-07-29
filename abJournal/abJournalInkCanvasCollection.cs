@@ -172,11 +172,11 @@ namespace abJournal {
                 public class InkData {
                     [ProtoContract(SkipConstructor = true)]
                     public class StrokeData {
-						[ProtoMember(1)]
+                        [ProtoMember(1)]
                         public System.Windows.Input.StylusPointCollection StylusPoints { get; set; }
-						[ProtoMember(2)]
+                        [ProtoMember(2)]
                         public System.Windows.Ink.DrawingAttributes DrawingAttributes { get; set; }
-						[ProtoMember(3)]
+                        [ProtoMember(3)]
                         public DrawingAttributesPlus DrawingAttributesPlus { get; set; }
                         public StrokeData(abJournal.StrokeData stroke) {
                             StylusPoints = stroke.StylusPoints;
@@ -193,14 +193,102 @@ namespace abJournal {
                         }
                     }
                     public InkData(abInkData d) {
-                        Texts = new TextDataCollection();
                         Strokes = new List<StrokeData>();
                         foreach(var c in d.Strokes) { Strokes.Add(new StrokeData(c)); }
+                        Texts = new List<TextData>();
                     }
                     [ProtoMember(1)]
                     public List<StrokeData> Strokes { get; set; }
+                    [ProtoContract(SkipConstructor=true)]
+                    public class TextData {
+                        [ProtoMember(1)]
+                        public string Text { get; set; }
+                        [ProtoMember(2)]
+                        public Rect Rect { get; set; }
+                        [ProtoMember(3)]
+                        public string FontFamily { get; set; }
+                        public class FontStyleData {
+                            enum Style { Normal = 1, Italic = 2, Oblique = 3 }
+                            [ProtoMember(1)]
+                            Style style { get; set; }
+                            public FontStyleData(FontStyle fs) {
+                                if(fs == FontStyles.Italic) style = Style.Italic;
+                                else if(fs == FontStyles.Oblique) style = Style.Oblique;
+                                else style = Style.Normal;
+                            }
+                            public FontStyle ToFontStyle() {
+                                switch(style) {
+                                    case Style.Italic: return FontStyles.Italic;
+                                    case Style.Oblique: return FontStyles.Oblique;
+                                    default: return FontStyles.Normal;
+                                }
+                            }
+                        }
+                        [ProtoMember(4)]
+                        FontStyleData FontStyle { get; set; }
+                        public class FontWeightData {
+                            enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16 };
+                            public FontWeightData(FontWeight fw) {
+                                if(fw == FontWeights.Thin) weight = Weight.Thin;
+                                else if(fw == FontWeights.ExtraLight) weight = Weight.ExtraLight;
+                                else if(fw == FontWeights.UltraLight) weight = Weight.UltraLight;
+                                else if(fw == FontWeights.Light) weight = Weight.Light;
+                                else if(fw == FontWeights.Regular) weight = Weight.Regular;
+                                else if(fw == FontWeights.Medium) weight = Weight.Medium;
+                                else if(fw == FontWeights.DemiBold) weight = Weight.DemiBold;
+                                else if(fw == FontWeights.SemiBold) weight = Weight.SemiBold;
+                                else if(fw == FontWeights.Bold) weight = Weight.Bold;
+                                else if(fw == FontWeights.ExtraBold) weight = Weight.ExtraBold;
+                                else if(fw == FontWeights.UltraBold) weight = Weight.UltraBold;
+                                else if(fw == FontWeights.Black) weight = Weight.Black;
+                                else if(fw == FontWeights.Heavy) weight = Weight.Heavy;
+                                else if(fw == FontWeights.ExtraBlack) weight = Weight.ExtraBlack;
+                                else if(fw == FontWeights.UltraBlack) weight = Weight.UltraBlack;
+                                else weight = Weight.Normal;
+                            }
+                            public FontWeight ToFontWeight() {
+                                switch(weight) {
+                                    case Weight.Thin: return FontWeights.Thin;
+                                    case Weight.ExtraLight: return FontWeights.ExtraLight;
+                                    case Weight.UltraLight: return FontWeights.UltraLight;
+                                    case Weight.Light: return FontWeights.Light;
+                                    case Weight.Regular: return FontWeights.Regular;
+                                    case Weight.Medium: return FontWeights.Medium;
+                                    case Weight.DemiBold: return FontWeights.DemiBold;
+                                    case Weight.SemiBold: return FontWeights.SemiBold;
+                                    case Weight.Bold: return FontWeights.Bold;
+                                    case Weight.ExtraBold: return FontWeights.ExtraBold;
+                                    case Weight.UltraBold: return FontWeights.UltraBold;
+                                    case Weight.Black: return FontWeights.Black;
+                                    case Weight.Heavy: return FontWeights.Heavy;
+                                    case Weight.ExtraBlack: return FontWeights.ExtraBlack;
+                                    case Weight.UltraBlack: return FontWeights.UltraBlack;
+                                    default: return FontWeights.Normal;
+                                }
+                            }
+                            Weight weight;
+                        }
+                        [ProtoMember(5)]
+                        FontWeightData FontWeight { get; set; }
+                        [ProtoMember(6)]
+                        double FontSize { get; set; }
+                        [ProtoMember(7)]
+                        public Color Color { get; set; }
+                        public TextData(abJournal.TextData td) {
+                            Text = td.Text; Rect = td.Rect;
+                            FontFamily = td.FontFamily.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.ToString())];
+                            FontStyle = new FontStyleData(td.FontStyle); FontWeight = new FontWeightData(td.FontWeight);
+                            FontSize = td.FontSize; Color = td.Color;
+                        }
+                        public abJournal.TextData ToTextData() {
+                            return new abJournal.TextData(
+                                Text, Rect, new System.Windows.Media.FontFamily(FontFamily), FontSize,
+                                FontStyle.ToFontStyle(), FontWeight.ToFontWeight(), Color
+                                );
+                        }
+                    }
                     [ProtoMember(2)]
-                    public TextDataCollection Texts { get; set; }
+                    public List<TextData> Texts { get; set; }
                 }
                 [ProtoMember(2)]
                 public InkData Data;
@@ -270,7 +358,6 @@ namespace abJournal {
             }
             try {
                 var model = abInkData.SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel.Create());
-
                 using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
                     data.AttachedFiles = AttachedFile.Save(zip);
                     var mainEntry = zip.CreateEntry("_data.abjnt");
@@ -436,7 +523,11 @@ namespace abJournal {
                     foreach(var s in d.Data.Strokes) {
                         abinkdata.Strokes.Add(s.ToStrokeData());
                     }
-                    abinkdata.Texts = d.Data.Texts;
+                    abinkdata.Texts = new TextDataCollection();
+                    abinkdata.Texts.Capacity = d.Data.Texts.Count;
+                    foreach(var t in d.Data.Texts) {
+                        abinkdata.Texts.Add(t.ToTextData());
+                    }
                     AddCanvas(abinkdata, protodata.Info, d.Info);
                 }
                 Info = protodata.Info;
@@ -476,7 +567,6 @@ namespace abJournal {
 
         public void Open(string file) {
             var watch = new Stopwatch();
-            bool succ = false;
             using(var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
                 if(LoadProtoBuf2(fs) || LoadProtoBuf(fs) || LoadXML(fs)) { }
             }
