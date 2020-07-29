@@ -132,7 +132,7 @@ namespace abJournal {
         }
         #endregion
 
-        #region 保存など
+        #region 保存用データ
         [ProtoContract]
         public class ablibInkCanvasCollectionSavingProtobufData {
             [ProtoContract(SkipConstructor = true)]
@@ -207,10 +207,11 @@ namespace abJournal {
                         public Rect Rect { get; set; }
                         [ProtoMember(3)]
                         public string FontFamily { get; set; }
+                        [ProtoContract(SkipConstructor=true)]
                         public class FontStyleData {
-                            enum Style { Normal = 1, Italic = 2, Oblique = 3 }
+                            public enum Style { Normal = 1, Italic = 2, Oblique = 3 }
                             [ProtoMember(1)]
-                            Style style { get; set; }
+                            public Style style { get; set; }
                             public FontStyleData(FontStyle fs) {
                                 if(fs == FontStyles.Italic) style = Style.Italic;
                                 else if(fs == FontStyles.Oblique) style = Style.Oblique;
@@ -226,8 +227,9 @@ namespace abJournal {
                         }
                         [ProtoMember(4)]
                         FontStyleData FontStyle { get; set; }
+                        [ProtoContract(SkipConstructor = true)]
                         public class FontWeightData {
-                            enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16 };
+                            public enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16 };
                             public FontWeightData(FontWeight fw) {
                                 if(fw == FontWeights.Thin) weight = Weight.Thin;
                                 else if(fw == FontWeights.ExtraLight) weight = Weight.ExtraLight;
@@ -266,7 +268,7 @@ namespace abJournal {
                                     default: return FontWeights.Normal;
                                 }
                             }
-                            Weight weight;
+                            public Weight weight;
                         }
                         [ProtoMember(5)]
                         FontWeightData FontWeight { get; set; }
@@ -326,6 +328,9 @@ namespace abJournal {
                 Info = new CanvasCollectionInfo();
             }
         }
+        #endregion
+
+        #region 保存など
         public static string GetSchema() {
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
@@ -519,14 +524,17 @@ namespace abJournal {
                 Clear();
                 foreach(var d in protodata.Data) {
                     var abinkdata = new abInkData();
-                    abinkdata.Strokes.Capacity = d.Data.Strokes.Count;
-                    foreach(var s in d.Data.Strokes) {
-                        abinkdata.Strokes.Add(s.ToStrokeData());
+                    if(d.Data.Strokes != null) {
+                        abinkdata.Strokes.Capacity = d.Data.Strokes.Count;
+                        foreach(var s in d.Data.Strokes) {
+                            abinkdata.Strokes.Add(s.ToStrokeData());
+                        }
                     }
-                    abinkdata.Texts = new TextDataCollection();
-                    abinkdata.Texts.Capacity = d.Data.Texts.Count;
-                    foreach(var t in d.Data.Texts) {
-                        abinkdata.Texts.Add(t.ToTextData());
+                    if(d.Data.Texts != null) {
+                        abinkdata.Texts.Capacity = d.Data.Texts.Count;
+                        foreach(var t in d.Data.Texts) {
+                            abinkdata.Texts.Add(t.ToTextData());
+                        }
                     }
                     AddCanvas(abinkdata, protodata.Info, d.Info);
                 }
