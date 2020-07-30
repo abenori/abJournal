@@ -78,8 +78,8 @@ namespace abJournal {
                 }
             }
         }
-        public static DoubleCollection DashArray_Dashed = new DoubleCollection(new double[] { 2, 1 });
-        public static DoubleCollection DashArray_Normal = DrawingAttributesPlus.NormalDashArray;
+        public static List<double> DashArray_Dashed = new List<double>(new double[] { 2, 1 });
+        public static List<double> DashArray_Normal = DrawingAttributesPlus.NormalDashArray;
         bool penDashed = false;
         public bool PenDashed {
             get { return penDashed; }

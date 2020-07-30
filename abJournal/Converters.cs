@@ -56,8 +56,8 @@ namespace abJournal {
     }
 
     class MakeDashArrayConverter : IValueConverter {
-        DoubleCollection normal = abJournalInkCanvasCollection.DashArray_Normal;
-        DoubleCollection dashed = abJournalInkCanvasCollection.DashArray_Dashed;
+        List<double> normal = abJournalInkCanvasCollection.DashArray_Normal;
+        List<double> dashed = abJournalInkCanvasCollection.DashArray_Dashed;
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
             return ((bool) value) ? dashed : normal;
         }

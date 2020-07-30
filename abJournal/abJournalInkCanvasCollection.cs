@@ -8,6 +8,8 @@ using System.Windows.Media;
 using System.IO;
 using System.IO.Compression;
 using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
 
 namespace abJournal {
     public partial class abJournalInkCanvasCollection : abInkCanvasCollection<abJournalInkCanvas>, INotifyPropertyChanged, IDisposable {
@@ -185,8 +187,11 @@ namespace abJournal {
                         }
                         public abJournal.StrokeData ToStrokeData() {
                             return new abJournal.StrokeData(
+                                //new System.Windows.Input.StylusPointCollection(),
                                 StylusPoints,
+                                //new System.Windows.Ink.DrawingAttributes(),
                                 DrawingAttributes,
+                                //new DrawingAttributesPlus(),
                                 DrawingAttributesPlus,
                                 abJournal.Properties.Settings.Default.DrawingAlgorithm
                             );
@@ -196,6 +201,7 @@ namespace abJournal {
                         Strokes = new List<StrokeData>();
                         foreach(var c in d.Strokes) { Strokes.Add(new StrokeData(c)); }
                         Texts = new List<TextData>();
+                        Texts.Add(new TextData(new abJournal.TextData("あ")));
                     }
                     [ProtoMember(1)]
                     public List<StrokeData> Strokes { get; set; }
@@ -330,7 +336,7 @@ namespace abJournal {
         }
         #endregion
 
-        #region 保存など
+        #region 保存
         public static string GetSchema() {
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.TypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
@@ -352,9 +358,10 @@ namespace abJournal {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData2.CanvasData(c.InkData, c.Info));
             }
             data.Info = Info;
-            SaveProc(data, file);
+            var task = SaveProcAsync(data, file);
         }
-        public void SaveProc(ablibInkCanvasCollectionSavingProtobufData2 data, string file) {
+        private async System.Threading.Tasks.Task SaveProcAsync(ablibInkCanvasCollectionSavingProtobufData2 data, string file) {
+
             string tmpFile = null;
             if(File.Exists(file)) {
                 tmpFile = Path.GetTempFileName();
@@ -367,7 +374,7 @@ namespace abJournal {
                     data.AttachedFiles = AttachedFile.Save(zip);
                     var mainEntry = zip.CreateEntry("_data.abjnt");
                     using(var ws = mainEntry.Open()) {
-                        model.Serialize(ws, data);
+                        await System.Threading.Tasks.Task.Run(() => model.Serialize(ws, data));
                     }
                 }
             }
@@ -473,7 +480,9 @@ namespace abJournal {
                 }
             }
         }
+        #endregion
 
+        #region 読み込み
         private bool LoadProtoBuf(System.IO.FileStream fs) {
             fs.Seek(0,SeekOrigin.Begin);
             var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create());

@@ -61,7 +61,7 @@ namespace abJournal {
         }
 
         public DrawingAttributesPlus StrokeDrawingAttributesPlus = new DrawingAttributesPlus();
-        public DoubleCollection PenDashArray {
+        public List<double> PenDashArray {
             get { return StrokeDrawingAttributesPlus.DashArray; }
             set { StrokeDrawingAttributesPlus.DashArray = value; }
         }
@@ -86,7 +86,7 @@ namespace abJournal {
             Mode = SavedMode;
         }
         // newしまくらないためだけ
-        static DoubleCollection DottedDoubleCollection = new DoubleCollection(new double[] { 1, 1 });
+        static List<double> DottedDoubleCollection = new List<double>(new double[] { 1, 1 });
 
         #region カーソル
         // Cursors.Noneを指定してCanvasに書いて動かそうと思ったけど，
@@ -244,7 +244,7 @@ namespace abJournal {
             double dashOffset = 0;
             DrawingGroup drawingGroup = null;
             Pen pen = null;
-            public DrawingVisualLine(double thickness, Brush brush, DoubleCollection dash, bool ignpres) {
+            public DrawingVisualLine(double thickness, Brush brush, List<double> dash, bool ignpres) {
                 pen = new Pen(brush, thickness);
                 pen.DashStyle = new DashStyle(dash, 0);
                 pen.DashCap = PenLineCap.Flat;
@@ -584,7 +584,7 @@ namespace abJournal {
         abInkData InkData { get; set; }
         Brush Background { get; set; }
         double PenThickness { get; set; }
-        DoubleCollection PenDashArray { get; set; }
+        List<double> PenDashArray { get; set; }
         Color PenColor { get; set; }
         InkManipulationMode Mode { get; set; }
         void Copy();

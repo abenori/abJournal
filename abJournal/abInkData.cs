@@ -533,7 +533,7 @@ namespace abJournal {
                     IgnorePressure = ignorePressure
                 };
                 var attrplus = new DrawingAttributesPlus() {
-                    DashArray = new DoubleCollection(this.DashArray)
+                    DashArray = new List<double>(this.DashArray)
                 };
                 return new StrokeData(spc, attr, attrplus, algo);
             }

@@ -13,13 +13,13 @@ using ProtoBuf;
 namespace abJournal {
     [ProtoContract]
     public class DrawingAttributesPlus : System.ComponentModel.INotifyPropertyChanged {
-        public static DoubleCollection NormalDashArray = new DoubleCollection();
+        public static List<double> NormalDashArray = new List<double>();
         public DrawingAttributesPlus() {
-            DashArray = new DoubleCollection();
+            DashArray = new List<double>();
         }
-        DoubleCollection dashArray;
+        List<double> dashArray;
         [ProtoMember(1)]
-        public DoubleCollection DashArray {
+        public List<double> DashArray {
             get { return dashArray; }
             set { dashArray = value; OnPropertyChanged("DashArray"); }
         }
