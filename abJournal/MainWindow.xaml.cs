@@ -214,7 +214,7 @@ namespace abJournal {
         private void DeleteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.Delete();
         }
-        private void SaveAsCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
+        private async void SaveAsCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new SaveFileDialog();
             fd.InitialDirectory = System.IO.Path.GetDirectoryName(mainCanvas.FileName);
             fd.FileName = System.IO.Path.GetFileName(mainCanvas.FileName);
@@ -232,7 +232,7 @@ namespace abJournal {
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
-                        mainCanvas.Save(fd.FileName);
+                        await mainCanvas.SaveAsync(fd.FileName);
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
@@ -246,10 +246,10 @@ namespace abJournal {
                 OnPropertyChanged("abmainCanvas");
             }
         }
-        private void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
+        private async void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
-                mainCanvas.Save();
+                await mainCanvas.SaveAsync();
                 mainCanvas.ClearUpdated();
                 AddHistory(mainCanvas.FileName);
                 OnPropertyChanged("abmainCanvas");
@@ -326,7 +326,8 @@ namespace abJournal {
                 if(mainCanvas.FileName != null) {
                     res = MessageBox.Show("\"" + mainCanvas.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
                     if(res == MessageBoxResult.Yes) {
-                        mainCanvas.Save();
+                        var task = mainCanvas.SaveAsync();
+                        task.Wait();
                         AddHistory(mainCanvas.FileName);
                         return true;
                     } else return (res != MessageBoxResult.Cancel);
@@ -336,7 +337,8 @@ namespace abJournal {
                         var fd = new SaveFileDialog();
                         fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
                         if(fd.ShowDialog() == true) {
-                            mainCanvas.Save(fd.FileName);
+                            var task = mainCanvas.SaveAsync(fd.FileName);
+                            task.Wait();
                             AddHistory(fd.FileName);
                             return true;
                         } else return false;

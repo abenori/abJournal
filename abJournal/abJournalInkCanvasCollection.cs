@@ -342,10 +342,10 @@ namespace abJournal {
             //return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData));
             return abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create()).GetSchema(typeof(ablibInkCanvasCollectionSavingProtobufData2));
         }
-        public void Save() {
-            Save(FileName);
+        public async System.Threading.Tasks.Task SaveAsync() {
+            await SaveAsync(FileName);
         }
-        public void Save(string file) {
+        public async System.Threading.Tasks.Task SaveAsync(string file) {
             /*
             ablibInkCanvasCollectionSavingProtobufData data = new ablibInkCanvasCollectionSavingProtobufData();
             foreach (var c in this) {
@@ -358,10 +358,6 @@ namespace abJournal {
                 data.Data.Add(new ablibInkCanvasCollectionSavingProtobufData2.CanvasData(c.InkData, c.Info));
             }
             data.Info = Info;
-            var task = SaveProcAsync(data, file);
-        }
-        private async System.Threading.Tasks.Task SaveProcAsync(ablibInkCanvasCollectionSavingProtobufData2 data, string file) {
-
             string tmpFile = null;
             if(File.Exists(file)) {
                 tmpFile = Path.GetTempFileName();
