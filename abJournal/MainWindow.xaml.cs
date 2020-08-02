@@ -125,7 +125,8 @@ namespace abJournal {
                     var c = new abJournalInkCanvasCollection();
                     try {
                         c.Open(f);
-                        c.SavePDF(pdf);
+                        var task = c.SavePDFAsync(pdf);
+                        task.Wait();
                     }
                     catch(Exception e) {
                         MessageBox.Show(f + " のPDFへの変換に失敗．\n" + e.Message + "\n" + e.StackTrace);
@@ -225,14 +226,18 @@ namespace abJournal {
                     WindowTitle = "保存中……";
                     if(ext == ".pdf") {
                         try {
-                            mainCanvas.SavePDF(fd.FileName);
+                            await mainCanvas.SavePDFAsync(fd.FileName);
                         }
                         catch(Exception ex) {
                             MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
-                        await mainCanvas.SaveAsync(fd.FileName);
+                        if(Properties.Settings.Default.SaveWithPDF) {
+                            await mainCanvas.SaveDataAndPDFAsync(fd.FileName);
+                        } else {
+                            await mainCanvas.SaveAsync(fd.FileName);
+                        }
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
@@ -249,7 +254,11 @@ namespace abJournal {
         private async void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
-                await mainCanvas.SaveAsync();
+                if(Properties.Settings.Default.SaveWithPDF) {
+                    await mainCanvas.SaveDataAndPDFAsync();
+                } else {
+                    await mainCanvas.SaveAsync();
+                }
                 mainCanvas.ClearUpdated();
                 AddHistory(mainCanvas.FileName);
                 OnPropertyChanged("abmainCanvas");
@@ -512,9 +521,11 @@ namespace abJournal {
         public static readonly RoutedCommand OpenHistory = new RoutedCommand("OpenHistory", typeof(MainWindow));
         private void OpenHistoryCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             string f = (string) e.Parameter;
-            f = f.Substring(f.IndexOf("(") + 1);
-            f = f.Substring(0, f.Length - 1);
-            if(f != null) FileOpen(new List<string>() { f });
+            if(f != null) {
+                f = f.Substring(f.IndexOf("(") + 1);
+                f = f.Substring(0, f.Length - 1);
+                if(f != null) FileOpen(new List<string>() { f });
+            }
         }
         public static readonly RoutedCommand ShowAboutDialog = new RoutedCommand("ShowAboutDialog", typeof(MainWindow));
         private void ShowAboutDialogCommandExecuted(object sender, ExecutedRoutedEventArgs e) {

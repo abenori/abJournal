@@ -614,14 +614,14 @@ namespace abJournal {
         }
         */
 
-        public void AddTextToPDFGraphic(iTextSharp.text.pdf.PdfWriter writer, double scale) {
+        public static void AddTextToPDFGraphic(iTextSharp.text.pdf.PdfWriter writer, double scale, List<StrokeDataStruct> Strokes) {
             if (Strokes.Count == 0) return;
             var gstate = new iTextSharp.text.pdf.PdfGState();
             gstate.FillOpacity = 0;
             gstate.StrokeOpacity = 0;
             var font = iTextSharp.text.FontFactory.GetFont("游ゴシック", iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.NOT_EMBEDDED, 16);
             using (var analyzer = new InkAnalyzer()) {
-                var strokes = new StrokeCollection(Strokes.Select(s => (Stroke)s));
+                var strokes = new StrokeCollection(Strokes.Select(s => (Stroke)s.ToStrokeData()));
                 analyzer.AddStrokes(strokes);
                 analyzer.Analyze();
                 var nodes = analyzer.FindNodesOfType(ContextNodeType.Line);
@@ -638,22 +638,22 @@ namespace abJournal {
                 }
             }
         }
-        
-        public void AddPdfGarphic(iTextSharp.text.pdf.PdfWriter writer, double scale) {
-            if (Strokes.Count == 0) return;
-            foreach (var s in Strokes) {
+
+        public static void AddPdfGarphic(iTextSharp.text.pdf.PdfWriter writer, double scale, List<StrokeDataStruct> Strokes) {
+            if(Strokes.Count == 0) return;
+            foreach(var s in Strokes) {
                 writer.DirectContent.SetColorStroke(new iTextSharp.text.BaseColor(
                         s.DrawingAttributes.Color.R,
                         s.DrawingAttributes.Color.G,
                         s.DrawingAttributes.Color.B,
                         s.DrawingAttributes.Color.A
                     ));
-                if (!s.DrawingAttributesPlus.IsNormalDashArray) {
+                if(!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.ToArray(), 0);
                 }
                 writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_ROUND);
-                s.DrawPath(writer, scale);
-                if (!s.DrawingAttributesPlus.IsNormalDashArray) {
+                StrokeData.DrawPath(writer, scale, s.StylusPoints, s.DrawingAttributes);
+                if(!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(0);
                 }
             }
