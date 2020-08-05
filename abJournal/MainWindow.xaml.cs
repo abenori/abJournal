@@ -26,9 +26,7 @@ namespace abJournal {
     public partial class MainWindow : Window, INotifyPropertyChanged,IDisposable {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         bool FitScaleToWidth = true;
@@ -51,7 +49,11 @@ namespace abJournal {
                     FitScaleToWidth = true;
                     if(mainCanvas.Count == 0) return;
                     double maxWidth = mainCanvas.Select(c => c.Width).Max();
-                    mainCanvas.Scale = MainPanel.ActualWidth / maxWidth;
+                    if(mainCanvas.Landscape) {
+                        mainCanvas.Scale = mainCanvas.ActualHeight / maxWidth;
+                    } else {
+                        mainCanvas.Scale = mainCanvas.ActualWidth / maxWidth;
+                    }
                 }
             }
         }
@@ -152,6 +154,7 @@ namespace abJournal {
             CurrentPen = 0;
             mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
             mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
+            mainCanvas.Landscape = Properties.Settings.Default.Landscape;
 
             files.RemoveAll(f => {
                 if(!System.IO.File.Exists(f)) {
@@ -411,7 +414,8 @@ namespace abJournal {
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e) {
             if(FitScaleToWidth && mainCanvas.Count != 0) {
                 double maxWidth = mainCanvas.Select(c => c.Width).Max();
-                mainCanvas.Scale = MainPanel.ActualWidth / maxWidth;
+                if(mainCanvas.Landscape)mainCanvas.Scale = mainCanvas.ActualHeight / maxWidth;
+                else mainCanvas.Scale = mainCanvas.ActualWidth / maxWidth;
             }
             mainCanvas.Scroll();
         }
@@ -455,6 +459,8 @@ namespace abJournal {
                 mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
                 SetLowLevelKeyboardHook();
                 mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
+                mainCanvas.Landscape = Properties.Settings.Default.Landscape;
+                if(ScaleComboBoxIndex == 0) ScaleComboBoxIndex = 0;// 倍率計算し直し
             }
         }
 

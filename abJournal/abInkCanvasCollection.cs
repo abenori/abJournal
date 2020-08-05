@@ -11,6 +11,7 @@ using System.Runtime.Serialization;
 using System.Xml;
 using ProtoBuf;
 using System.ComponentModel;
+using System.Windows.Interop;
 
 namespace abJournal {
     // InkCanvasたちからなる「文書用」
@@ -114,6 +115,18 @@ namespace abJournal {
                 OnPropertyChanged("IgnorePressure");
             }
         }
+        bool landscape = false;
+        public bool Landscape {
+            get { return landscape; }
+            set {
+                if(landscape == value) return;
+                landscape = value;
+                Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
+                if(landscape) m.Rotate(-90);
+                else m.Rotate(90);
+                ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+            }
+        }
 
         public new Brush Background {
             get { return base.Background; }
@@ -135,7 +148,7 @@ namespace abJournal {
 
         public abInkCanvasCollection() {
             SizeChanged += InkCanvasCollection_SizeChanged;
-
+            
             Mode = InkManipulationMode.Inking;
             PenThickness = 2;
             Background = Brushes.Gray;
@@ -146,6 +159,7 @@ namespace abJournal {
             innerCanvas.Height = 0;
             innerCanvas.Background = Background;
             innerCanvas.RenderTransform = new MatrixTransform();
+
             innerCanvas.MouseDown += innerCanvas_MouseDown;
             innerCanvas.TouchDown += innerCanvas_TouchDown;
             Children.Add(innerCanvas);
@@ -210,9 +224,10 @@ namespace abJournal {
             base.OnManipulationInertiaStarting(e);
         }
         protected override void OnManipulationStarting(ManipulationStartingEventArgs e) {
-            var rect = innerCanvas.RenderTransform.TransformBounds(new Rect(0, 0, innerCanvas.Width, 0));
-            if(rect.Width < ActualWidth + 2) e.Mode = ManipulationModes.TranslateY;
-            else e.Mode = ManipulationModes.Translate;
+            var rect = innerCanvas.RenderTransform.TransformBounds(new Rect(0, 0, innerCanvas.Width, innerCanvas.Height));
+            e.Mode = ManipulationModes.Translate;
+            if(rect.Width < ActualWidth + 2 && !landscape) e.Mode = ManipulationModes.TranslateY;
+            if(rect.Height < ActualHeight + 2 && !landscape) e.Mode = ManipulationModes.TranslateX;
             e.IsSingleTouchEnabled = true;
             //e.Handled = true;
             base.OnManipulationStarting(e);
@@ -230,6 +245,11 @@ namespace abJournal {
                 bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(new Rect(-innerCanvas.Width/2,0,innerCanvas.Width,innerCanvas.Height)));
             }
             catch(NullReferenceException) { return rv; }
+            if(landscape) {
+                bounds = new Rect(bounds.Y, bounds.X, bounds.Height, bounds.Width);
+                windowSize = new Size(windowSize.Height, windowSize.Width);
+                scroll = new Vector(scroll.Y, scroll.X);
+            }
 
             if(bounds.Width != 0) {
                 if(bounds.Width < windowSize.Width + 2) {
@@ -252,10 +272,13 @@ namespace abJournal {
 
             //System.Diagnostics.Debug.WriteLine("scroll: " + scroll + ", bounds: " + bounds + ", rv; " + rv);
 
+            if(landscape) rv = new Vector(rv.Y, rv.X);
+
             return rv;
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e) {
-            Scroll(new Vector(0, e.Delta / 3));
+            if(landscape) Scroll(new Vector(-e.Delta / 3, 0));
+            else Scroll(new Vector(0, e.Delta / 3));
         }
 
         void InkCanvasCollection_SizeChanged(object sender, SizeChangedEventArgs e) {
@@ -304,9 +327,18 @@ namespace abJournal {
         void canvas_PropertyChanged(object sender, PropertyChangedEventArgs e) {
             switch(e.PropertyName) {
             case "Width":
-                var c = (abInkCanvasClass)sender;
-                Canvas.SetLeft(c, -c.Width / 2);
-                innerCanvas.Width = CanvasCollection.Select(d => d.Width).Max();
+                if(!landscape) {
+                    var c = (abInkCanvasClass)sender;
+                    Canvas.SetLeft(c, -c.Width / 2);
+                    innerCanvas.Width = CanvasCollection.Select(d => d.Width).Max();
+                }
+                break;
+            case "Height":
+                if(landscape) {
+                    var c = (abInkCanvasClass)sender;
+                    Canvas.SetTop(c, -c.Height / 2);
+                    innerCanvas.Height = CanvasCollection.Select(d => d.Height).Max();
+                }
                 break;
             default:
                 break;

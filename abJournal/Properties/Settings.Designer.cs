@@ -117,5 +117,17 @@ namespace abJournal.Properties {
                 this["SaveWithPDF"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool Landscape {
+            get {
+                return ((bool)(this["Landscape"]));
+            }
+            set {
+                this["Landscape"] = value;
+            }
+        }
     }
 }
