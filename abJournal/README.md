@@ -44,7 +44,7 @@ zipでアーカイブされていて，解凍すると
 * _data.abjnt
 * attached/*
 
-がでてきます．_data.abjntがprotobufでシリアライズされたデータ本体．（abInkCanvasManager.ablibInkCanvasCollectionSavingProtobufData型．添付しているabJournal.protoも参照．このファイルはabJournal.exe /getprotoschemaでも生成されます．）
+がでてきます．_data.abjntがprotobufでシリアライズされたデータ本体．（abInkCanvasManager.ablibInkCanvasCollectionSavingProtobufData2型．添付しているabJournal.protoも参照．このファイルはabJournal.exe /getprotoschemaでも生成されます．）
 attachedの中が，このファイルに付随するファイルたちです（たとえば背景に使われている画像とか）．
 
 ## 謝辞

@@ -119,12 +119,15 @@ namespace abJournal {
         public bool Landscape {
             get { return landscape; }
             set {
-                if(landscape == value) return;
-                landscape = value;
-                Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
-                if(landscape) m.Rotate(-90);
-                else m.Rotate(90);
-                ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+                if(landscape != value) {
+                    landscape = value;
+                    Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
+                    if(landscape) m.Rotate(-90);
+                    else m.Rotate(90);
+                    ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+                }
+                Scroll();
+                OnPropertyChanged("Landscape");
             }
         }
 
@@ -227,7 +230,7 @@ namespace abJournal {
             var rect = innerCanvas.RenderTransform.TransformBounds(new Rect(0, 0, innerCanvas.Width, innerCanvas.Height));
             e.Mode = ManipulationModes.Translate;
             if(rect.Width < ActualWidth + 2 && !landscape) e.Mode = ManipulationModes.TranslateY;
-            if(rect.Height < ActualHeight + 2 && !landscape) e.Mode = ManipulationModes.TranslateX;
+            if(rect.Height < ActualHeight + 2 && landscape) e.Mode = ManipulationModes.TranslateX;
             e.IsSingleTouchEnabled = true;
             //e.Handled = true;
             base.OnManipulationStarting(e);
