@@ -40,7 +40,7 @@ namespace abJournal {
                 rv.ShowDate = ShowDate;
                 rv.ShowTitle = ShowTitle;
                 rv.InkCanvasInfo = InkCanvasInfo.DeepCopy();
-                if (Title != null) rv.Title = (string)Title.Clone();
+                if(Title != null) rv.Title = (string)Title.Clone();
                 return rv;
             }
         }
@@ -72,16 +72,16 @@ namespace abJournal {
         public void InsertCanvas(abInkData d, CanvasCollectionInfo info, abJournalInkCanvas.InkCanvasInfo inkcanvasinfo, int index) {
             var canvas = new abJournalInkCanvas(d, inkcanvasinfo);
             base.InsertCanvas(canvas, index);
-            if (index == 0) DrawNoteContents(canvas, info);
+            if(index == 0) DrawNoteContents(canvas, info);
             DrawRules(canvas, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
         }
 
         public void ReDraw() {
-            for (int i = 0; i < Count; ++i) {
+            for(int i = 0; i < Count; ++i) {
                 var c = this[i];
                 c.CleanUpBrush();
                 c.SetBackgroundFromStr();
-                if (i == 0) DrawNoteContents(c, Info);
+                if(i == 0) DrawNoteContents(c, Info);
                 DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
                 c.ReDraw();
             }
@@ -90,7 +90,7 @@ namespace abJournal {
 
         #region background関連
         public void SetBackgroundFromStr() {
-            foreach (var c in this) c.SetBackgroundFromStr();
+            foreach(var c in this) c.SetBackgroundFromStr();
         }
         #endregion
 
@@ -98,28 +98,26 @@ namespace abJournal {
         public void Import(string path) {
             // 全く更新がない時はインポートしたページのみにする
             bool newImport = false;
-            if (!Updated && FileName == null) {
+            if(!Updated && FileName == null) {
                 DeleteCanvas(0);
                 Info.ShowTitle = false;
                 newImport = true;
             }
-            using (var file = new AttachedFile(path)) {
+            using(var file = new AttachedFile(path)) {
                 var ext = System.IO.Path.GetExtension(path).ToLower();
-                switch (ext) {
-                case ".pdf":
-                    {
+                switch(ext) {
+                case ".pdf": {
                         int oldCount = Count;
                         BackgroundPDF.LoadFile(file, this);
-                        for (int i = 0; i < Count - oldCount; ++i) {
+                        for(int i = 0; i < Count - oldCount; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
                         }
                         break;
                     }
-                case ".xps":
-                    {
+                case ".xps": {
                         int oldCount = Count;
                         BackgroundXPS.LoadFile(file, this);
-                        for (int i = 0; i < Count - oldCount; ++i) {
+                        for(int i = 0; i < Count - oldCount; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:xps:" + file.Identifier + ":page=" + i.ToString();
                         }
                         break;
@@ -128,7 +126,7 @@ namespace abJournal {
                     throw new NotImplementedException();
                 }
             }
-            if (newImport) {
+            if(newImport) {
                 ClearUndoChain();
                 ClearUpdated();
             }
@@ -244,7 +242,6 @@ namespace abJournal {
             await SaveAsync(file, data);
             await SavePDFAsync(Path.ChangeExtension(file, ".pdf"), data);
         }
-
         public async System.Threading.Tasks.Task SaveAsync() {
             await SaveAsync(FileName);
         }
@@ -253,135 +250,160 @@ namespace abJournal {
             catch(Exception e) { throw e; }
             FileName = file;
         }
-        private static async System.Threading.Tasks.Task SaveAsync(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
-            await System.Threading.Tasks.Task.Run(() => {
-                string tmpFile = null;
-                if(File.Exists(file)) {
-                    tmpFile = Path.GetTempFileName();
-                    File.Delete(tmpFile);
-                    File.Move(file, tmpFile);
-                }
-                try {
-                    var model = abInkData.SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel.Create());
-                    using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
-                        data.AttachedFiles = AttachedFile.Save(zip);
-                        var mainEntry = zip.CreateEntry("_data.abjnt");
-                        using(var ws = mainEntry.Open()) {
-                            model.Serialize(ws, data);
-                        }
+        public void SaveDataAndPDF() {
+            SaveDataAndPDF(FileName);
+        }
+        public void SaveDataAndPDF(string file) {
+            var data = MakeSavingData();
+            Save(file, data);
+            SavePDF(Path.ChangeExtension(file, ".pdf"), data);
+        }
+
+        public void Save() {
+            Save(FileName);
+        }
+        public void Save(string file) {
+            try { Save(file, MakeSavingData()); }
+            catch(Exception e) { throw e; }
+            FileName = file;
+        }
+        private static void Save(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
+            string tmpFile = null;
+            if(File.Exists(file)) {
+                tmpFile = Path.GetTempFileName();
+                File.Delete(tmpFile);
+                File.Move(file, tmpFile);
+            }
+            try {
+                var model = abInkData.SetProtoBufTypeModel2(ProtoBuf.Meta.RuntimeTypeModel.Create());
+                using(var zip = ZipFile.Open(file, ZipArchiveMode.Create)) {
+                    data.AttachedFiles = AttachedFile.Save(zip);
+                    var mainEntry = zip.CreateEntry("_data.abjnt");
+                    using(var ws = mainEntry.Open()) {
+                        model.Serialize(ws, data);
                     }
                 }
-                catch(Exception e) {
-                    System.Diagnostics.Debug.WriteLine(e.Message);
-                    File.Delete(file);
-                    if(tmpFile != null) File.Move(tmpFile, file);
-                    throw e;
-                }
+            }
+            catch(Exception e) {
+                System.Diagnostics.Debug.WriteLine(e.Message);
+                File.Delete(file);
+                if(tmpFile != null) File.Move(tmpFile, file);
+                throw e;
+            }
 
-                /*
-                using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
-                    //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
-                    model.Serialize(wfs, data);
-                }*/
-                if(tmpFile != null) File.Delete(tmpFile);
+            /*
+            using(var wfs = new System.IO.FileStream(file, System.IO.FileMode.Create)) {
+                //using(var zs = new System.IO.Compression.GZipStream(wfs, System.IO.Compression.CompressionLevel.Optimal)) {
+                model.Serialize(wfs, data);
+            }*/
+            if(tmpFile != null) File.Delete(tmpFile);
+        }
+
+        private static async System.Threading.Tasks.Task SaveAsync(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
+            await System.Threading.Tasks.Task.Run(() => {
+                Save(file, data);
             });
         }
 
         public async System.Threading.Tasks.Task SavePDFAsync(string file) {
             await SavePDFAsync(file, MakeSavingData());
         }
-        private static async System.Threading.Tasks.Task SavePDFAsync(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
-            await System.Threading.Tasks.Task.Run(() => {
-                double scale = (double)720 / (double)254 / Paper.mmToSize;
-                var documents = new Dictionary<string, iTextSharp.text.pdf.PdfReader>();
-                FileStream fw = null;
-                iTextSharp.text.Document doc = null;
-                iTextSharp.text.pdf.PdfWriter writer = null;
-                try {
-                    fw = new FileStream(file, FileMode.Create, FileAccess.Write);
-                    for(int i = 0; i < data.Data.Count; ++i) {
-                        var ps = Paper.GetPaperSize(data.Data[i].Info.Size);
-                        iTextSharp.text.Rectangle pagesize;
-                        // 1 = 1/72インチ = 25.4/72 mm
-                        switch(ps) {
-                            case Paper.PaperSize.A0: pagesize = iTextSharp.text.PageSize.A0; break;
-                            case Paper.PaperSize.A1: pagesize = iTextSharp.text.PageSize.A1; break;
-                            case Paper.PaperSize.A2: pagesize = iTextSharp.text.PageSize.A2; break;
-                            case Paper.PaperSize.A3: pagesize = iTextSharp.text.PageSize.A3; break;
-                            case Paper.PaperSize.A4: pagesize = iTextSharp.text.PageSize.A4; break;
-                            case Paper.PaperSize.A5: pagesize = iTextSharp.text.PageSize.A5; break;
-                            case Paper.PaperSize.B0: pagesize = iTextSharp.text.PageSize.B0; break;
-                            case Paper.PaperSize.B1: pagesize = iTextSharp.text.PageSize.B1; break;
-                            case Paper.PaperSize.B2: pagesize = iTextSharp.text.PageSize.B2; break;
-                            case Paper.PaperSize.B3: pagesize = iTextSharp.text.PageSize.B3; break;
-                            case Paper.PaperSize.B4: pagesize = iTextSharp.text.PageSize.B4; break;
-                            case Paper.PaperSize.B5: pagesize = iTextSharp.text.PageSize.B5; break;
-                            case Paper.PaperSize.Letter: pagesize = iTextSharp.text.PageSize.LETTER; break;
-                            case Paper.PaperSize.Tabloid: pagesize = iTextSharp.text.PageSize.TABLOID; break;
-                            case Paper.PaperSize.Ledger: pagesize = iTextSharp.text.PageSize.LEDGER; break;
-                            case Paper.PaperSize.Legal: pagesize = iTextSharp.text.PageSize.LEGAL; break;
-                            //case Paper.PaperSize.Folio: pagesize = iTextSharp.text.PageSize.; break;
-                            //case Paper.PaperSize.Quarto: pagesize = iTextSharp.text.PageSize.QUARTO; break;
-                            case Paper.PaperSize.Executive: pagesize = iTextSharp.text.PageSize.EXECUTIVE; break;
-                            //case Paper.PaperSize.Statement: pagesize = iTextSharp.text.PageSize.STATEMENT; break;
-                            case Paper.PaperSize.Other:
-                                pagesize = new iTextSharp.text.Rectangle((float)(data.Data[i].Info.Size.Width * scale), (float)(data.Data[i].Info.Size.Height * scale));
-                                break;
-                            default:
-                                var s = Paper.GetmmSize(ps);
-                                pagesize = new iTextSharp.text.Rectangle((float)s.Width * 720 / 254, (float)s.Height * 720 / 254);
-                                break;
-                        }
-                        if(doc == null) {
-                            doc = new iTextSharp.text.Document(pagesize);
-                            writer = iTextSharp.text.pdf.PdfWriter.GetInstance(doc, fw);
-                            doc.Open();
-                        } else doc.SetPageSize(pagesize);
-                        if(data.Data[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
-                            var str = data.Data[i].Info.BackgroundStr.Substring("image:pdf:".Length);
-                            var r = str.IndexOf(":");
-                            if(r != -1) {
-                                var id = str.Substring(0, r);
-                                int pagenum;
-                                if(Int32.TryParse(str.Substring(r + "page=".Length + 1), out pagenum)) {
-                                    iTextSharp.text.pdf.PdfReader pdfdoc;
-                                    if(documents.ContainsKey(id)) pdfdoc = documents[id];
-                                    else {
-                                        using(var f = AttachedFile.GetFileFromIdentifier(id)) {
-                                            pdfdoc = new iTextSharp.text.pdf.PdfReader(f.FileName);
-                                            documents[id] = pdfdoc;
-                                        }
+        public void SavePDF(string file) {
+            SavePDF(file, MakeSavingData());
+        }
+        private static void SavePDF(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
+            double scale = (double)720 / (double)254 / Paper.mmToSize;
+            var documents = new Dictionary<string, iTextSharp.text.pdf.PdfReader>();
+            FileStream fw = null;
+            iTextSharp.text.Document doc = null;
+            iTextSharp.text.pdf.PdfWriter writer = null;
+            try {
+                fw = new FileStream(file, FileMode.Create, FileAccess.Write);
+                for(int i = 0; i < data.Data.Count; ++i) {
+                    var ps = Paper.GetPaperSize(data.Data[i].Info.Size);
+                    iTextSharp.text.Rectangle pagesize;
+                    // 1 = 1/72インチ = 25.4/72 mm
+                    switch(ps) {
+                    case Paper.PaperSize.A0: pagesize = iTextSharp.text.PageSize.A0; break;
+                    case Paper.PaperSize.A1: pagesize = iTextSharp.text.PageSize.A1; break;
+                    case Paper.PaperSize.A2: pagesize = iTextSharp.text.PageSize.A2; break;
+                    case Paper.PaperSize.A3: pagesize = iTextSharp.text.PageSize.A3; break;
+                    case Paper.PaperSize.A4: pagesize = iTextSharp.text.PageSize.A4; break;
+                    case Paper.PaperSize.A5: pagesize = iTextSharp.text.PageSize.A5; break;
+                    case Paper.PaperSize.B0: pagesize = iTextSharp.text.PageSize.B0; break;
+                    case Paper.PaperSize.B1: pagesize = iTextSharp.text.PageSize.B1; break;
+                    case Paper.PaperSize.B2: pagesize = iTextSharp.text.PageSize.B2; break;
+                    case Paper.PaperSize.B3: pagesize = iTextSharp.text.PageSize.B3; break;
+                    case Paper.PaperSize.B4: pagesize = iTextSharp.text.PageSize.B4; break;
+                    case Paper.PaperSize.B5: pagesize = iTextSharp.text.PageSize.B5; break;
+                    case Paper.PaperSize.Letter: pagesize = iTextSharp.text.PageSize.LETTER; break;
+                    case Paper.PaperSize.Tabloid: pagesize = iTextSharp.text.PageSize.TABLOID; break;
+                    case Paper.PaperSize.Ledger: pagesize = iTextSharp.text.PageSize.LEDGER; break;
+                    case Paper.PaperSize.Legal: pagesize = iTextSharp.text.PageSize.LEGAL; break;
+                    //case Paper.PaperSize.Folio: pagesize = iTextSharp.text.PageSize.; break;
+                    //case Paper.PaperSize.Quarto: pagesize = iTextSharp.text.PageSize.QUARTO; break;
+                    case Paper.PaperSize.Executive: pagesize = iTextSharp.text.PageSize.EXECUTIVE; break;
+                    //case Paper.PaperSize.Statement: pagesize = iTextSharp.text.PageSize.STATEMENT; break;
+                    case Paper.PaperSize.Other:
+                        pagesize = new iTextSharp.text.Rectangle((float)(data.Data[i].Info.Size.Width * scale), (float)(data.Data[i].Info.Size.Height * scale));
+                        break;
+                    default:
+                        var s = Paper.GetmmSize(ps);
+                        pagesize = new iTextSharp.text.Rectangle((float)s.Width * 720 / 254, (float)s.Height * 720 / 254);
+                        break;
+                    }
+                    if(doc == null) {
+                        doc = new iTextSharp.text.Document(pagesize);
+                        writer = iTextSharp.text.pdf.PdfWriter.GetInstance(doc, fw);
+                        doc.Open();
+                    } else doc.SetPageSize(pagesize);
+                    if(data.Data[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
+                        var str = data.Data[i].Info.BackgroundStr.Substring("image:pdf:".Length);
+                        var r = str.IndexOf(":");
+                        if(r != -1) {
+                            var id = str.Substring(0, r);
+                            int pagenum;
+                            if(Int32.TryParse(str.Substring(r + "page=".Length + 1), out pagenum)) {
+                                iTextSharp.text.pdf.PdfReader pdfdoc;
+                                if(documents.ContainsKey(id)) pdfdoc = documents[id];
+                                else {
+                                    using(var f = AttachedFile.GetFileFromIdentifier(id)) {
+                                        pdfdoc = new iTextSharp.text.pdf.PdfReader(f.FileName);
+                                        documents[id] = pdfdoc;
                                     }
-                                    var page = writer.GetImportedPage(pdfdoc, pagenum + 1);
-                                    writer.DirectContent.AddTemplate(page, 0, 0);
                                 }
+                                var page = writer.GetImportedPage(pdfdoc, pagenum + 1);
+                                writer.DirectContent.AddTemplate(page, 0, 0);
                             }
                         }
-                        if(i == 0) DrawNoteContents(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info, scale);
-                        DrawRules(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info.InkCanvasInfo.HorizontalRule, data.Info.InkCanvasInfo.VerticalRule, (i == 0 && data.Info.ShowTitle), scale);
-                        abInkData.AddPdfGarphic(writer, scale, data.Data[i].Data.Strokes);
-                        if(Properties.Settings.Default.SaveTextToPDF) abInkData.AddTextToPDFGraphic(writer, scale, data.Data[i].Data.Strokes);
-                        if(i != data.Data.Count - 1) doc.NewPage();
                     }
-                    doc.AddCreator("abJournal");
-                    doc.AddTitle(data.Info.Title);
-                    writer.Info.Put(new iTextSharp.text.pdf.PdfName("CreationDate"), new iTextSharp.text.pdf.PdfDate(data.Info.Date));
-                    writer.Info.Put(new iTextSharp.text.pdf.PdfName("ModificationDate"), new iTextSharp.text.pdf.PdfDate(DateTime.Now));
+                    if(i == 0) DrawNoteContents(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info, scale);
+                    DrawRules(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info.InkCanvasInfo.HorizontalRule, data.Info.InkCanvasInfo.VerticalRule, (i == 0 && data.Info.ShowTitle), scale);
+                    abInkData.AddPdfGarphic(writer, scale, data.Data[i].Data.Strokes);
+                    if(Properties.Settings.Default.SaveTextToPDF) abInkData.AddTextToPDFGraphic(writer, scale, data.Data[i].Data.Strokes);
+                    if(i != data.Data.Count - 1) doc.NewPage();
                 }
-                finally {
-                    doc?.Close();
-                    writer?.Close();
-                    fw?.Close();
-                    foreach(var d in documents) {
-                        d.Value.Close();
-                    }
+                doc.AddCreator("abJournal");
+                doc.AddTitle(data.Info.Title);
+                writer.Info.Put(new iTextSharp.text.pdf.PdfName("CreationDate"), new iTextSharp.text.pdf.PdfDate(data.Info.Date));
+                writer.Info.Put(new iTextSharp.text.pdf.PdfName("ModificationDate"), new iTextSharp.text.pdf.PdfDate(DateTime.Now));
+            }
+            finally {
+                doc?.Close();
+                writer?.Close();
+                fw?.Close();
+                foreach(var d in documents) {
+                    d.Value.Close();
                 }
-            });
+            }
+        }
+        private static async System.Threading.Tasks.Task SavePDFAsync(string file, ablibInkCanvasCollectionSavingProtobufData2 data) {
+            await System.Threading.Tasks.Task.Run(() => { SavePDF(file, data); });
         }
 
-            #endregion
+        #endregion
 
-            #region 読み込み
+        #region 読み込み
             private bool LoadProtoBuf(System.IO.FileStream fs) {
             fs.Seek(0,SeekOrigin.Begin);
             var model = abInkData.SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel.Create());

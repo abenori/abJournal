@@ -127,8 +127,7 @@ namespace abJournal {
                     var c = new abJournalInkCanvasCollection();
                     try {
                         c.Open(f);
-                        var task = c.SavePDFAsync(pdf);
-                        task.Wait();
+                        c.SavePDF(pdf);
                     }
                     catch(Exception e) {
                         MessageBox.Show(f + " のPDFへの変換に失敗．\n" + e.Message + "\n" + e.StackTrace);
@@ -338,8 +337,7 @@ namespace abJournal {
                 if(mainCanvas.FileName != null) {
                     res = MessageBox.Show("\"" + mainCanvas.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
                     if(res == MessageBoxResult.Yes) {
-                        var task = mainCanvas.SaveAsync();
-                        task.Wait();
+                        mainCanvas.Save();
                         AddHistory(mainCanvas.FileName);
                         return true;
                     } else return (res != MessageBoxResult.Cancel);
@@ -349,8 +347,7 @@ namespace abJournal {
                         var fd = new SaveFileDialog();
                         fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
                         if(fd.ShowDialog() == true) {
-                            var task = mainCanvas.SaveAsync(fd.FileName);
-                            task.Wait();
+                            mainCanvas.Save(fd.FileName);
                             AddHistory(fd.FileName);
                             return true;
                         } else return false;
