@@ -239,8 +239,12 @@ namespace abJournal {
         }
         public async System.Threading.Tasks.Task SaveDataAndPDFAsync(string file) {
             var data = MakeSavingData();
-            await SaveAsync(file, data);
-            await SavePDFAsync(Path.ChangeExtension(file, ".pdf"), data);
+            try {
+                await SaveAsync(file, data);
+                await SavePDFAsync(Path.ChangeExtension(file, ".pdf"), data);
+            }
+            catch(Exception e) { throw e; }
+            FileName = file;
         }
         public async System.Threading.Tasks.Task SaveAsync() {
             await SaveAsync(FileName);
@@ -255,8 +259,12 @@ namespace abJournal {
         }
         public void SaveDataAndPDF(string file) {
             var data = MakeSavingData();
-            Save(file, data);
-            SavePDF(Path.ChangeExtension(file, ".pdf"), data);
+            try {
+                Save(file, data);
+                SavePDF(Path.ChangeExtension(file, ".pdf"), data);
+            }
+            catch(Exception e) { throw e; }
+            FileName = file;
         }
 
         public void Save() {

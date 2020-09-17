@@ -1,7 +1,7 @@
 ﻿<Window x:Class="abJournal.PenSettingDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="鉛筆設定" Height="300" Width="300"
+        Title="鉛筆設定" Height="300" Width="340"
         xmlns:local="clr-namespace:abJournal">
     <Window.Resources>
         <local:ColorBrushConverter x:Key="ColorBrushConverter"/>
@@ -17,24 +17,25 @@
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Row="0">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="0.7*"/>
-            <ColumnDefinition Width="0.8*"/>
-            <ColumnDefinition Width="0.3*"/>
-            <ColumnDefinition Width="0.4*"/>
-            <ColumnDefinition Width="0.6*"/>
-            <ColumnDefinition Width="0.6*"/>
-        </Grid.ColumnDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="0.7*"/>
+                <ColumnDefinition Width="0.8*"/>
+                <ColumnDefinition Width="0.3*"/>
+                <ColumnDefinition Width="0.4*"/>
+                <ColumnDefinition Width="0.6*"/>
+                <ColumnDefinition Width="0.6*"/>
+                <ColumnDefinition Width="0.6*"/>
+            </Grid.ColumnDefinitions>
             <Label Grid.Column="1" Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
             <Label Grid.Column="1" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
             <Label Grid.Column="1" Grid.Row="2" HorizontalAlignment="Right" VerticalAlignment="Center">色の変更</Label>
@@ -81,14 +82,23 @@
             <ComboBox Grid.Column="4" Grid.Row="6" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen6Thickness_ComboBox" SelectedIndex="{Binding PenThickness[6],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
             <ComboBox Grid.Column="4" Grid.Row="7" Width="50" HorizontalAlignment="Center" VerticalAlignment="Center" x:Name="Pen7Thickness_ComboBox" SelectedIndex="{Binding PenThickness[7],Converter={StaticResource ThicknessComboBoxSelConvereter}}"/>
 
-            <CheckBox Grid.Column="5" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[0],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[1],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[2],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[3],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[4],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[5],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="6" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[6],Mode=TwoWay}">破線</CheckBox>
-            <CheckBox Grid.Column="5" Grid.Row="7" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[7],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[0],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[1],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[2],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[3],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[4],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[5],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="6" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[6],Mode=TwoWay}">蛍光</CheckBox>
+            <CheckBox Grid.Column="5" Grid.Row="7" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenHilight[7],Mode=TwoWay}">蛍光</CheckBox>
+
+            <CheckBox Grid.Column="6" Grid.Row="0" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[0],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[1],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="2" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[2],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="3" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[3],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="4" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[4],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="5" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[5],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="6" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[6],Mode=TwoWay}">破線</CheckBox>
+            <CheckBox Grid.Column="6" Grid.Row="7" HorizontalAlignment="Center" VerticalAlignment="Center" IsChecked="{Binding PenDashed[7],Mode=TwoWay}">破線</CheckBox>
         </Grid>
         <Grid Grid.Row="1">
             <Grid.RowDefinitions>

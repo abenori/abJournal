@@ -147,11 +147,25 @@
                             </Setter.Value>
                         </Setter>
                     </Style>
+                    <Style x:Key="SaveButtonStyle" TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Image x:Name="SaveImage" Height="18" Source="icon/save.png"/>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsEnabled" Value="false">
+                                            <Setter TargetName="SaveImage" Property="Source" Value="icon/save_gray.png"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
                 </ToolBar.Resources>
-            <Button Command="Save" ToolTip="保存">
-                <Image Height="18" Source="icon/save.png" />
+            <Button Command="Save" ToolTip="保存" x:Name="SaveButton" Style="{StaticResource SaveButtonStyle}">
+                <Image Height="18" Source="icon/save.png"/>
             </Button>
-            <Button Command="Undo" ToolTip="元に戻す" Style="{StaticResource UndoButtonStyle}" Margin="0 0 3 0"/>
+                <Button Command="Undo" ToolTip="元に戻す" Style="{StaticResource UndoButtonStyle}" Margin="0 0 3 0"/>
             <Button Command="Redo" ToolTip="やり直し" Style="{StaticResource RedoButtonStyle}"/>
             <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
                 <Image Height="18" Source="icon/pencil.png" />

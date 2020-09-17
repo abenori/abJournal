@@ -16,13 +16,14 @@
         }
 
         protected override void OnSettingsLoaded(object sender, System.Configuration.SettingsLoadedEventArgs e) {
-            if(PenDashed == null) PenDashed = new bool[] { false, false, false, false, false, false, false, false };
-            if(PenThickness == null) PenThickness = new double[] { 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5 };
-            if(PenColor == null) {
+            if (PenDashed == null) PenDashed = new bool[] { false, false, false, false, false, false, false, false };
+            if (PenThickness == null) PenThickness = new double[] { 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5 };
+            if (PenColor == null) {
                 PenColor = new System.Windows.Media.Color[8];
-                for(int i = 0 ; i < PenColor.Length ; ++i) PenColor[i] = System.Windows.Media.Colors.Black;
+                for (int i = 0; i < PenColor.Length; ++i) PenColor[i] = System.Windows.Media.Colors.Black;
             }
-            if(History == null) History = new System.Collections.Specialized.StringCollection();
+            if (PenHilight == null) PenHilight = new bool[] { false, false, false, false, false, false, false, false };
+            if (History == null) History = new System.Collections.Specialized.StringCollection();
             base.OnSettingsLoaded(sender, e);
         }
 
@@ -54,6 +55,13 @@
         public System.Windows.Media.Color[] PenColor {
             get { return (System.Windows.Media.Color[]) this["PenColor"]; }
             set { this["PenColor"] = value; }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public bool[] PenHilight {
+            get { return (bool[])this["PenHilight"]; }
+            set { this["PenHilight"] = value; }
         }
     }
 }

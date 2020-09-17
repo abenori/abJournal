@@ -226,6 +226,7 @@ namespace abJournal {
                 try {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     WindowTitle = "保存中……";
+                    SaveButton.IsEnabled = false;
                     if(ext == ".pdf") {
                         try {
                             await mainCanvas.SavePDFAsync(fd.FileName);
@@ -235,10 +236,15 @@ namespace abJournal {
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
-                        if(Properties.Settings.Default.SaveWithPDF) {
-                            await mainCanvas.SaveDataAndPDFAsync(fd.FileName);
-                        } else {
-                            await mainCanvas.SaveAsync(fd.FileName);
+                        try {
+                            if(Properties.Settings.Default.SaveWithPDF) {
+                                await mainCanvas.SaveDataAndPDFAsync(fd.FileName);
+                            } else {
+                                await mainCanvas.SaveAsync(fd.FileName);
+                            }
+                        }
+                        catch(Exception ex) {
+                            MessageBox.Show("ファイルの保存に失敗しました．\n" + ex.Message);
                         }
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
@@ -249,6 +255,7 @@ namespace abJournal {
                 }
                 finally {
                     WindowTitle = null;
+                    SaveButton.IsEnabled = true;
                 }
                 OnPropertyChanged("abmainCanvas");
             }
@@ -256,11 +263,13 @@ namespace abJournal {
         private async void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
+                SaveButton.IsEnabled = false;
                 if(Properties.Settings.Default.SaveWithPDF) {
                     await mainCanvas.SaveDataAndPDFAsync();
                 } else {
                     await mainCanvas.SaveAsync();
                 }
+                SaveButton.IsEnabled = true;
                 mainCanvas.ClearUpdated();
                 AddHistory(mainCanvas.FileName);
                 OnPropertyChanged("abmainCanvas");
