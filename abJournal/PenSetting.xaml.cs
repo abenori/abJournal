@@ -25,6 +25,12 @@ namespace abJournal {
         public Color[] PenColor {
             get { return Properties.Settings.Default.PenColor; }
         }
+        public bool[] PenHilight {
+            get { return Properties.Settings.Default.PenHilight; }
+        }
+        public bool[] PenShowInToolbar {
+            get { return Properties.Settings.Default.PenShowInToolbar; }
+        }
 
         public PenSettingDialog() {
             InitializeComponent();

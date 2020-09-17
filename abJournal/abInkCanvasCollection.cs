@@ -90,6 +90,15 @@ namespace abJournal {
                 OnPropertyChanged("PenDashed");
             }
         }
+        public bool penIsHilighter = false;
+        public bool PenIsHilighter {
+            get { return penIsHilighter; }
+            set {
+                penIsHilighter = value;
+                foreach (var c in CanvasCollection) c.PenIsHilighter = penIsHilighter;
+                OnPropertyChanged("PenIsHilighter");
+            }
+        }
 
         double scale = 1;
         public double Scale {

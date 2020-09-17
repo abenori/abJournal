@@ -45,6 +45,7 @@ namespace abJournal {
             get { return StrokeBrush.Color; }
             set {
                 StrokeBrush = new SolidColorBrush(value);
+                StrokeBrush.Opacity = PenIsHilighter ? 0.5 : 0;
                 StrokeBrush.Freeze();
                 StrokeDrawingAttributes.Color = value;
                 SetCursor();
@@ -64,6 +65,15 @@ namespace abJournal {
         public List<double> PenDashArray {
             get { return StrokeDrawingAttributesPlus.DashArray; }
             set { StrokeDrawingAttributesPlus.DashArray = value; }
+        }
+        public bool PenIsHilighter {
+            get { return StrokeDrawingAttributes.IsHighlighter; }
+            set {
+                StrokeDrawingAttributes.IsHighlighter = value;
+                StrokeBrush = new SolidColorBrush(PenColor);
+                StrokeBrush.Opacity = value ? 0.5 : 0;
+                StrokeBrush.Freeze();
+            }
         }
 
         public new double Height {
@@ -586,6 +596,7 @@ namespace abJournal {
         double PenThickness { get; set; }
         List<double> PenDashArray { get; set; }
         Color PenColor { get; set; }
+        bool PenIsHilighter { get; set; }
         InkManipulationMode Mode { get; set; }
         void Copy();
         void Cut();

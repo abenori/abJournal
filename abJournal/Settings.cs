@@ -23,6 +23,7 @@
                 for (int i = 0; i < PenColor.Length; ++i) PenColor[i] = System.Windows.Media.Colors.Black;
             }
             if (PenHilight == null) PenHilight = new bool[] { false, false, false, false, false, false, false, false };
+            if (PenShowInToolbar == null) PenShowInToolbar = new bool[] { true, false, false, false, false, false, false, false };
             if (History == null) History = new System.Collections.Specialized.StringCollection();
             base.OnSettingsLoaded(sender, e);
         }
@@ -62,6 +63,13 @@
         public bool[] PenHilight {
             get { return (bool[])this["PenHilight"]; }
             set { this["PenHilight"] = value; }
+        }
+
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        public bool[] PenShowInToolbar {
+            get { return (bool[])this["PenShowInToolbar"]; }
+            set { this["PenShowInToolbar"] = value; }
         }
     }
 }

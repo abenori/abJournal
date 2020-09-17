@@ -57,6 +57,7 @@
         <local:MakeDashArrayConverter x:Key="MakeDashArrayConverter"/>
         <local:IsSelectingModeCnverter x:Key="IsSelectingModeConverter"/>
         <local:FileNameConverter x:Key="FileNameConverter"/>
+        <local:ShowToWidthConverter x:Key="ShowToWidthConverter"/>
         <ContextMenu x:Key="CanvasCollectionMenu" Opened="ContextMenu_Opened" Closed="ContextMenu_Closed">
             <MenuItem Header="削除" Command="Delete"/>
             <MenuItem Header="コピー" Command="Copy"/>
@@ -167,65 +168,36 @@
             </Button>
                 <Button Command="Undo" ToolTip="元に戻す" Style="{StaticResource UndoButtonStyle}" Margin="0 0 3 0"/>
             <Button Command="Redo" ToolTip="やり直し" Style="{StaticResource RedoButtonStyle}"/>
-            <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToPen}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsInkingModeConverter},Mode=OneWay}">
-                <Image Height="18" Source="icon/pencil.png" />
-            </ToggleButton>
-                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="0" Width="{Binding PenShowInToolbar[0],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=0,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[0]}" Stroke="{Binding PenColor[0],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[0],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="1" Width="{Binding PenShowInToolbar[1],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=1,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[1]}" Stroke="{Binding PenColor[1],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[1],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="2" Width="{Binding PenShowInToolbar[2],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=2,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[2]}" Stroke="{Binding PenColor[2],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[2],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="3" Width="{Binding PenShowInToolbar[3],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=3,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[3]}" Stroke="{Binding PenColor[3],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[3],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="4" Width="{Binding PenShowInToolbar[4],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=4,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[4]}" Stroke="{Binding PenColor[4],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[4],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="5" Width="{Binding PenShowInToolbar[5],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=5,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[5]}" Stroke="{Binding PenColor[5],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[5],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="6" Width="{Binding PenShowInToolbar[6],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=6,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[6]}" Stroke="{Binding PenColor[6],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[6],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Height="18" Command="{x:Static local:MainWindow.ModeChangeToPen}" CommandParameter="7" Width="{Binding PenShowInToolbar[7],Converter={StaticResource ShowToWidthConverter}}" IsChecked="{Binding PenMode,Converter={StaticResource IsInkingModeConverter},ConverterParameter=7,Mode=OneWay}">
+                    <Line VerticalAlignment="Center" X1="0" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[7]}" Stroke="{Binding PenColor[7],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[7],Converter={StaticResource MakeDashArrayConverter}}"/>
+                </ToggleButton>
+                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToEraser}" IsChecked="{Binding PenMode,Converter={StaticResource IsErasingModeConverter},Mode=OneWay}">
             <Image Height="18" Source="icon/eraser.png"/>
             </ToggleButton>
-                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToSelection}" IsChecked="{Binding ElementName=mainCanvas,Path=Mode,Converter={StaticResource IsSelectingModeConverter},Mode=OneWay}">
+                <ToggleButton Command="{x:Static local:MainWindow.ModeChangeToSelection}" IsChecked="{Binding PenMode,Converter={StaticResource IsSelectingModeConverter},Mode=OneWay}">
                     <Image Height="18" Source="icon/select.png"/>
                 </ToggleButton>
-            <ComboBox Width="100"  SelectedIndex="{Binding CurrentPen}">
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン1</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[0]}" Stroke="{Binding PenColor[0],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[0],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン2</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[1]}" Stroke="{Binding PenColor[1],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[1],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン3</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[2]}" Stroke="{Binding PenColor[2],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[2],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン4</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[3]}" Stroke="{Binding PenColor[3],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[3],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン5</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[4]}" Stroke="{Binding PenColor[4],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[4],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン6</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[5]}" Stroke="{Binding PenColor[5],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[5],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン7</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[6]}" Stroke="{Binding PenColor[6],Converter={StaticResource ColorBrushConverter}}" StrokeDashArray="{Binding PenDashed[6],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-                <ComboBoxItem>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock>ぺン8</TextBlock>
-                        <Line VerticalAlignment="Center" X1="10" Y1="0" X2="40" Y2="0" StrokeThickness="{Binding PenThickness[7]}" Stroke="{Binding PenColor[7],Converter={StaticResource ColorBrushConverter}}"  StrokeDashArray="{Binding PenDashed[7],Converter={StaticResource MakeDashArrayConverter}}"/>
-                    </StackPanel>
-                </ComboBoxItem>
-            </ComboBox>
                 <ComboBox Width="70" SelectedIndex="{Binding ScaleComboBoxIndex}">
                     <ComboBoxItem>ページ幅</ComboBoxItem>
                     <ComboBoxItem>50%</ComboBoxItem>

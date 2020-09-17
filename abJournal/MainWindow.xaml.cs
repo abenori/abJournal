@@ -58,14 +58,31 @@ namespace abJournal {
             }
         }
 
-        int currentPen = 0;
-        public int CurrentPen {
-            get { return currentPen; }
+        public enum InkMode{
+            Pen0 = 0,Pen1 = 1,Pen2 = 2,Pen3 = 3,Pen4 = 4,Pen5 = 5,Pen6 = 6,Pen7 = 7,Erasing,Selecting
+        }
+        InkMode penMode = InkMode.Pen0;
+        public InkMode PenMode {
+            get { return penMode; }
             set {
-                currentPen = value;
-                mainCanvas.PenColor = Properties.Settings.Default.PenColor[currentPen];
-                mainCanvas.PenThickness = Properties.Settings.Default.PenThickness[currentPen];
-                mainCanvas.PenDashed = Properties.Settings.Default.PenDashed[currentPen];
+                penMode = value;
+                switch (penMode) {
+                case InkMode.Erasing:
+                    mainCanvas.Mode = InkManipulationMode.Erasing;
+                    break;
+                case InkMode.Selecting:
+                    mainCanvas.Mode = InkManipulationMode.Selecting;
+                    break;
+                default:
+                    mainCanvas.Mode = InkManipulationMode.Inking;
+                    int index = (int)penMode;
+                    mainCanvas.PenColor = PenColor[index];
+                    mainCanvas.PenThickness = PenThickness[index];
+                    mainCanvas.PenDashed = PenDashed[index];
+                    mainCanvas.PenIsHilighter = PenHilight[index];
+                    break;
+                }
+                OnPropertyChanged("PenMode");
             }
         }
 
@@ -99,6 +116,13 @@ namespace abJournal {
         public System.Windows.Media.Color[] PenColor {
             get { return Properties.Settings.Default.PenColor; }
         }
+        public bool[] PenShowInToolbar {
+            get { return Properties.Settings.Default.PenShowInToolbar; }
+        }
+        public bool[] PenHilight {
+            get { return Properties.Settings.Default.PenHilight; }
+        }
+
         public System.Collections.Specialized.StringCollection History {
             get { return Properties.Settings.Default.History; }
         }
@@ -150,7 +174,7 @@ namespace abJournal {
             Panel.SetZIndex(mainCanvas, -4);
 
             ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
-            CurrentPen = 0;
+            PenMode = InkMode.Pen0;
             mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
             mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
             mainCanvas.Landscape = Properties.Settings.Default.Landscape;
@@ -474,23 +498,25 @@ namespace abJournal {
         private void PenSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             PenSettingDialog dialog = new PenSettingDialog();
             if(dialog.ShowDialog() == true) {
-                CurrentPen = CurrentPen;
+                PenMode = PenMode;
                 OnPropertyChanged("PenColor");
                 OnPropertyChanged("PenThickness");
                 OnPropertyChanged("PenDashed");
+                OnPropertyChanged("PenHilight");
+                OnPropertyChanged("PenShowInToolbar");
             }
         }
         public static readonly RoutedCommand ModeChangeToPen = new RoutedCommand("ModeChangeToPen", typeof(MainWindow));
         private void ModeChangeToPenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.Mode = InkManipulationMode.Inking;
+            PenMode = (InkMode)int.Parse(e.Parameter.ToString());
         }
         public static readonly RoutedCommand ModeChangeToEraser = new RoutedCommand("ModeChangeToEraser", typeof(MainWindow));
         private void ModeChangeToEraserCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.Mode = InkManipulationMode.Erasing;
+            PenMode = InkMode.Erasing;
         }
         public static readonly RoutedCommand ModeChangeToSelection = new RoutedCommand("ModeChangeToSelection", typeof(MainWindow));
         private void ModeChangeToSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.Mode = InkManipulationMode.Selecting;
+            PenMode = InkMode.Selecting;
         }
         public static readonly RoutedCommand ClearSelection = new RoutedCommand("ClearSelection", typeof(MainWindow));
         private void ClearSelectionCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
