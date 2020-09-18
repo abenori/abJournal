@@ -206,80 +206,95 @@ namespace abJournal {
 
         #region 描画
         // 内部状態保持用変数
-        DrawingVisualLine StrokeDrawingVisual = null;
+        PenRunningVisual RunningVisual = null;
 
         void DrawingStart(StylusPoint pt) {
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
             if(Mode == InkManipulationMode.Selecting) {
-                StrokeDrawingVisual = new DrawingVisualLine(2, Brushes.Orange, DottedDoubleCollection, true);
+                var dattr = new DrawingAttributes();
+                dattr.Color = Brushes.Orange.Color;
+                dattr.Height = dattr.Width = 2;
+                dattr.IgnorePressure = true;
+                var dattrp = new DrawingAttributesPlus();
+                dattrp.DashArray = DottedDoubleCollection;
+                RunningVisual = new PenRunningVisual(this, Mode, dattr, dattrp, InkData.DrawingAlgorithm);
+                StrokeChildren.Add(RunningVisual.Visual);
+                RunningVisual.StartPoint(pt);
             } else if(Mode == InkManipulationMode.Inking) {
-                StrokeDrawingVisual = new DrawingVisualLine(PenThickness, StrokeBrush, StrokeDrawingAttributesPlus.DashArray, StrokeDrawingAttributes.IgnorePressure);
-            }
-            if(Mode != InkManipulationMode.Erasing) {
-                StrokeDrawingVisual.StartPoint(pt);
-                StrokeChildren.Add(StrokeDrawingVisual);
+                RunningVisual = new PenRunningVisual(this, Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, InkData.DrawingAlgorithm);
+                StrokeChildren.Add(RunningVisual.Visual);
+                RunningVisual.StartPoint(pt);
             }
         }
 
         void Drawing(StylusPoint pt) {
             if(Mode == InkManipulationMode.Selecting) {
-                var prev = StrokeDrawingVisual.PrevPoint;
+                var prev = RunningVisual.PrevPoint;
 	            // さぼることでHitTestを速くさせる．
                 if((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
             }
             InkData.ProcessPointerUpdate(pt);
             if(Mode != InkManipulationMode.Erasing) {
-                StrokeDrawingVisual.AddPoint(pt);
+                RunningVisual.AddPoint(pt);
             }
         }
 
         void DrawingEnd(StylusPoint pt) {
             if(Mode != InkManipulationMode.Erasing) {
                 for(int i = StrokeChildren.Count - 1 ; i >= 0 ; --i) {
-                    if(StrokeChildren[i] == StrokeDrawingVisual) {
+                    if(StrokeChildren[i] == RunningVisual.Visual) {
                         StrokeChildren.RemoveAt(i);
                         break;
                     }
                 }
             }
-            StrokeDrawingVisual = null;
+            RunningVisual = null;
             InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
         }
 
 		// ペンを走らせている時の描画を担当するクラス．
-        class DrawingVisualLine : DrawingVisual {
+        class PenRunningVisual { 
             public StylusPoint PrevPoint;
-            bool ignorePressure;
+            public ContainerVisual Visual = null;
+            InkManipulationMode Mode;
+            DrawingAttributes DrawingAttribute;
+            DrawingAttributesPlus DrawingAttributePlus;
+            DrawingAlgorithm DrawingAlgorithm;
+            StrokeData StrokeData;
+            abInkCanvas Parent;
 
-            double dashOffset = 0;
-            DrawingGroup drawingGroup = null;
-            Pen pen = null;
-            public DrawingVisualLine(double thickness, Brush brush, List<double> dash, bool ignpres) {
-                pen = new Pen(brush, thickness);
-                pen.DashStyle = new DashStyle(dash, 0);
-                pen.DashCap = PenLineCap.Flat;
-                pen.Freeze();
-                ignorePressure = ignpres;
-                drawingGroup = new DrawingGroup();
-                using(var dc = RenderOpen()) {
-                    dc.DrawDrawing(drawingGroup);
-                }
+            public PenRunningVisual(abInkCanvas parent, InkManipulationMode m,DrawingAttributes attr,DrawingAttributesPlus dattrp,DrawingAlgorithm algo) {
+                Parent = parent;
+                Mode = m;
+                DrawingAttribute = attr;
+                DrawingAttributePlus = dattrp;
+                DrawingAlgorithm = algo;
+                Visual = new ContainerVisual();
             }
             public void StartPoint(StylusPoint pt) {
                 PrevPoint = pt;
+                var pts = new StylusPointCollection();
+                pts.Add(pt);
+                StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
+                Visual.Children.Add(StrokeData.Visual);
             }
             public void AddPoint(StylusPoint pt) {
-                var p = pen.Clone();
-                if(!ignorePressure) p.Thickness *= pt.PressureFactor * 2;
-                if(p.DashStyle.Dashes.Count > 0) {
-                    p.DashStyle.Offset = dashOffset;
-                    dashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / pen.Thickness;
-                }
-                p.Freeze();
-                using(var dc = drawingGroup.Append()) {
-                    dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint());
-                }
+                StrokeData.StylusPoints.Add(pt);
+                StrokeData.ReDraw();
                 PrevPoint = pt;
+                if (StrokeData.StylusPoints.Count > 100) {
+                    var pts = new StylusPointCollection();
+                    pts.Add(pt);
+                    StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
+                    Visual.Children.Add(StrokeData.Visual);
+                }
+                for (int i = Parent.StrokeChildren.Count - 1; i >= 0; i--) {
+                    if(Parent.StrokeChildren[i] == Visual) {
+                        Parent.StrokeChildren.RemoveAt(i);
+                        Parent.StrokeChildren.Add(Visual);
+                        break;
+                    }
+                }
             }
         }
         #endregion
