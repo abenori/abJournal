@@ -45,7 +45,7 @@ namespace abJournal {
             get { return StrokeBrush.Color; }
             set {
                 StrokeBrush = new SolidColorBrush(value);
-                StrokeBrush.Opacity = PenIsHilighter ? 0.5 : 0;
+                StrokeBrush.Opacity = PenIsHilighter ? 0.5 : 1;
                 StrokeBrush.Freeze();
                 StrokeDrawingAttributes.Color = value;
                 SetCursor();

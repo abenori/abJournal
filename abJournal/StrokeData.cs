@@ -54,10 +54,12 @@ namespace abJournal {
         Pen pen = null;
         Pen Pen {
             get {
-                if(pen == null) {
-                    pen = new Pen(new SolidColorBrush(DrawingAttributes.Color), DrawingAttributes.Width);
+                if (pen == null) {
+                    var brush = new SolidColorBrush(DrawingAttributes.Color);
+                    brush.Opacity = DrawingAttributes.IsHighlighter ? 0.5 : 1;
+                    pen = new Pen(brush, DrawingAttributes.Width);
                     pen.EndLineCap = pen.StartLineCap = PenLineCap.Round;
-                    if(!DrawingAttributesPlus.IsNormalDashArray) {
+                    if (!DrawingAttributesPlus.IsNormalDashArray) {
                         pen.DashStyle = new DashStyle(DrawingAttributesPlus.DashArray, 0);
                         pen.DashCap = PenLineCap.Flat;
                     }
@@ -74,7 +76,7 @@ namespace abJournal {
         [ProtoMember(1)]
         public DrawingAttributesPlus DrawingAttributesPlus {
             get { return drawingAttributesPlus; }
-            set { drawingAttributesPlus = value; redraw = true; }
+            set { drawingAttributesPlus = value; redraw = true; pen = null; }
         }
 
         // protobuf用．空っぽにしたりSkipConstructor=trueにしたりすると駄目みたい．
@@ -82,14 +84,14 @@ namespace abJournal {
         StrokeData()
             : base(new StylusPointCollection(new Point[] { new Point(0, 0) })) {
             DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
-            DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
+            DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; pen = null; });
             visual = new DrawingVisual();
             visual.Transform = new MatrixTransform();
         }
         public StrokeData(StylusPointCollection spc, DrawingAttributes att, DrawingAttributesPlus attplus, DrawingAlgorithm algo, bool selecting = false)
             : base(spc, att.Clone()) {
             DrawingAttributes.AttributeChanged += ((s, e) => { redraw = true; pen = null; });
-            DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; });
+            DrawingAttributesPlus.PropertyChanged += ((s, e) => { redraw = true; pen = null; });
             visual = new DrawingVisual();
             visual.Transform = new MatrixTransform();
             Selected = selecting;
