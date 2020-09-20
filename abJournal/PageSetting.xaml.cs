@@ -41,17 +41,88 @@ namespace abJournal {
             ColorDialog diag = new ColorDialog();
             Color col = Info.InkCanvasInfo.BackgroundColor;
             diag.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
-            if(diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+            if (diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 Info.InkCanvasInfo.BackgroundColor = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
                 OnPropertyChanged("Info");
             }
         }
- 
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
+            if (PropertyChanged != null) {
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
             }
+        }
+
+        private void HorizontalColorButton_Click(object sender, RoutedEventArgs e) {
+            ColorDialog diag = new ColorDialog();
+            Color col = Info.InkCanvasInfo.HorizontalRule.Color;
+            diag.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
+            if (diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                Info.InkCanvasInfo.HorizontalRule.Color = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
+                OnPropertyChanged("Info");
+            }
+        }
+
+        private void VerticalColorButton_Click(object sender, RoutedEventArgs e) {
+            ColorDialog diag = new ColorDialog();
+            Color col = Info.InkCanvasInfo.VerticalRule.Color;
+            diag.Color = System.Drawing.Color.FromArgb(col.A, col.R, col.G, col.B);
+            if (diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+                Info.InkCanvasInfo.VerticalRule.Color = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
+                OnPropertyChanged("Info");
+            }
+        }
+
+        private void TextBox_PreviewTextInput_CheckDouble(object sender, TextCompositionEventArgs e) {
+            double r;
+            var textbox = (System.Windows.Controls.TextBox)sender;
+            var text = textbox.Text.Insert(textbox.CaretIndex, e.Text);
+            if (!Double.TryParse(text, out r)) e.Handled = true;
+        }
+
+        private void TextBox_PreviewExecuted_CheckDouble(object sender, ExecutedRoutedEventArgs e) {
+            if (e.Command == ApplicationCommands.Paste) {
+                double r;
+                var text = System.Windows.Clipboard.GetText();
+                if (Double.TryParse(text, out r)) ((System.Windows.Controls.TextBox)sender).Paste();
+                else e.Handled = true;
+            }
+        }
+        private void TextBox_PreviewTextInput_CheckDoubleArray(object sender, TextCompositionEventArgs e) {
+            double r;
+            var textbox = (System.Windows.Controls.TextBox)sender;
+            var text = textbox.Text.Insert(textbox.CaretIndex, e.Text);
+            if (text.Split(new char[] { ',' }).Any(s => !double.TryParse(s, out r))) e.Handled = true;
+        }
+
+        private void TextBox_PreviewExecuted_CheckDoubleArray(object sender, ExecutedRoutedEventArgs e) {
+            if (e.Command == ApplicationCommands.Paste) {
+                double r;
+                var text = System.Windows.Clipboard.GetText();
+                if (text.Split(new char[] { ',' }).Any(s => !double.TryParse(s, out r))) e.Handled = true;
+                else ((System.Windows.Controls.TextBox)sender).Paste();
+            }
+        }
+    }
+    class abJournalPointTommConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            return ((double)value) / Paper.mmToSize;
+        }
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            try { return (Double.Parse((string)value)) * Paper.mmToSize; }
+            catch (Exception) { return 0; }
+        }
+    }
+
+    class DashArrayConverter : IValueConverter {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            var v = ((List<double>)value).Select(d => d / Paper.mmToSize);
+            return string.Join(",", v);
+        }
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
+            double d;
+            return new List<double>(((string)value).Split(new char[] { ',' }).Where(s => double.TryParse(s, out d)).Select(s => double.Parse(s) * Paper.mmToSize));
         }
     }
 }

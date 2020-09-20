@@ -9,7 +9,7 @@ using System.Windows.Media;
 using System.Text.RegularExpressions;
 
 namespace abJournal {
-    public partial class abJournalInkCanvas : abInkCanvas,IabInkCanvas{
+    public partial class abJournalInkCanvas : abInkCanvas, IabInkCanvas {
         public abJournalInkCanvas(abInkData d, double width, double height)
             : base(d, width, height) {
             Info = new InkCanvasInfo();
@@ -43,11 +43,15 @@ namespace abJournal {
             public bool Show { get; set; }
             [ProtoMember(5)]
             public double Thickness { get; set; }
+            [ProtoMember(6)]
+            public double StartMargin { get; set; }
+            [ProtoMember(7)]
+            public double EndMargin { get; set; }
             public Rule DeepCopy() {
                 Rule rv = new Rule();
                 rv.Color = Color;
                 rv.DashArray.Clear();
-                for(int i = 0 ; i < DashArray.Count ; ++i) rv.DashArray.Add(DashArray[i]);
+                for (int i = 0; i < DashArray.Count; ++i) rv.DashArray.Add(DashArray[i]);
                 rv.Interval = Interval;
                 rv.Show = Show;
                 rv.Thickness = Thickness;
@@ -57,9 +61,9 @@ namespace abJournal {
         [ProtoContract(SkipConstructor = true)]
         public class InkCanvasInfo {
             [ProtoMember(1)]
-            public Rule HorizontalRule = new Rule();
+            public Rule HorizontalRule { get; set; }
             [ProtoMember(2)]
-            public Rule VerticalRule = new Rule();
+            public Rule VerticalRule { get; set; }
             [ProtoMember(3)]
             public Size Size = new Size();
             [ProtoMember(4)]
@@ -73,6 +77,8 @@ namespace abJournal {
             public string BackgroundStr { get; set; }
 
             public InkCanvasInfo() {
+				HorizontalRule = new Rule();
+				VerticalRule = new Rule();
                 BackgroundColor = Colors.White;
             }
             public InkCanvasInfo DeepCopy() {
@@ -97,14 +103,15 @@ namespace abJournal {
             get { return base.Height; }
             set { base.Height = value; Info.Size.Height = value; }
         }
+        private DrawingVisual RuleVisual = null;
 
         public void CleanUpBrush() {
-            if(BackgroundData != null)BackgroundData.Dispose(this);
+            if (BackgroundData != null) BackgroundData.Dispose(this);
             else Background = null;
         }
         public void SetBackgroundFromStr() {
             string str = Info.BackgroundStr;
-            if(str == null || str == "" || str == "color") {
+            if (str == null || str == "" || str == "color") {
                 BackgroundColor.SetBackground(this, Info.BackgroundColor);
                 Info.BackgroundStr = "color";
                 return;
@@ -123,9 +130,9 @@ namespace abJournal {
                     }
                 })
             };
-            foreach(var act in SetBacks) {
+            foreach (var act in SetBacks) {
                 var m = act.Item1.Match(str);
-                if(m.Success) {
+                if (m.Success) {
                     act.Item2(m);
                     return;
                 }
@@ -157,16 +164,82 @@ namespace abJournal {
                 })
             };
             var str = Info.BackgroundStr;
-            foreach(var act in SetBacks) {
+            foreach (var act in SetBacks) {
                 var m = act.Item1.Match(str);
-                if(m.Success) {
+                if (m.Success) {
                     act.Item2(m);
                 }
             }
             r.ReDraw();
             return r;
         }
+        public void DrawRule() { DrawRule(new List<Rect>()); }
+        public void DrawRule(List<Rect> skiparea) {
+            DrawRule(skiparea, new Rect(0, 0, Width, Height));
+        }
 
+        public void DrawRule(List<Rect> skiparea, Rect area) {
+            if (RuleVisual != null) {
+                for (int i = Children.Count - 1; i >= 0; --i) {
+                    if (Children[i] == RuleVisual) {
+                        Children.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+            RuleVisual = new DrawingVisual();
+            using (var dc = RuleVisual.RenderOpen()) {
+                if (Info.HorizontalRule.Show) {
+                    var brush = new SolidColorBrush(Info.HorizontalRule.Color);
+                    brush.Freeze();
+                    var pen = new Pen(brush, Info.HorizontalRule.Thickness);
+                    pen.DashStyle = new DashStyle(Info.HorizontalRule.DashArray, 0);
+                    pen.DashCap = PenLineCap.Flat;
+                    pen.Freeze();
+                    for (double d = Info.HorizontalRule.Interval + Info.HorizontalRule.StartMargin + area.Top;
+                        d < area.Bottom - Info.HorizontalRule.EndMargin; d += Info.HorizontalRule.Interval) {
+                        double skipleft = Width, skipright = 0;
+                        foreach (var a in skiparea) {
+                            if (a.Top <= d && d <= a.Bottom) {
+                                skipleft = (a.Left < skipleft) ? a.Left : skipleft;
+                                skipright = (a.Right > skipright) ? a.Right : skipright;
+                            }
+                        }
+                        if (skipleft < skipright) {
+                            if (area.Left < skipleft) dc.DrawLine(pen, new Point(area.Left, d), new Point(skipleft, d));
+                            if (area.Right > skipright) dc.DrawLine(pen, new Point(skipright, d), new Point(area.Right, d));
+                        } else {
+                            dc.DrawLine(pen, new Point(area.Left, d), new Point(area.Right, d));
+                        }
+                    }
+                }
+                if (Info.VerticalRule.Show) {
+                    var brush = new SolidColorBrush(Info.VerticalRule.Color);
+                    brush.Freeze();
+                    var pen = new Pen(brush, Info.VerticalRule.Thickness);
+                    pen.DashStyle = new DashStyle(Info.VerticalRule.DashArray, 0);
+                    pen.DashCap = PenLineCap.Flat;
+                    pen.Freeze();
+                    for (double d = Info.VerticalRule.Interval + Info.VerticalRule.StartMargin + area.Left;
+                        d < area.Right - Info.VerticalRule.EndMargin; d += Info.VerticalRule.Interval) {
+                        double skiptop = Height, skipbottom = 0;
+                        foreach (var a in skiparea) {
+                            if (a.Left <= d && d <= a.Right) {
+                                skiptop = (a.Top < skiptop) ? a.Top : skiptop;
+                                skipbottom = (a.Bottom > skiptop) ? a.Bottom : skipbottom;
+                            }
+                        }
+                        if (skiptop < skipbottom) {
+                            if (area.Top < skiptop) dc.DrawLine(pen, new Point(d, area.Top), new Point(d, skiptop));
+                            if (area.Bottom > skipbottom) dc.DrawLine(pen, new Point(d, skipbottom), new Point(d, area.Bottom));
+                        } else {
+                            dc.DrawLine(pen, new Point(d, area.Top), new Point(d, area.Bottom));
+                        }
+                    }
+                }
+            }
+            Children.Add(RuleVisual);
+        }
 
     }
 }

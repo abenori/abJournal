@@ -73,7 +73,7 @@ namespace abJournal {
             var canvas = new abJournalInkCanvas(d, inkcanvasinfo);
             base.InsertCanvas(canvas, index);
             if(index == 0) DrawNoteContents(canvas, info);
-            DrawRules(canvas, inkcanvasinfo.HorizontalRule, inkcanvasinfo.VerticalRule, (index == 0) && Info.ShowTitle);
+            DrawRules(canvas, (index == 0) && Info.ShowTitle);
         }
 
         public void ReDraw() {
@@ -81,8 +81,9 @@ namespace abJournal {
                 var c = this[i];
                 c.CleanUpBrush();
                 c.SetBackgroundFromStr();
+                c.Info = this.Info.InkCanvasInfo;
                 if(i == 0) DrawNoteContents(c, Info);
-                DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, (i == 0) && Info.ShowTitle);
+                DrawRules(c, (i == 0) && Info.ShowTitle);
                 c.ReDraw();
             }
         }
@@ -588,56 +589,17 @@ namespace abJournal {
             c.Children.Add(visual);
             noteContents[c] = visual;
         }
-        static Dictionary<abInkCanvas, Visual> rules = new Dictionary<abInkCanvas, Visual>();
-
+        
         public void DrawRules(abJournalInkCanvas c, bool showTitle) {
-            DrawRules(c, c.Info.HorizontalRule, c.Info.VerticalRule, showTitle);
-        }
-        public static void DrawRules(abJournalInkCanvas c, abJournalInkCanvas.Rule Horizontal, abJournalInkCanvas.Rule Vertical, bool showTitle) {
-            if (rules.ContainsKey(c)) {
-                c.Children.Remove(rules[c]);
-            }
-            var visual = new DrawingVisual();
-            using (var dc = visual.RenderOpen()) {
+            if (showTitle) {
                 double xyohaku, yyohaku, height, hankei;
                 GetYohakuHankei(c.Width, c.Height, out xyohaku, out yyohaku, out height, out hankei);
-                if (Horizontal.Show) {
-                    double d = Horizontal.Interval;
-                    if (showTitle && !Horizontal.Show) d += yyohaku + height + 2 * hankei;
-                    var brush = new SolidColorBrush(Horizontal.Color);
-                    brush.Freeze();
-                    var pen = new Pen(brush, Horizontal.Thickness);
-                    pen.DashStyle = new DashStyle(Horizontal.DashArray, 0);
-                    pen.DashCap = PenLineCap.Flat;
-                    pen.Freeze();
-                    for (; d < c.Height; d += Horizontal.Interval) {
-                        if (showTitle && yyohaku < d && d < yyohaku + height) {
-                            dc.DrawLine(pen, new Point(0, d), new Point(xyohaku, d));
-                            dc.DrawLine(pen, new Point(c.Width - xyohaku, d), new Point(c.Width, d));
-                        } else {
-                            dc.DrawLine(pen, new Point(0, d), new Point(c.Width, d));
-                        }
-                    }
-                }
-                if (Vertical.Show) {
-                    var brush = new SolidColorBrush(Vertical.Color);
-                    brush.Freeze();
-                    var pen = new Pen(brush, Vertical.Thickness);
-                    pen.DashStyle = new DashStyle(Vertical.DashArray, 0);
-                    pen.DashCap = PenLineCap.Flat;
-                    pen.Freeze();
-                    for (double d = Vertical.Interval; d < c.Width; d += Vertical.Interval) {
-                        if (showTitle && xyohaku < d && d < c.Width - xyohaku) {
-                            dc.DrawLine(pen, new Point(d, 0), new Point(d, yyohaku));
-                            dc.DrawLine(pen, new Point(d, yyohaku + height + 2 * hankei), new Point(d, c.Height));
-                        } else {
-                            dc.DrawLine(pen, new Point(d, 0), new Point(d, c.Height));
-                        }
-                    }
-                }
+                var skip = new List<Rect>() {new Rect(xyohaku,yyohaku,c.Width - 2*xyohaku,height + 2 * hankei) };
+                var drawrect = new Rect(0, yyohaku + height + 2 * hankei, c.Width, c.Height - (yyohaku + height + 2 * hankei));
+                c.DrawRule(skip, drawrect);
+            } else {
+                c.DrawRule();
             }
-            rules[c] = visual;
-            c.Children.Add(visual);
         }
 
         public static void DrawNoteContents(iTextSharp.text.pdf.PdfWriter writer, double pwidth, double pheight, CanvasCollectionInfo info, double scale) {
@@ -788,7 +750,7 @@ namespace abJournal {
             for(int i = 0 ; i < Count ; ++i){
                 var r = this[i].GetPrintingCanvas(algo);
                 if(i == 0) DrawNoteContents(r);
-                DrawRules(r, r.Info.HorizontalRule, r.Info.VerticalRule, (i == 0 && Info.ShowTitle));
+                DrawRules(r, (i == 0 && Info.ShowTitle));
                 yield return r;
             }
         }
