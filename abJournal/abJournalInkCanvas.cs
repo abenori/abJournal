@@ -189,7 +189,7 @@ namespace abJournal {
             }
             RuleVisual = new DrawingVisual();
             using (var dc = RuleVisual.RenderOpen()) {
-                if (Info.HorizontalRule.Show) {
+                if (Info.HorizontalRule.Show && Info.HorizontalRule.Interval > 0) {
                     var brush = new SolidColorBrush(Info.HorizontalRule.Color);
                     brush.Freeze();
                     var pen = new Pen(brush, Info.HorizontalRule.Thickness);
@@ -213,7 +213,7 @@ namespace abJournal {
                         }
                     }
                 }
-                if (Info.VerticalRule.Show) {
+                if (Info.VerticalRule.Show && Info.VerticalRule.Interval > 0) {
                     var brush = new SolidColorBrush(Info.VerticalRule.Color);
                     brush.Freeze();
                     var pen = new Pen(brush, Info.VerticalRule.Thickness);

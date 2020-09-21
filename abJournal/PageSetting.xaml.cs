@@ -96,8 +96,7 @@ namespace abJournal {
             if (e.Command == ApplicationCommands.Paste) {
                 double r;
                 var text = System.Windows.Clipboard.GetText();
-                if (Double.TryParse(text, out r)) ((System.Windows.Controls.TextBox)sender).Paste();
-                else e.Handled = true;
+                if (!Double.TryParse(text, out r)) e.Handled = true;
             }
         }
         private void TextBox_PreviewTextInput_CheckDoubleArray(object sender, TextCompositionEventArgs e) {
