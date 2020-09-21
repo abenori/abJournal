@@ -17,8 +17,9 @@ namespace abJournal {
     public class abInkCanvas : FrameworkElement, IabInkCanvas {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
-                PropertyChanged(this, new PropertyChangedEventArgs(name));
+            if (PropertyChanged != null) {
+                var e = new PropertyChangedEventArgs(name);
+                PropertyChanged(this, e);
             }
         }
 

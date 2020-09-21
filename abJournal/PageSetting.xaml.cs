@@ -24,9 +24,15 @@ namespace abJournal {
             get { return info; }
             set { info = value; OnPropertyChanged("Info"); }
         }
+        public double PaperWidth { get; set; }
+        public double PaperHeight { get; set; }
+        Size WindowSize;
 
-        public PageSetting(abJournalInkCanvasCollection.CanvasCollectionInfo i) {
+        public PageSetting(abJournalInkCanvasCollection.CanvasCollectionInfo i, Size windowsize) {
+            WindowSize = windowsize;
             Info = i.DeepCopy();
+            PaperWidth = Info.InkCanvasInfo.Size.Width;
+            PaperHeight = Info.InkCanvasInfo.Size.Height;
             DataContext = this;
             InitializeComponent();
         }
@@ -74,6 +80,11 @@ namespace abJournal {
             }
         }
 
+        private void FixWindowRatioButton_Click(object sender, RoutedEventArgs e) {
+            PaperHeight = Math.Round(PaperWidth * WindowSize.Height / WindowSize.Width, 2);
+            OnPropertyChanged("PaperHeight");
+        }
+
         private void TextBox_PreviewTextInput_CheckDouble(object sender, TextCompositionEventArgs e) {
             double r;
             var textbox = (System.Windows.Controls.TextBox)sender;
@@ -104,6 +115,10 @@ namespace abJournal {
                 else ((System.Windows.Controls.TextBox)sender).Paste();
             }
         }
+
+        private void Window_Closing(object sender, CancelEventArgs e) {
+            Info.InkCanvasInfo.Size = new Size(PaperWidth, PaperHeight);
+       }
     }
     class abJournalPointTommConverter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {

@@ -97,7 +97,7 @@ namespace abJournal {
 
         public new double Width {
             get { return base.Width; }
-            set { base.Width = value; Info.Size.Width = value; }
+            set { base.Width = value; Info.Size.Width = value; base.OnPropertyChanged("Width"); }
         }
         public new double Height {
             get { return base.Height; }

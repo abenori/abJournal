@@ -548,10 +548,16 @@ namespace abJournal {
         }
         public static readonly RoutedCommand PageSetting = new RoutedCommand("PageSetting", typeof(MainWindow));
         private void PageSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            var dialog = new PageSetting(mainCanvas.Info);
-            if(dialog.ShowDialog() == true) {
+            var wsize = mainCanvas.Landscape ? new Size(mainCanvas.ActualHeight, mainCanvas.ActualWidth) : new Size(mainCanvas.ActualWidth, mainCanvas.ActualHeight);
+            var dialog = new PageSetting(mainCanvas.Info, wsize);
+            if (dialog.ShowDialog() == true) {
                 mainCanvas.Info = dialog.Info;
-                foreach(var c in mainCanvas) c.Info.BackgroundColor = dialog.info.InkCanvasInfo.BackgroundColor;
+                mainCanvas.Info.InkCanvasInfo.Size = new Size(dialog.PaperWidth, dialog.PaperHeight);
+                foreach (var c in mainCanvas) {
+                    c.Info.BackgroundColor = dialog.info.InkCanvasInfo.BackgroundColor;
+                    c.Width = dialog.PaperWidth;
+                    c.Height = dialog.PaperHeight;
+                }
                 mainCanvas.ReDraw();
                 OnPropertyChanged("mainCanvas");
             }

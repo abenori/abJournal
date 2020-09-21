@@ -343,14 +343,14 @@ namespace abJournal {
                     var c = (abInkCanvasClass)sender;
                     Canvas.SetLeft(c, -c.Width / 2);
                     innerCanvas.Width = CanvasCollection.Select(d => d.Width).Max();
-                }
+                } else VerticalArrangeCanvas();
                 break;
             case "Height":
-                if(landscape) {
+                if (landscape) {
                     var c = (abInkCanvasClass)sender;
                     Canvas.SetTop(c, -c.Height / 2);
                     innerCanvas.Height = CanvasCollection.Select(d => d.Height).Max();
-                }
+                } else VerticalArrangeCanvas();
                 break;
             default:
                 break;
