@@ -65,7 +65,7 @@ namespace abJournal {
         public DrawingAttributesPlus StrokeDrawingAttributesPlus = new DrawingAttributesPlus();
         public List<double> PenDashArray {
             get { return StrokeDrawingAttributesPlus.DashArray; }
-            set { StrokeDrawingAttributesPlus.DashArray = value; }
+            set { StrokeDrawingAttributesPlus.DashArray = value; OnPropertyChanged("PenDashArray"); }
         }
         public bool PenIsHilighter {
             get { return StrokeDrawingAttributes.IsHighlighter; }
@@ -74,6 +74,7 @@ namespace abJournal {
                 StrokeBrush = new SolidColorBrush(PenColor);
                 StrokeBrush.Opacity = value ? 0.5 : 0;
                 StrokeBrush.Freeze();
+                OnPropertyChanged("PenIsHilighter");
             }
         }
 

@@ -13,8 +13,7 @@ namespace abJournal {
         public abJournalInkCanvas(abInkData d, double width, double height)
             : base(d, width, height) {
             Info = new InkCanvasInfo();
-            Info.Size.Width = width;
-            Info.Size.Height = height;
+            Info.Size = new Size(Width, Height);
         }
         public abJournalInkCanvas(abInkData d, InkCanvasInfo info)
             : base(d, info.Size.Width, info.Size.Height) {
@@ -24,29 +23,20 @@ namespace abJournal {
         #region 付加情報クラス
         [ProtoContract]
         public class Rule {
-            public Rule() {
-                //DashArray = new DoubleCollection();
-                DashArray = new List<double>();
-                Color = Colors.LightBlue;
-                Interval = 80;
-                Thickness = 2;
-                Show = false;
-            }
             [ProtoMember(1)]
-            public Color Color { get; set; }
+            public Color Color { get; set; } = Colors.LightBlue;
             [ProtoMember(2)]
-            //public DoubleCollection DashArray { get; set; }
-            public List<double> DashArray { get; set; }
+            public List<double> DashArray { get; set; } = new List<double>();
             [ProtoMember(3)]
-            public double Interval { get; set; }
+            public double Interval { get; set; } = 80;
             [ProtoMember(4)]
-            public bool Show { get; set; }
+            public bool Show { get; set; } = false;
             [ProtoMember(5)]
-            public double Thickness { get; set; }
+            public double Thickness { get; set; } = 2;
             [ProtoMember(6)]
-            public double StartMargin { get; set; }
+            public double StartMargin { get; set; } = 0;
             [ProtoMember(7)]
-            public double EndMargin { get; set; }
+            public double EndMargin { get; set; } = 0;
             public Rule DeepCopy() {
                 Rule rv = new Rule();
                 rv.Color = Color;
@@ -61,13 +51,13 @@ namespace abJournal {
         [ProtoContract(SkipConstructor = true)]
         public class InkCanvasInfo {
             [ProtoMember(1)]
-            public Rule HorizontalRule { get; set; }
+            public Rule HorizontalRule { get; set; } = new Rule();
             [ProtoMember(2)]
-            public Rule VerticalRule { get; set; }
+            public Rule VerticalRule { get; set; } = new Rule();
             [ProtoMember(3)]
-            public Size Size = new Size();
+            public Size Size { get; set; } = new Size();
             [ProtoMember(4)]
-            public Color BackgroundColor { get; set; }
+            public Color BackgroundColor { get; set; } = Colors.White;
 
             // Backgroundの種別を記述する．この操作はabJournalInkCanvasCollection内で完結させる．
             // "color": BackgroundColor（から作られたSolidBrush）
@@ -76,11 +66,6 @@ namespace abJournal {
             [ProtoMember(5)]
             public string BackgroundStr { get; set; }
 
-            public InkCanvasInfo() {
-				HorizontalRule = new Rule();
-				VerticalRule = new Rule();
-                BackgroundColor = Colors.White;
-            }
             public InkCanvasInfo DeepCopy() {
                 InkCanvasInfo rv = new InkCanvasInfo();
                 rv.HorizontalRule = HorizontalRule.DeepCopy();
@@ -97,11 +82,11 @@ namespace abJournal {
 
         public new double Width {
             get { return base.Width; }
-            set { base.Width = value; Info.Size.Width = value; base.OnPropertyChanged("Width"); }
+            set { base.Width = value; Info.Size = new Size(value, Info.Size.Height); base.OnPropertyChanged("Width"); }
         }
         public new double Height {
             get { return base.Height; }
-            set { base.Height = value; Info.Size.Height = value; }
+            set { base.Height = value; Info.Size = new Size(Info.Size.Width, value); }
         }
         private DrawingVisual RuleVisual = null;
 
