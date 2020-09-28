@@ -257,46 +257,83 @@ namespace abJournal {
 		// ペンを走らせている時の描画を担当するクラス．
         class PenRunningVisual { 
             public StylusPoint PrevPoint;
-            public ContainerVisual Visual = null;
+            public Visual Visual = null;
             InkManipulationMode Mode;
             DrawingAttributes DrawingAttribute;
             DrawingAttributesPlus DrawingAttributePlus;
             DrawingAlgorithm DrawingAlgorithm;
             StrokeData StrokeData;
+
+            DrawingGroup DrawingGroup;
+            Pen Pen;
+            double DashOffset = 0;
+
             abInkCanvas Parent;
 
-            public PenRunningVisual(abInkCanvas parent, InkManipulationMode m,DrawingAttributes attr,DrawingAttributesPlus dattrp,DrawingAlgorithm algo) {
+            const double SwitchAlgorithmThickness = 8;
+
+            public PenRunningVisual(abInkCanvas parent, InkManipulationMode m, DrawingAttributes attr, DrawingAttributesPlus dattrp, DrawingAlgorithm algo) {
                 Parent = parent;
                 Mode = m;
                 DrawingAttribute = attr;
                 DrawingAttributePlus = dattrp;
                 DrawingAlgorithm = algo;
-                Visual = new ContainerVisual();
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    Visual = new ContainerVisual();
+                } else {
+                    var brush = new SolidColorBrush(DrawingAttribute.Color);
+                    if (DrawingAttribute.IsHighlighter) brush.Opacity = 0.5;
+                    Pen = new Pen(brush, DrawingAttribute.Width);
+                    Pen.DashStyle = new DashStyle(DrawingAttributePlus.DashArray, 0);
+                    Pen.DashCap = PenLineCap.Flat;
+                    Pen.Freeze();
+                    Visual = new DrawingVisual();
+                    DrawingGroup = new DrawingGroup();
+                    using (var dc = ((DrawingVisual)Visual).RenderOpen()) { dc.DrawDrawing(DrawingGroup); }
+                }
             }
             public void StartPoint(StylusPoint pt) {
-                PrevPoint = pt;
-                var pts = new StylusPointCollection();
-                pts.Add(pt);
-                StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
-                Visual.Children.Add(StrokeData.Visual);
-            }
-            public void AddPoint(StylusPoint pt) {
-                StrokeData.StylusPoints.Add(pt);
-                StrokeData.ReDraw();
-                PrevPoint = pt;
-                if (StrokeData.StylusPoints.Count > 100) {
-                    var pts = new StylusPointCollection();
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    var pts = new StylusPointCollection(pt.Description);
                     pts.Add(pt);
                     StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
-                    Visual.Children.Add(StrokeData.Visual);
+                    ((ContainerVisual)Visual).Children.Add(StrokeData.Visual);
                 }
-                for (int i = Parent.StrokeChildren.Count - 1; i >= 0; i--) {
-                    if(Parent.StrokeChildren[i] == Visual) {
-                        Parent.StrokeChildren.RemoveAt(i);
-                        Parent.StrokeChildren.Add(Visual);
-                        break;
+                PrevPoint = pt;
+            }
+            public void AddPoint(StylusPoint pt) {
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    StrokeData.StylusPoints.Add(pt);
+                    StrokeData.ReDraw();
+                    if (StrokeData.StylusPoints.Count > 100) {
+                        var pts = new StylusPointCollection(pt.Description);
+                        pts.Add(pt);
+                        StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
+                        ((ContainerVisual)Visual).Children.Add(StrokeData.Visual);
                     }
+                    for (int i = Parent.StrokeChildren.Count - 1; i >= 0; i--) {
+                        if (Parent.StrokeChildren[i] == Visual) {
+                            Parent.StrokeChildren.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    Parent.StrokeChildren.Add(Visual);
+                } else {
+                    Pen p;
+                    if (DrawingAttribute.IgnorePressure && DrawingAttributePlus.DashArray.Count == 0) {
+                        p = Pen;
+                    } else {
+                        p = Pen.Clone();
+                        if (!DrawingAttribute.IgnorePressure) p.Thickness *= pt.PressureFactor * 2;
+                        if (DrawingAttributePlus.DashArray.Count > 0) {
+                            p.DashStyle.Offset = DashOffset;
+                            DashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / Pen.Thickness;
+                        }
+                        p.Freeze();
+                    }
+                    using (var dc = DrawingGroup.Append()) { dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint()); }
                 }
+                PrevPoint = pt;
             }
         }
         #endregion
