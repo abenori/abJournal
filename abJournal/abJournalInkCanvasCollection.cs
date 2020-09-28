@@ -433,10 +433,10 @@ namespace abJournal {
             }
             if(protodata != null) {
                 Clear();
-                foreach(var d in protodata.Data) {
+                Info = protodata.Info;
+                foreach (var d in protodata.Data) {
                     AddCanvas(d.Data, protodata.Info, d.Info);
                 }
-                Info = protodata.Info;
                 return true;
             } else {
                 return false;
@@ -461,7 +461,8 @@ namespace abJournal {
             }
             if(protodata != null) {
                 Clear();
-                foreach(var d in protodata.Data) {
+                Info = protodata.Info;
+                foreach (var d in protodata.Data) {
                     var abinkdata = new abInkData();
                     if(d.Data.Strokes != null) {
                         abinkdata.Strokes.Capacity = d.Data.Strokes.Count;
@@ -477,7 +478,6 @@ namespace abJournal {
                     }
                     AddCanvas(abinkdata, protodata.Info, d.Info);
                 }
-                Info = protodata.Info;
                 return true;
             } else {
                 return false;
@@ -501,12 +501,12 @@ namespace abJournal {
 
             if(data != null) {
                 Clear();
-                foreach(var d in data.Data) {
+                Info = data.Info;
+                foreach (var d in data.Data) {
                     abInkData id = new abInkData();
                     id.LoadSavingData(d.Data);
                     AddCanvas(id, data.Info, d.Info);
                 }
-                Info = data.Info;
                 return true;
             } else return false;
         }
