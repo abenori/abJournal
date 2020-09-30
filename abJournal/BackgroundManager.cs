@@ -26,7 +26,7 @@ namespace abJournal {
 
     public class BackgroundColor : BackgroundImage.BackgroundData {
         public void Dispose(abJournalInkCanvas c) { c.Background = null; }
-        public void SetViewport(abJournalInkCanvas c, abJournalInkCanvas.ViewportChangedEventArgs e) { }
+        public void SetViewport(abJournalInkCanvas c, abInkCanvas.ViewportChangedEventArgs e) { }
         public static void SetBackground(abJournalInkCanvas c, Color color) {
             if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
             c.BackgroundData = new BackgroundColor();
@@ -158,7 +158,7 @@ namespace abJournal {
                         var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
                         var ps = Paper.GetPaperSize(size);
                         if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                        collection.AddCanvas(new abInkData(), size, collection.Info.InkCanvasInfo.BackgroundColor);
+                        collection.AddCanvas(size, collection.Info.InkCanvasInfo.BackgroundColor);
                     }
                     var c = collection[collection.Count - 1];
                     SetBackground(c, page);
@@ -265,7 +265,7 @@ namespace abJournal {
                     var size = new Size(pagedoc.Size.Width * scale, pagedoc.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    collection.AddCanvas(new abInkData(),size,collection.Info.InkCanvasInfo.BackgroundColor);
+                    collection.AddCanvas(size,collection.Info.InkCanvasInfo.BackgroundColor);
                     SetBackground(collection[collection.Count - 1], page);
                 }
             }

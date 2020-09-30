@@ -7,19 +7,24 @@ using ProtoBuf;
 using System.Windows;
 using System.Windows.Media;
 using System.Text.RegularExpressions;
+using System.Windows.Ink;
 
 namespace abJournal {
-    public partial class abJournalInkCanvas : abInkCanvas, IabInkCanvas {
-        public abJournalInkCanvas(abInkData d, double width, double height)
-            : base(d, width, height) {
+    public partial class abJournalInkCanvas : abInkCanvas {
+        public abJournalInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height)
+            : base(strokes, dattr, dattrp, width, height) {
             Info = new InkCanvasInfo();
             Info.Size = new Size(Width, Height);
         }
-        public abJournalInkCanvas(abInkData d, InkCanvasInfo info)
-            : base(d, info.Size.Width, info.Size.Height) {
+        public abJournalInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, InkCanvasInfo info)
+            : base(strokes, dattr, dattrp, info.Size.Width, info.Size.Height) {
             Info = info.DeepCopy();
         }
 
+        public abJournalInkCanvas(double width,double height) : base(width, height) {
+            Info = new InkCanvasInfo();
+            Info.Size = new Size(Width, Height);
+        }
         #region 付加情報クラス
         [ProtoContract]
         public class Rule {
@@ -131,9 +136,10 @@ namespace abJournal {
             SetBackgroundFromStr();
         }
 
-        public abJournalInkCanvas GetPrintingCanvas(DrawingAlgorithm algo) {
-            var r = new abJournalInkCanvas(InkData.Clone(), Info);
-            r.InkData.DrawingAlgorithm = algo;
+        public abJournalInkCanvas GetPrintingCanvas() {
+            var strokes = new List<abStroke>();
+            foreach (var s in Strokes) { strokes.Add(s.Clone() as abStroke); }
+            var r = new abJournalInkCanvas(strokes, DefaultDrawingAttributes, DefaultDrawingAttributesPlus, Info);
             var SetBacks = new List<Tuple<Regex, Action<Match>>>(){
                 new Tuple<Regex,Action<Match>>(new Regex("^image:pdf:([^:]*):page=([0-9]+)$"),(m) =>{
                     using(var file = AttachedFile.GetFileFromIdentifier(m.Groups[1].Value)){
@@ -165,12 +171,7 @@ namespace abJournal {
 
         public void DrawRule(List<Rect> skiparea, Rect area) {
             if (RuleVisual != null) {
-                for (int i = Children.Count - 1; i >= 0; --i) {
-                    if (Children[i] == RuleVisual) {
-                        Children.RemoveAt(i);
-                        break;
-                    }
-                }
+                VisualChildren.Remove(RuleVisual);
             }
             RuleVisual = new DrawingVisual();
             using (var dc = RuleVisual.RenderOpen()) {
@@ -223,8 +224,7 @@ namespace abJournal {
                     }
                 }
             }
-            Children.Add(RuleVisual);
+            VisualChildren.Add(RuleVisual);
         }
-
     }
 }
