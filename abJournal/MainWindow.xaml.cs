@@ -161,7 +161,7 @@ namespace abJournal {
             }
 
             InitializeComponent();
-            abInkCanvas.ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+            ABInkCanvas.ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
             DataContext = this;
             SetLowLevelKeyboardHook();
 

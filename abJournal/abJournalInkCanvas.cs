@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 using System.Windows.Ink;
 
 namespace abJournal {
-    public partial class abJournalInkCanvas : abInkCanvas {
+    public partial class abJournalInkCanvas : ABInkCanvas {
         public abJournalInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height)
             : base(strokes, dattr, dattrp, width, height) {
             Info = new InkCanvasInfo();

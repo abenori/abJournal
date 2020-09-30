@@ -9,14 +9,14 @@ using System.ComponentModel;
 using System.Windows.Input.StylusPlugIns;
 
 namespace abJournal {
-    public class abInkCanvas : InkCanvas {
+    public class ABInkCanvas : InkCanvas {
         public DrawingAttributesPlus DefaultDrawingAttributesPlus { get; set; } = new DrawingAttributesPlus();
 
         public event PropertyChangedEventHandler PropertyChanged;
-        public abInkCanvas(double width, double height) {
+        public ABInkCanvas(double width, double height) {
             Init(new List<abStroke>(), new DrawingAttributes(), new DrawingAttributesPlus(), width, height);
         }
-        public abInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
+        public ABInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
             Init(strokes, dattr, dattrp, width, height);
         }
         private void Init(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
@@ -30,7 +30,7 @@ namespace abJournal {
             DefaultDrawingAttributes = dattr.Clone();
             DefaultDrawingAttributesPlus = dattrp.Clone();
             Background = Brushes.White;
-            abDynamicRender abDynamicRender = new abDynamicRender();
+            ABDynamicRender abDynamicRender = new ABDynamicRender();
             abDynamicRender.DrawingAttributes = DefaultDrawingAttributes;
             abDynamicRender.DrawingAttributesPlus = DefaultDrawingAttributesPlus;
             DynamicRenderer = abDynamicRender;
@@ -40,10 +40,10 @@ namespace abJournal {
             SetCursor();
             ClipToBounds = false;
             DefaultDrawingAttributes.AttributeChanged += DefaultDrawingAttributes_AttributeChanged;
-            EditingModeChanged += AbInkCanvas_EditingModeChanged;
+            EditingModeChanged += ABInkCanvas_EditingModeChanged;
         }
 
-        private void AbInkCanvas_EditingModeChanged(object sender, RoutedEventArgs e) {
+        private void ABInkCanvas_EditingModeChanged(object sender, RoutedEventArgs e) {
             SetCursor();
         }
 
@@ -234,7 +234,7 @@ namespace abJournal {
         }
         public delegate void ViewportChangedEventHandler(object sender, ViewportChangedEventArgs e);
         public event ViewportChangedEventHandler ViewportChanged = ((s, e) => { });
-        // Canvasに入る/から出る時にabInkCanvasCollectionから呼び出される．
+        // Canvasに入る/から出る時にABInkCanvasCollectionから呼び出される．
         public void RemovedFromView() { }
         public void AddedToView() { }
         public void ReDraw() { base.InvalidateVisual(); }
@@ -324,7 +324,7 @@ namespace abJournal {
         }
     }
 
-    public class abDynamicRender : DynamicRenderer {
+    public class ABDynamicRender : DynamicRenderer {
         private Point? prevPoint = null;
         public DrawingAttributesPlus DrawingAttributesPlus { get; set; }
         double DashOffset = 0;
@@ -369,8 +369,8 @@ namespace abJournal {
     }
 
     interface UndoCommand {
-        void Undo(abInkCanvas stroke);
-        void Redo(abInkCanvas stroke);
+        void Undo(ABInkCanvas stroke);
+        void Redo(ABInkCanvas stroke);
     }
     interface UndoCommandComibinable : UndoCommand {
         // UndoCommand.Undoの呼び出しがかなり遅いっぽいので，
@@ -383,10 +383,10 @@ namespace abJournal {
         public int Count { get { return Commands.Count; } }
         public UndoGroup() { }
         public void Add(UndoCommand c) { Commands.Add(c); }
-        public void Undo(abInkCanvas data) {
+        public void Undo(ABInkCanvas data) {
             for (int i = Commands.Count - 1; i >= 0; --i) Commands[i].Undo(data);
         }
-        public void Redo(abInkCanvas data) {
+        public void Redo(ABInkCanvas data) {
             for (int i = 0; i < Commands.Count; ++i) Commands[i].Redo(data);
         }
         // undoCommandCombinableなコマンドを全て展開し，Combineでくっつけておく．
@@ -438,11 +438,11 @@ namespace abJournal {
             stroke = new StrokeCollection(); stroke.Add(s);
         }
         public DeleteStrokeCommand(StrokeCollection s) { stroke = s; }
-        public void Undo(abInkCanvas data) {
+        public void Undo(ABInkCanvas data) {
             foreach (var s in stroke) data.Strokes.Add(s);
             //data.StrokeAdded(data, new StrokeChangedEventArgs(stroke));
         }
-        public void Redo(abInkCanvas data) {
+        public void Redo(ABInkCanvas data) {
             foreach (var s in stroke) data.Strokes.Remove(s);
             //data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
         }
@@ -456,10 +456,10 @@ namespace abJournal {
         public AddStrokeCommand(Stroke s) {
             stroke = new StrokeCollection(); stroke.Add(s);
         }
-        public void Redo(abInkCanvas data) {
+        public void Redo(ABInkCanvas data) {
             data.Strokes.Add(stroke);
         }
-        public void Undo(abInkCanvas data) {
+        public void Undo(ABInkCanvas data) {
             data.Strokes.Remove(stroke);
         }
         public void Combine(UndoCommand add) {
@@ -471,12 +471,12 @@ namespace abJournal {
         public SelectCommand(StrokeCollection before, StrokeCollection after) {
             beforeStroke = before; afterStroke = after;
         }
-        public void Undo(abInkCanvas c) {
+        public void Undo(ABInkCanvas c) {
             c.StopAddToUndo();
             c.Select(beforeStroke);
             c.StartAddToUndo();
         }
-        public void Redo(abInkCanvas c) {
+        public void Redo(ABInkCanvas c) {
             c.StopAddToUndo();
             c.Select(afterStroke);
             c.StartAddToUndo();
@@ -501,12 +501,12 @@ namespace abJournal {
             Matrices = new Dictionary<Stroke, MatrixPair>();
             foreach (var s in sc) Matrices[s] = new MatrixPair(matrix);
         }
-        public void Undo(abInkCanvas data) {
+        public void Undo(ABInkCanvas data) {
             foreach (var x in Matrices) {
                 x.Key.Transform(x.Value.invMatrix, false);
             }
         }
-        public void Redo(abInkCanvas data) {
+        public void Redo(ABInkCanvas data) {
             foreach (var x in Matrices) {
                 x.Key.Transform(x.Value.matrix, true);
             }

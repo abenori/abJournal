@@ -17,7 +17,7 @@ namespace abJournal {
     // InkCanvasたちからなる「文書用」
     // InkCanvasの適切な配置とかを担当．一応汎用的にと思いジェネリックにしている．
     // 継承しているCanvasの中にもう一つCanvas（innerCanvas）を置き，その中にabInkCanvasClassを並べる．
-    public class abInkCanvasCollection<abInkCanvasClass> : Canvas, IEnumerable<abInkCanvasClass>, INotifyPropertyChanged where abInkCanvasClass : abInkCanvas{
+    public class abInkCanvasCollection<abInkCanvasClass> : Canvas, IEnumerable<abInkCanvasClass>, INotifyPropertyChanged where abInkCanvasClass : ABInkCanvas{
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {

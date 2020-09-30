@@ -97,7 +97,7 @@ namespace abJournal {
         #endregion
 
         #region Import
-        public void Import(string path) {
+        public async void Import(string path) {
             // 全く更新がない時はインポートしたページのみにする
             bool newImport = false;
             if (!Updated && FileName == null) {
@@ -110,7 +110,7 @@ namespace abJournal {
                 switch (ext) {
                 case ".pdf": {
                         int oldCount = Count;
-                        BackgroundPDF.LoadFile(file, this);
+                        await BackgroundPDF.LoadFile(file, this);
                         for (int i = 0; i < Count - oldCount; ++i) {
                             this[i + oldCount].Info.BackgroundStr = "image:pdf:" + file.Identifier + ":page=" + i.ToString();
                         }
@@ -497,11 +497,11 @@ namespace abJournal {
             titleheight = Height * 0.06;
             hankei = Width * 0.02;
         }
-        static Dictionary<abInkCanvas, Visual> noteContents = new Dictionary<abInkCanvas, Visual>();
-        public void DrawNoteContents(abInkCanvas c) {
+        static Dictionary<ABInkCanvas, Visual> noteContents = new Dictionary<ABInkCanvas, Visual>();
+        public void DrawNoteContents(ABInkCanvas c) {
             DrawNoteContents(c, Info);
         }
-        public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
+        public static void DrawNoteContents(ABInkCanvas c, CanvasCollectionInfo info) {
             if (noteContents.ContainsKey(c)) {
                 c.VisualChildren.Remove(noteContents[c]);
             }
