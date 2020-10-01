@@ -72,15 +72,21 @@ namespace abJournal {
             base.EditingMode = editingMode;
         }
 
-        protected override void OnPreviewMouseDown(MouseButtonEventArgs e) {
-            if (EditingMode == InkCanvasEditingMode.EraseByStroke) BeginUndoGroup();
-            base.OnPreviewMouseDown(e);
+        // 消しゴムで消したのはUndoの際にまとめる．
+        // ずっとペンをおいているつもりなのにOnPreviewStylusUp/OnPreviewStylusDownが発生することがあるので
+        // 前回と今回が消しゴムでUpとDownの時間差が短い場合はUndoStackを前のものとくっつける．
+        bool is_erasing_at_last_time = false;
+        int last_up_tickcount = Environment.TickCount;
+        protected override void OnPreviewStylusUp(StylusEventArgs e) {
+            last_up_tickcount = Environment.TickCount;
+            System.Diagnostics.Debug.WriteLine("OnPreviewStylusUp, TickCount = " + last_up_tickcount.ToString());
+            if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
+                is_erasing_at_last_time = true;
+                EndUndoGroup();
+            } else is_erasing_at_last_time = false;
+            if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
+            base.OnPreviewStylusUp(e);
         }
-        protected override void OnPreviewMouseUp(MouseButtonEventArgs e) {
-            EndUndoGroup();
-            base.OnPreviewMouseUp(e);
-        }
-
         protected override void OnPreviewStylusDown(StylusDownEventArgs e) {
             if (GetSelectedStrokes().Count > 0) {
                 base.EditingMode = InkCanvasEditingMode.Select;
@@ -102,13 +108,13 @@ namespace abJournal {
                     } else RestoreEditingMode();
                 }
             }
+            System.Diagnostics.Debug.WriteLine("OnPreviewStylusDown, TickCount = " + Environment.TickCount.ToString() + ", last_up_tickcount = " + last_up_tickcount.ToString());
+            if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
+                if (!is_erasing_at_last_time || Environment.TickCount - last_up_tickcount >= 300) BeginAppendUndoGroup();
+                BeginUndoGroup(true);
+            }
             SetCursor();
             base.OnPreviewStylusDown(e);
-        }
-
-        protected override void OnPreviewStylusUp(StylusEventArgs e) {
-            if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
-            base.OnPreviewStylusUp(e);
         }
 
         protected void OnPropertyChanged(string name) {
@@ -144,6 +150,15 @@ namespace abJournal {
             RestoreEditingMode();
         }
 
+        [System.Diagnostics.Conditional("DEBUG")]
+        void DUMP_UNDOSTACK() {
+            var s = "Current UndoStack = ";
+            for(int i = 0; i < UndoStack.Count; ++i) {
+                s += "[" + i.ToString() + "] " + UndoStack[i].ToString() + "  ";
+            }
+            s += "CurrentUndoPosition = " + CurrentUndoPosition.ToString();
+            System.Diagnostics.Debug.WriteLine(s);
+        }
         public class UndoChainChangedEventArgs : EventArgs { }
         public delegate void UndoChainChangedEventhandler(object sender, UndoChainChangedEventArgs e);
         public event UndoChainChangedEventhandler UndoChainChanged;
@@ -151,18 +166,54 @@ namespace abJournal {
         List<UndoCommand> UndoStack = new List<UndoCommand>();
         int CurrentUndoPosition = 0;
         int EditCount = 0;
-        void BeginUndoGroup() { UndoGroup = new UndoGroup(); }
+        bool append_to_last_undogroup = false;
+        int append_start_index = -1;
+        // BeginAppendUndoGroup()が呼ばれると，その時点でのUndo履歴の場所が記録される．
+        // その後BeginUndoGroup(true)を呼び出すと，EndUndoGroup()の段階で記録された場所からのUndo履歴がすべて一つにまとめられる．
+        // この記録はBeginUndoGroup(false)，Redo()，Undo()，Begin/Endで囲まれていないAddUndoで解除される．
+        void BeginAppendUndoGroup() {
+            append_start_index = CurrentUndoPosition;
+            System.Diagnostics.Debug.WriteLine("BeginAppendUndoGroup, append_start_index = " + append_start_index.ToString());
+        }
+        void BeginUndoGroup(bool append = false) {
+            System.Diagnostics.Debug.WriteLine("BeginUndoGroup: append = " + append.ToString() + ", CurrentUndoPosition = " + CurrentUndoPosition.ToString());
+            append_to_last_undogroup = append;
+            if (!append) append_start_index = -1;
+            if (UndoGroup == null) UndoGroup = new UndoGroup();
+        }
         void EndUndoGroup() {
-            if (UndoGroup != null) {
-                if (UndoGroup.Count > 0) {
+            System.Diagnostics.Debug.WriteLine("EndUndoGroup, UndoStack.Count = " + UndoStack.Count.ToString() + ", append_to_last_undogroup = " + append_to_last_undogroup.ToString());
+            if (UndoGroup != null && UndoGroup.Count > 0) {
+                if (append_to_last_undogroup && append_start_index >= 0) {
+                    var call_event = (append_start_index >= CurrentUndoPosition);
+                    var undog = new UndoGroup();
+                    for(int i = append_start_index; i < CurrentUndoPosition; ++i) {
+                        undog.Add(UndoStack[i]);
+                    }
+                    undog.Add(UndoGroup);
+                    undog.Normalize();
+                    UndoStack.RemoveRange(append_start_index, UndoStack.Count - append_start_index);
+                    System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + undog.ToString());
+                    UndoStack.Add(undog);
+                    if (call_event) {
+                        UndoChainChanged(this, new UndoChainChangedEventArgs());
+                        ++EditCount;
+                    }
+                    CurrentUndoPosition = append_start_index + 1;
+
+                } else {
                     UndoStack.RemoveRange(CurrentUndoPosition, UndoStack.Count - CurrentUndoPosition);
+                    System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + UndoGroup.ToString());
+                    UndoGroup.Normalize();
                     UndoStack.Add(UndoGroup);
                     ++CurrentUndoPosition;
                     ++EditCount;
+                    UndoChainChanged(this, new UndoChainChangedEventArgs());
                 }
-                UndoGroup = null;
-                UndoChainChanged(this, new UndoChainChangedEventArgs());
             }
+            UndoGroup = null;
+            System.Diagnostics.Debug.WriteLine("DONE: UndoStack.Count = " + UndoStack.Count.ToString());
+            DUMP_UNDOSTACK();
         }
         bool do_not_add_to_undo_stack = false;
         public void StopAddToUndo() { do_not_add_to_undo_stack = true; }
@@ -170,13 +221,18 @@ namespace abJournal {
 
         void AddUndo(UndoCommand undo) {
             if (do_not_add_to_undo_stack) return;
+            System.Diagnostics.Debug.WriteLine("AddUndo: UndoType = " + undo.GetType().ToString());
             if (UndoGroup == null) {
                 UndoStack.RemoveRange(CurrentUndoPosition, UndoStack.Count - CurrentUndoPosition);
                 ++CurrentUndoPosition;
                 ++EditCount;
+                System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + undo.ToString());
                 UndoStack.Add(undo);
                 UndoChainChanged(this, new UndoChainChangedEventArgs());
+                append_start_index = -1;
+                append_to_last_undogroup = false;
             } else UndoGroup.Add(undo);
+            DUMP_UNDOSTACK();
         }
         protected override void OnStrokeErasing(InkCanvasStrokeErasingEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
@@ -190,6 +246,7 @@ namespace abJournal {
             var undog = new UndoGroup();
             undog.Add(new DeleteStrokeCommand(e.PreviousStrokes));
             undog.Add(new AddStrokeCommand(e.NewStrokes));
+            undog.Normalize();
             AddUndo(undog);
             base.OnStrokesReplaced(e);
         }
@@ -220,6 +277,11 @@ namespace abJournal {
             base.OnSelectionChanged(e);
         }
         public bool Undo() {
+            append_to_last_undogroup = false;
+            append_start_index = -1;
+            EndUndoGroup();
+            System.Diagnostics.Debug.WriteLine("Undo: UndoStack.Count = " + UndoStack.Count.ToString() + ", CurrentUndoPosition = " + CurrentUndoPosition.ToString());
+            DUMP_UNDOSTACK();
             if (CurrentUndoPosition <= 0 || CurrentUndoPosition > UndoStack.Count) return false;
             else {
                 --CurrentUndoPosition;
@@ -229,6 +291,9 @@ namespace abJournal {
             }
         }
         public bool Redo() {
+            append_to_last_undogroup = false;
+            append_start_index = -1;
+            EndUndoGroup();
             if (CurrentUndoPosition < 0 || CurrentUndoPosition >= UndoStack.Count) return false;
             else {
                 UndoStack[CurrentUndoPosition].Redo(this);
