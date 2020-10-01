@@ -29,6 +29,7 @@ namespace abJournal {
             }
             DefaultDrawingAttributes = dattr.Clone();
             DefaultDrawingAttributesPlus = dattrp.Clone();
+            base.Background = null;
             Background = Brushes.White;
             ABDynamicRender abDynamicRender = new ABDynamicRender();
             abDynamicRender.DrawingAttributes = DefaultDrawingAttributes;
@@ -51,16 +52,23 @@ namespace abJournal {
             SetCursor();
         }
 
+        InkCanvasEditingMode editingMode;
         public new InkCanvasEditingMode EditingMode {
-            get { return base.EditingMode; }
-            set { base.EditingMode = value; SetCursor(); }
+            get { return editingMode; }
+            set {
+                editingMode = value;
+                base.EditingMode = editingMode;
+                switch (value) {
+                case InkCanvasEditingMode.Ink: System.Diagnostics.Debug.WriteLine("EditingMode switches to Ink");break;
+                case InkCanvasEditingMode.EraseByStroke: System.Diagnostics.Debug.WriteLine("EditingMode switches to EraseByStroke"); break;
+                case InkCanvasEditingMode.Select: System.Diagnostics.Debug.WriteLine("EditingMode switches to Select"); break;
+                }
+                SetCursor(); 
+            }
         }
 
-        InkCanvasEditingMode? SavedEditingMode = null;
-        void SaveEditingMode() { SavedEditingMode = EditingMode; }
         void RestoreEditingMode() {
-            EditingMode = SavedEditingMode ?? EditingMode;
-            SavedEditingMode = null;
+            base.EditingMode = editingMode;
         }
 
         protected override void OnPreviewMouseDown(MouseButtonEventArgs e) {
@@ -73,30 +81,32 @@ namespace abJournal {
         }
 
         protected override void OnPreviewStylusDown(StylusDownEventArgs e) {
-            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
-                SaveEditingMode();
-                EditingMode = InkCanvasEditingMode.None;
+            if (GetSelectedStrokes().Count > 0) {
+                base.EditingMode = InkCanvasEditingMode.Select;
             } else {
-                // VAIO Duo 13の場合
-                // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
-                // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
-                // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
-                if (e.StylusDevice.Name == "Eraser") {
-                    SaveEditingMode();
-                    EditingMode = InkCanvasEditingMode.EraseByStroke;
-                } else if (
-                     e.StylusDevice.StylusButtons.Count > 1 &&
-                     e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
-                 ) {
-                    SaveEditingMode();
-                    EditingMode = InkCanvasEditingMode.Select;
+                if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
+                    base.EditingMode = InkCanvasEditingMode.None;
+                } else {
+                    // VAIO Duo 13の場合
+                    // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
+                    // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
+                    // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
+                    if (e.StylusDevice.Name == "Eraser") {
+                        base.EditingMode = InkCanvasEditingMode.EraseByStroke;
+                    } else if (
+                         e.StylusDevice.StylusButtons.Count > 1 &&
+                         e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
+                     ) {
+                        base.EditingMode = InkCanvasEditingMode.Select;
+                    } else RestoreEditingMode();
                 }
             }
+            SetCursor();
             base.OnPreviewStylusDown(e);
         }
 
         protected override void OnPreviewStylusUp(StylusEventArgs e) {
-            RestoreEditingMode();
+            if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
             base.OnPreviewStylusUp(e);
         }
 
@@ -108,7 +118,13 @@ namespace abJournal {
         }
 
         protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
-            this.Strokes.Remove(e.Stroke);
+            System.Diagnostics.Debug.WriteLine("OnStrokeCollected");
+            for(int i = this.Strokes.Count - 1;  i>= 0; --i) {
+                if(this.Strokes[i] == e.Stroke) {
+                    this.Strokes.RemoveAt(i);
+                    break;
+                }
+            }
             var abStroke = new abStroke(e.Stroke.StylusPoints, e.Stroke.DrawingAttributes, DefaultDrawingAttributesPlus);
             this.Strokes.Add(abStroke);
             InkCanvasStrokeCollectedEventArgs args = new InkCanvasStrokeCollectedEventArgs(abStroke);
@@ -129,6 +145,7 @@ namespace abJournal {
                 Strokes.Remove(s);
             }
             EndUndoGroup();
+            RestoreEditingMode();
         }
 
         public class UndoChainChangedEventArgs : EventArgs { }
@@ -166,6 +183,7 @@ namespace abJournal {
             } else UndoGroup.Add(undo);
         }
         protected override void OnStrokeErasing(InkCanvasStrokeErasingEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
             if (e.Stroke is abStroke) {
                 AddUndo(new DeleteStrokeCommand(e.Stroke as abStroke));
             }
@@ -195,6 +213,15 @@ namespace abJournal {
         protected override void OnSelectionChanging(InkCanvasSelectionChangingEventArgs e) {
             AddUndo(new SelectCommand(GetSelectedStrokes(), e.GetSelectedStrokes()));
             base.OnSelectionChanging(e);
+        }
+        protected override void OnSelectionChanged(EventArgs e) {
+            SetCursor();
+            System.Diagnostics.Debug.WriteLine("OnSelectionChanged, SelectedStrokes.Count = " + GetSelectedStrokes().Count.ToString());
+            if (GetSelectedStrokes().Count == 0) {
+                // https://ja.stackoverflow.com/questions/22573/
+                Dispatcher.BeginInvoke((Action)(() => { RestoreEditingMode(); System.Diagnostics.Debug.WriteLine("RestoreEditingMode in BeginInvoke"); }), System.Windows.Threading.DispatcherPriority.Render); ;
+            }
+            base.OnSelectionChanged(e);
         }
         public bool Undo() {
             if (CurrentUndoPosition <= 0 || CurrentUndoPosition > UndoStack.Count) return false;
@@ -261,13 +288,19 @@ namespace abJournal {
             }
         }
         void SetCursor() {
-            switch (EditingMode) {
-            case InkCanvasEditingMode.Ink:
-                SetCursor(MakeInkingCursor(DefaultDrawingAttributes.Width, DefaultDrawingAttributes.Color)); break;
-            case InkCanvasEditingMode.EraseByStroke:
-                SetCursor(ErasingCursor); break;
-            default:
-                SetCursor(Cursors.Cross); break;
+            if (GetSelectedStrokes().Count > 0) {
+                UseCustomCursor = false;
+                SetCursor(Cursors.Arrow);
+            } else {
+                UseCustomCursor = true;
+                switch (EditingMode) {
+                case InkCanvasEditingMode.Ink:
+                    SetCursor(MakeInkingCursor(DefaultDrawingAttributes.Width, DefaultDrawingAttributes.Color)); break;
+                case InkCanvasEditingMode.EraseByStroke:
+                    SetCursor(ErasingCursor); break;
+                default:
+                    SetCursor(Cursors.Cross); break;
+                }
             }
         }
         void SetCursor(Cursor c) {
@@ -275,16 +308,23 @@ namespace abJournal {
         }
 
         public VisualCollection VisualChildren { get; private set; }
-        protected override int VisualChildrenCount => base.VisualChildrenCount + VisualChildren.Count;
-        protected override Visual GetVisualChild(int index) {
-            if (index < base.VisualChildrenCount) return base.GetVisualChild(index);
-            else return VisualChildren[index - base.VisualChildrenCount];
-            //if (index < VisualChildren.Count) return VisualChildren[index];
-            //else return base.GetVisualChild(index - VisualChildren.Count);
-        }
+        Dictionary<Visual, Brush> VisualChildrenBrushes = new Dictionary<Visual, Brush>();
+        public new Brush Background { get; set; }
         protected override void OnRender(DrawingContext drawingContext) {
+            var rect = new Rect(0, 0, RenderSize.Width, RenderSize.Height);
             if (Background != null) {
-                drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
+                drawingContext.DrawRectangle(Background, null, rect);
+            }
+            foreach (var v in VisualChildren) {
+                if (!VisualChildrenBrushes.ContainsKey(v)) {
+                    var b = new VisualBrush(v);
+                    b.Stretch = Stretch.None;
+                    b.AlignmentX = AlignmentX.Left;
+                    b.AlignmentY = AlignmentY.Top;
+                    VisualChildrenBrushes[v] = b;
+                }
+                if (v is ContainerVisual) drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, (v as ContainerVisual).ContentBounds);
+                else drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, rect);
             }
             base.OnRender(drawingContext);
         }

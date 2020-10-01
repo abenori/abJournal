@@ -92,17 +92,15 @@ namespace abJournal {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
-            	// 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
-                lock(lockObj){
+                // 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
+                lock (lockObj) {
                     try {
                         using (var doc = new pdfium.PDFDocument(File.FileName)) {
                             using (var pdfpage = doc.GetPage(PageNum)) {
-                                for (int i = 0; i < 10; ++i) {
-                                    var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
-                                    if (b != null) {
-                                        b.Freeze();
-                                        return b;
-                                    }
+                                var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
+                                if (b != null) {
+                                    b.Freeze();
+                                    return b;
                                 }
                                 return null;
                             }
