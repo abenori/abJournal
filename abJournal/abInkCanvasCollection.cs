@@ -142,7 +142,15 @@ namespace abJournal {
 
         #region 選択
         //RectTracker SelectedRectTracker = new RectTracker();
-        abInkCanvasClass CanvasContainingSelection = null;
+        //abInkCanvasClass CanvasContainingSelection = null;
+        private abInkCanvasClass CanvasContainingSelection {
+            get {
+                foreach(var c in this) {
+                    if (c.GetSelectedStrokes().Count > 0) return c;
+                }
+                return null;
+            }
+        }
         #endregion
 
         public abInkCanvasCollection() {
@@ -664,6 +672,7 @@ namespace abJournal {
             var c = CanvasCollection[page];
             c.Paste(c.PointFromScreen(pt));
         }
+
         public void Copy() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.Copy();
         }
