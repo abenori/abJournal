@@ -1,16 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using ProtoBuf;
 using System.Windows;
 using System.Windows.Media;
 using System.IO;
 using System.IO.Compression;
 using System.ComponentModel;
-using System.Runtime.CompilerServices;
-using System.Threading.Tasks;
-using System.Linq.Expressions;
 using System.Windows.Ink;
 
 namespace abJournal {
@@ -369,8 +365,30 @@ namespace abJournal {
                     }
                     if (i == 0) DrawNoteContents(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info, scale);
                     DrawRules(writer, data.Data[i].Info.Size.Width, data.Data[i].Info.Size.Height, data.Info.InkCanvasInfo.HorizontalRule, data.Info.InkCanvasInfo.VerticalRule, (i == 0 && data.Info.ShowTitle), scale);
-                    //abInkData.AddPdfGarphic(writer, scale, data.Data[i].Data.Strokes);
-                    //if (Properties.Settings.Default.SaveTextToPDF) abInkData.AddTextToPDFGraphic(writer, scale, data.Data[i].Data.Strokes);
+                    DrawingStrokes.DrawPath(writer, scale, data.Data[i].Data.Strokes);
+                    if (Properties.Settings.Default.SaveTextToPDF) {
+                        var gstate = new iTextSharp.text.pdf.PdfGState();
+                        gstate.FillOpacity = 0;
+                        gstate.StrokeOpacity = 0;
+                        var font = iTextSharp.text.FontFactory.GetFont("游ゴシック", iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.NOT_EMBEDDED, 16);
+                        using (var analyzer = new InkAnalyzer()) {
+                            var strokes = new StrokeCollection(data.Data[i].Data.Strokes.Select(s => new Stroke(s.StylusPoints)));
+                            analyzer.AddStrokes(strokes);
+                            analyzer.Analyze();
+                            var nodes = analyzer.FindNodesOfType(ContextNodeType.Line);
+                            foreach (var node in nodes) {
+                                var rect = node.Location.GetBounds();
+                                var str = ((LineNode)node).GetRecognizedString();
+                                writer.DirectContent.SaveState();
+                                writer.DirectContent.SetGState(gstate);
+                                writer.DirectContent.BeginText();
+                                writer.DirectContent.SetFontAndSize(font.BaseFont, (float)(scale * rect.Height));
+                                writer.DirectContent.ShowTextAligned(iTextSharp.text.pdf.PdfContentByte.ALIGN_LEFT, str, (float)(scale * rect.Left), (float)(writer.PageSize.Height - scale * rect.Bottom), 0);
+                                writer.DirectContent.EndText();
+                                writer.DirectContent.RestoreState();
+                            }
+                        }
+                    }
                     if (i != data.Data.Count - 1) doc.NewPage();
                 }
                 doc.AddCreator("abJournal");

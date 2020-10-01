@@ -21,7 +21,7 @@ namespace abJournal {
         }
         private void Init(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
             VisualChildren = new VisualCollection(this);
-            Focusable = false;
+            Focusable = false;// Copyなどのコマンドが奪われなくなる
             base.Width = width;
             base.Height = height;
             foreach (var s in strokes) {
@@ -31,9 +31,10 @@ namespace abJournal {
             DefaultDrawingAttributesPlus = dattrp.Clone();
             base.Background = null;
             Background = Brushes.White;
-            ABDynamicRender abDynamicRender = new ABDynamicRender();
-            abDynamicRender.DrawingAttributes = DefaultDrawingAttributes;
-            abDynamicRender.DrawingAttributesPlus = DefaultDrawingAttributesPlus;
+            ABDynamicRender abDynamicRender = new ABDynamicRender() {
+                DrawingAttributes = DefaultDrawingAttributes,
+                DrawingAttributesPlus = DefaultDrawingAttributesPlus,
+            };
             DynamicRenderer = abDynamicRender;
             EditingMode = InkCanvasEditingMode.Ink;
             EditingModeInverted = InkCanvasEditingMode.EraseByStroke;
@@ -119,12 +120,7 @@ namespace abJournal {
 
         protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnStrokeCollected");
-            for(int i = this.Strokes.Count - 1;  i>= 0; --i) {
-                if(this.Strokes[i] == e.Stroke) {
-                    this.Strokes.RemoveAt(i);
-                    break;
-                }
-            }
+            this.Strokes.Remove(e.Stroke);
             var abStroke = new abStroke(e.Stroke.StylusPoints, e.Stroke.DrawingAttributes, DefaultDrawingAttributesPlus);
             this.Strokes.Add(abStroke);
             InkCanvasStrokeCollectedEventArgs args = new InkCanvasStrokeCollectedEventArgs(abStroke);

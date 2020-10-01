@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Ink;
 using System.Windows.Media;
-using System.Runtime.Serialization;
-using System.Xml;
 using ProtoBuf;
 
 namespace abJournal {
