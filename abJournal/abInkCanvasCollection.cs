@@ -48,7 +48,7 @@ namespace abJournal {
             set {
                 if (penColor != value) {
                     penColor = value;
-                    foreach (var c in CanvasCollection) c.DefaultDrawingAttributes.Color =penColor;
+                    foreach (var c in CanvasCollection) c.DefaultDrawingAttributes.Color = penColor;
                     OnPropertyChanged("PenColor");
                 }
             }

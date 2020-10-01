@@ -309,7 +309,11 @@ namespace abJournal {
 
         public VisualCollection VisualChildren { get; private set; }
         Dictionary<Visual, Brush> VisualChildrenBrushes = new Dictionary<Visual, Brush>();
-        public new Brush Background { get; set; }
+        Brush backGround = null;
+        public new Brush Background {
+            get { return backGround; }
+            set { backGround = value; InvalidateVisual(); }
+        }
         protected override void OnRender(DrawingContext drawingContext) {
             var rect = new Rect(0, 0, RenderSize.Width, RenderSize.Height);
             if (Background != null) {
