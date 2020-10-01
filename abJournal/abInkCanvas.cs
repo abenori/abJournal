@@ -507,7 +507,10 @@ namespace abJournal {
                     for (; i < cmds.Count; ++i) {
                         if (type == cmds[i].GetType()) {
                             cmd.Combine(cmds[i]);
-                        } else break;
+                        } else {
+                            --i;
+                            break;
+                        }
                     }
                     Commands.Add(cmd);
                 } else {
