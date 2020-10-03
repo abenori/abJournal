@@ -76,10 +76,11 @@ namespace abJournal {
         // ずっとペンをおいているつもりなのにOnPreviewStylusUp/OnPreviewStylusDownが発生することがあるので
         // 前回と今回が消しゴムでUpとDownの時間差が短い場合はUndoStackを前のものとくっつける．
         bool is_erasing_at_last_time = false;
-        int last_up_tickcount = Environment.TickCount;
+        System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         protected override void OnPreviewStylusUp(StylusEventArgs e) {
-            last_up_tickcount = Environment.TickCount;
-            System.Diagnostics.Debug.WriteLine("OnPreviewStylusUp, TickCount = " + last_up_tickcount.ToString());
+            stopwatch.Reset();
+            stopwatch.Start();
+            System.Diagnostics.Debug.WriteLine("OnPreviewStylusUp");
             if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
                 is_erasing_at_last_time = true;
                 EndUndoGroup();
@@ -108,9 +109,10 @@ namespace abJournal {
                     } else RestoreEditingMode();
                 }
             }
-            System.Diagnostics.Debug.WriteLine("OnPreviewStylusDown, TickCount = " + Environment.TickCount.ToString() + ", last_up_tickcount = " + last_up_tickcount.ToString());
+            stopwatch.Stop();
+            System.Diagnostics.Debug.WriteLine("OnPreviewStylusDown, Elapsed = " + stopwatch.ElapsedMilliseconds);
             if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
-                if (!is_erasing_at_last_time || Environment.TickCount - last_up_tickcount >= 300) BeginAppendUndoGroup();
+                if (!is_erasing_at_last_time || stopwatch.ElapsedMilliseconds >= 300) BeginAppendUndoGroup();
                 BeginUndoGroup(true);
             }
             SetCursor();
@@ -236,8 +238,8 @@ namespace abJournal {
         }
         protected override void OnStrokeErasing(InkCanvasStrokeErasingEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
-            if (e.Stroke is abStroke) {
-                AddUndo(new DeleteStrokeCommand(e.Stroke as abStroke));
+            if (e.Stroke is abStroke s) {
+                AddUndo(new DeleteStrokeCommand(s));
             }
             System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
             base.OnStrokeErasing(e);
@@ -246,7 +248,6 @@ namespace abJournal {
             var undog = new UndoGroup();
             undog.Add(new DeleteStrokeCommand(e.PreviousStrokes));
             undog.Add(new AddStrokeCommand(e.NewStrokes));
-            undog.Normalize();
             AddUndo(undog);
             base.OnStrokesReplaced(e);
         }
@@ -388,7 +389,7 @@ namespace abJournal {
                     b.AlignmentY = AlignmentY.Top;
                     VisualChildrenBrushes[v] = b;
                 }
-                if (v is ContainerVisual) drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, (v as ContainerVisual).ContentBounds);
+                if (v is ContainerVisual cv) drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, cv.ContentBounds);
                 else drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, rect);
             }
             base.OnRender(drawingContext);
@@ -500,8 +501,7 @@ namespace abJournal {
             UndoGroup.ExpandGroups(this, ref cmds);
             Commands.Clear();
             for (int i = 0; i < cmds.Count; ++i) {
-                if (cmds[i] is UndoCommandComibinable) {
-                    UndoCommandComibinable cmd = cmds[i] as UndoCommandComibinable;
+                if (cmds[i] is UndoCommandComibinable cmd) {
                     System.Type type = cmd.GetType();
                     ++i;
                     for (; i < cmds.Count; ++i) {
@@ -521,7 +521,7 @@ namespace abJournal {
         // UndoGroupを全て展開し，一連のUndoCommandの配列とする．
         static void ExpandGroups(UndoGroup undo, ref List<UndoCommand> cmds) {
             for (int i = 0; i < undo.Count; ++i) {
-                if (undo.Commands[i] is UndoGroup) UndoGroup.ExpandGroups((UndoGroup)undo.Commands[i], ref cmds);
+                if (undo.Commands[i] is UndoGroup ug) UndoGroup.ExpandGroups(ug, ref cmds);
                 else cmds.Add(undo.Commands[i]);
             }
         }
