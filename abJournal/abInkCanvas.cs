@@ -50,6 +50,7 @@ namespace abJournal {
         }
 
         private void DefaultDrawingAttributes_AttributeChanged(object sender, PropertyDataChangedEventArgs e) {
+            foreach(var s in Strokes) { s.DrawingAttributes.IgnorePressure = DefaultDrawingAttributes.IgnorePressure; }
             SetCursor();
         }
 

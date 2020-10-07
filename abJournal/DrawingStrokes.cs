@@ -203,13 +203,21 @@ namespace abJournal {
                         s.DrawingAttributes.Color.A
                     ));
                 if (s.DrawingAttributesPlus.IsNormalDashArray) {
-                    writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.ToArray(), 0);
+                    writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.Select(d => d * scale).ToArray(), 0);
                 }
+                var state = new iTextSharp.text.pdf.PdfGState();
+                state.StrokeOpacity = (float)(s.DrawingAttributes.IsHighlighter ? 0.5 : 1);
+                writer.DirectContent.SetGState(state);
+                writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * scale);
                 StylusPointCollection pts = MabikiPointsType1(s.StylusPoints, s.DrawingAttributes);
                 PointCollection cpt1 = new PointCollection(), cpt2 = new PointCollection();
                 GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
                 writer.DirectContent.MoveTo(scale * pts[0].X, writer.PageSize.Height - scale * pts[0].Y);
                 for (int i = 0; i < pts.Count - 1; ++i) {
+                    // 何か変になる……
+                    // if (!s.DrawingAttributes.IgnorePressure) {
+                        //writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * pts[i + 1].PressureFactor * scale);
+                    //}
                     writer.DirectContent.CurveTo(scale * cpt1[i].X, writer.PageSize.Height - scale * cpt1[i].Y,
                         scale * cpt2[i].X, writer.PageSize.Height - scale * cpt2[i].Y,
                         scale * pts[i + 1].X, writer.PageSize.Height - scale * pts[i + 1].Y);
