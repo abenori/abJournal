@@ -139,10 +139,11 @@ namespace abJournal {
                             mabiku = true;
                             break;
                         }
+                        /*
                         if (!dattr.IgnorePressure && Math.Abs(Points[k].PressureFactor - pressuremean) > 0.1) {
                             mabiku = true;
                             break;
-                        }
+                        }*/
                     }
                     if (mabiku) {
                         nokoriPoints.Add(Points[j]);
@@ -180,6 +181,8 @@ namespace abJournal {
         public static void GenerateBezierControlPointsType1(StylusPointCollection Points, ref PointCollection ctrlpt1, ref PointCollection ctrlpt2) {
             System.Diagnostics.Debug.Assert(Points.Count >= 2);
             ctrlpt1.Clear(); ctrlpt2.Clear();
+            //Point firstCtrlPoint = new Point(Points[0].ToPoint().X * 0.67 + Points[1].ToPoint().X * 0.33,Points[0].ToPoint().Y * 0.67 + Points[1].ToPoint().Y * 0.33);
+            //Point firstCtrlPoint = new Point(Points[0].ToPoint().X * 0.99 + Points[1].ToPoint().X * 0.01, Points[0].ToPoint().Y * 0.99 + Points[1].ToPoint().Y * 0.01);
             Point firstCtrlPoint = Points[0].ToPoint();
             double prevLength = (Points[1].ToPoint() - Points[0].ToPoint()).Length;
             for (int i = 1; i < Points.Count - 1; ++i) {
@@ -206,7 +209,7 @@ namespace abJournal {
                     writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.Select(d => d * scale).ToArray(), 0);
                 }
                 var state = new iTextSharp.text.pdf.PdfGState();
-                state.StrokeOpacity = (float)(s.DrawingAttributes.IsHighlighter ? 0.5 : 1);
+                state.StrokeOpacity = s.DrawingAttributes.IsHighlighter ? 0.5f : 1.0f;
                 writer.DirectContent.SetGState(state);
                 writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * scale);
                 StylusPointCollection pts = MabikiPointsType1(s.StylusPoints, s.DrawingAttributes);
@@ -214,10 +217,9 @@ namespace abJournal {
                 GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
                 writer.DirectContent.MoveTo(scale * pts[0].X, writer.PageSize.Height - scale * pts[0].Y);
                 for (int i = 0; i < pts.Count - 1; ++i) {
-                    // 何か変になる……
-                    // if (!s.DrawingAttributes.IgnorePressure) {
-                        //writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * pts[i + 1].PressureFactor * scale);
-                    //}
+                    if (!s.DrawingAttributes.IgnorePressure) {
+                        writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * pts[i].PressureFactor * scale * 2);
+                    }
                     writer.DirectContent.CurveTo(scale * cpt1[i].X, writer.PageSize.Height - scale * cpt1[i].Y,
                         scale * cpt2[i].X, writer.PageSize.Height - scale * cpt2[i].Y,
                         scale * pts[i + 1].X, writer.PageSize.Height - scale * pts[i + 1].Y);

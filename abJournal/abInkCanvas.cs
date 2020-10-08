@@ -142,15 +142,46 @@ namespace abJournal {
         public void SelectAll() { Select(Strokes); }
         public bool Updated { get { return EditCount != 0; } }
         public void ClearUpdated() { EditCount = 0; }
-        public void DeleteSelection() {
-            BeginUndoGroup();
-            var selected = GetSelectedStrokes();
-            foreach (var s in selected) {
-                AddUndo(new DeleteStrokeCommand(s as abStroke));
-                Strokes.Remove(s);
+        public new void Paste() {
+            if (CanPaste()) {
+                base.Paste();
+                var added = new StrokeCollection();
+                for (int i = 0; i < Strokes.Count; ++i) {
+                    if (!(Strokes[i] is abStroke)) {
+                        var abs = new abStroke(Strokes[i].StylusPoints, Strokes[i].DrawingAttributes, new DrawingAttributesPlus());
+                        Strokes[i] = abs;
+                        added.Add(abs);
+                    }
+                }
+                AddUndo(new AddStrokeCommand(added));
             }
-            EndUndoGroup();
-            RestoreEditingMode();
+        }
+        public new void Paste(Point pt) {
+            if (CanPaste()) {
+                base.Paste(pt);
+                var added = new StrokeCollection();
+                for (int i = 0; i < Strokes.Count; ++i) {
+                    if (!(Strokes[i] is abStroke)) {
+                        var abs = new abStroke(Strokes[i].StylusPoints, Strokes[i].DrawingAttributes, new DrawingAttributesPlus());
+                        Strokes[i] = abs;
+                        added.Add(abs);
+                    }
+                }
+                AddUndo(new AddStrokeCommand(added));
+            }
+        }
+        public void DeleteSelection() {
+            UndoGroup ug = new UndoGroup();
+            var selected = GetSelectedStrokes();
+            if (selected.Count > 0) {
+                ug.Add(new SelectCommand(selected, new StrokeCollection()));
+                foreach (var s in selected) {
+                    ug.Add(new DeleteStrokeCommand(s as abStroke));
+                    Strokes.Remove(s);
+                }
+                AddUndo(ug);
+                RestoreEditingMode();
+            }
         }
 
         [System.Diagnostics.Conditional("DEBUG")]
