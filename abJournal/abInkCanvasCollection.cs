@@ -117,10 +117,11 @@ namespace abJournal {
             set {
                 if(landscape != value) {
                     landscape = value;
-                    Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
+                    var tr = innerCanvas.RenderTransform as MatrixTransform;
+                    var m = tr.Matrix;
                     if(landscape) m.Rotate(-90);
                     else m.Rotate(90);
-                    ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+                    tr.Matrix = m;
                 }
                 Scroll();
                 OnPropertyChanged("Landscape");
@@ -190,9 +191,10 @@ namespace abJournal {
             ScrollWithoutAdjust(scroll - toadjust);
         }
         void ScrollWithoutAdjust(Vector vec) {
-            Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
+            var tr = innerCanvas.RenderTransform as MatrixTransform;
+            var m = tr.Matrix;
             m.Translate(vec.X, vec.Y);
-            ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
+            tr.Matrix = m;
             CalculateCurrentPage(true);
         }
 
@@ -741,7 +743,14 @@ namespace abJournal {
             if(currentPage < 0) currentPage = 0;
             else if(currentPage >= Count) currentPage = Count - 1;
 
-            var transform = innerCanvas.RenderTransform;
+            Transform transform;
+            if (landscape && (innerCanvas.RenderTransform.Clone() is MatrixTransform tf)) {
+                var m = tf.Matrix;
+                m.Rotate(90);
+                tf.Matrix.Rotate(90);
+                transform = tf;
+            } else transform = innerCanvas.RenderTransform;
+
             var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]),Canvas.GetTop(CanvasCollection[currentPage]),CanvasCollection[currentPage].Width,CanvasCollection[currentPage].Height));
             int start, direction;
             if(currentRect.Top < 0) {
