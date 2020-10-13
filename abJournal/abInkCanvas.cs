@@ -129,9 +129,13 @@ namespace abJournal {
 
         protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnStrokeCollected");
-            this.Strokes.Remove(e.Stroke);
             var abStroke = new abStroke(e.Stroke.StylusPoints, e.Stroke.DrawingAttributes, DefaultDrawingAttributesPlus);
-            this.Strokes.Add(abStroke);
+            for (int i = this.Strokes.Count - 1; i >= 0; --i) {
+                if (e.Stroke == this.Strokes[i]) {
+                    this.Strokes[i] = abStroke;
+                    break;
+                }
+            }
             InkCanvasStrokeCollectedEventArgs args = new InkCanvasStrokeCollectedEventArgs(abStroke);
             AddUndo(new AddStrokeCommand(abStroke));
             base.OnStrokeCollected(args);
