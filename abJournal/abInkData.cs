@@ -652,6 +652,10 @@ namespace abJournal {
                     writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.ToArray(), 0);
                 }
                 writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_ROUND);
+                var state = new iTextSharp.text.pdf.PdfGState();
+                state.StrokeOpacity = s.DrawingAttributes.IsHighlighter ? 0.5f : 1.0f;
+                writer.DirectContent.SetGState(state);
+                writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * scale);
                 StrokeData.DrawPath(writer, scale, s.StylusPoints, s.DrawingAttributes);
                 if(!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(0);

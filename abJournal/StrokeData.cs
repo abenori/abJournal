@@ -353,6 +353,9 @@ namespace abJournal {
             GenerateBezierControlPointsType1(pts, ref cpt1, ref cpt2);
             writer.DirectContent.MoveTo(scale * pts[0].X, writer.PageSize.Height - scale * pts[0].Y);
             for(int i = 0; i < pts.Count - 1; ++i) {
+                if (!drawingAttributes.IgnorePressure) {
+                    writer.DirectContent.SetLineWidth(drawingAttributes.Width * pts[i].PressureFactor * scale * 2);
+                }
                 writer.DirectContent.CurveTo(scale * cpt1[i].X, writer.PageSize.Height - scale * cpt1[i].Y,
                     scale * cpt2[i].X, writer.PageSize.Height - scale * cpt2[i].Y,
                     scale * pts[i + 1].X, writer.PageSize.Height - scale * pts[i + 1].Y);
