@@ -746,8 +746,15 @@ namespace abJournal {
             if(currentPage < 0) currentPage = 0;
             else if(currentPage >= Count) currentPage = Count - 1;
 
-            var transform = innerCanvas.RenderTransform;
+            Transform transform;
+            if (landscape && (innerCanvas.RenderTransform.Clone() is MatrixTransform tf)) {
+                var m = tf.Matrix;
+                m.Rotate(90);
+                tf.Matrix = m;
+                transform = tf;
+            } else transform = innerCanvas.RenderTransform;
             var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]),Canvas.GetTop(CanvasCollection[currentPage]),CanvasCollection[currentPage].Width,CanvasCollection[currentPage].Height));
+
             int start, direction;
             if(currentRect.Top < 0) {
                 start = currentPage;
