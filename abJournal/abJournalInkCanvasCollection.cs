@@ -366,7 +366,7 @@ namespace abJournal {
                         writer = iTextSharp.text.pdf.PdfWriter.GetInstance(doc, fw);
                         doc.Open();
                     } else doc.SetPageSize(pagesize);
-                    if(data.Data[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
+                    if(data.Data[i].Info.BackgroundStr != null && data.Data[i].Info.BackgroundStr.StartsWith("image:pdf:")) {
                         var str = data.Data[i].Info.BackgroundStr.Substring("image:pdf:".Length);
                         var r = str.IndexOf(":");
                         if(r != -1) {

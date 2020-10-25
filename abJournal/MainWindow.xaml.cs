@@ -288,15 +288,20 @@ namespace abJournal {
             if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
                 SaveButton.IsEnabled = false;
-                if(Properties.Settings.Default.SaveWithPDF) {
-                    await mainCanvas.SaveDataAndPDFAsync();
-                } else {
-                    await mainCanvas.SaveAsync();
+                try {
+                    if (Properties.Settings.Default.SaveWithPDF) {
+                        await mainCanvas.SaveDataAndPDFAsync();
+                    } else {
+                        await mainCanvas.SaveAsync();
+                    }
+                    SaveButton.IsEnabled = true;
+                    mainCanvas.ClearUpdated();
+                    AddHistory(mainCanvas.FileName);
+                    OnPropertyChanged("abmainCanvas");
                 }
-                SaveButton.IsEnabled = true;
-                mainCanvas.ClearUpdated();
-                AddHistory(mainCanvas.FileName);
-                OnPropertyChanged("abmainCanvas");
+                catch(Exception ex) {
+                    MessageBox.Show(ex.Message);
+                }
             }
         }
         private void NewCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
