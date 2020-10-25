@@ -548,6 +548,7 @@ namespace abJournal {
             DrawNoteContents(c, Info);
         }
         public static void DrawNoteContents(abInkCanvas c, CanvasCollectionInfo info) {
+            var PixelsPerDip = VisualTreeHelper.GetDpi(c).PixelsPerDip;
             if (noteContents.ContainsKey(c)) {
                 c.Children.Remove(noteContents[c]);
             }
@@ -562,9 +563,9 @@ namespace abJournal {
                         if (info.ShowDate) textheight -= 20;
                         double width = c.Width - 2 * xyohaku - 2 * hankei;
                         var pt = new Point(xyohaku + hankei, yyohaku);
-                        double fontsize = GuessFontSize(info.Title, pdfFontName, width, textheight);
-                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), fontsize, Brushes.Black);
-                        var textSize = GetStringSize(info.Title, pdfFontName, fontsize);
+                        double fontsize = GuessFontSize(info.Title, pdfFontName, width, textheight, PixelsPerDip);
+                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), fontsize, Brushes.Black, PixelsPerDip);
+                        var textSize = GetStringSize(info.Title, pdfFontName, fontsize, PixelsPerDip);
                         text.MaxTextWidth = width;
                         text.MaxTextHeight = textSize.Height;
                         int n = (int)(textSize.Width / width) + 1;
@@ -574,7 +575,7 @@ namespace abJournal {
                     }
 
                     if (info.ShowDate) {
-                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), 12, Brushes.Gray);
+                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), 12, Brushes.Gray, PixelsPerDip);
                         dc.DrawText(text, new Point(c.Width - xyohaku - text.Width - hankei, yyohaku + 2 * hankei + height - text.Height - 4));
 
                         var pen = new Pen(Brushes.LightGray, 1);
@@ -613,7 +614,7 @@ namespace abJournal {
                 double dateTextHeight = 0;
                 Size datetextSize = new Size();
                 if (info.ShowDate) {
-                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
+                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12, 1.0);
                     dateTextHeight = datetextSize.Height + 8;
                 }
                 if (info.Title != null && info.Title != "") {
@@ -625,7 +626,7 @@ namespace abJournal {
                     //writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.BLACK);
                     //writer.DirectContent.Rectangle(rect.Left,rect.Bottom,rect.Width,rect.Height);
                     //writer.DirectContent.Stroke();
-                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.Width / scale, rect.Height / scale);
+                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.Width / scale, rect.Height / scale, 1.0);
                     var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * fontsize));
                     writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.BLACK);
                     // 調整
@@ -721,22 +722,24 @@ namespace abJournal {
             }
         }
 
-        public static Size GetStringSize(string str, string fontname, double fontsize) {
+        public static Size GetStringSize(string str, string fontname, double fontsize, double PixelsPerDip) {
             var ft = new FormattedText(str, System.Globalization.CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 new Typeface(fontname),
                 fontsize,
-                Brushes.White);
+                Brushes.White,
+                PixelsPerDip
+                );
             return new Size(ft.Width, ft.Height);
         }
 
         // 推測が怪しい気がしてきたので，後で考え直す．
-        public static double GuessFontSize(string str, string fontname, double width, double height) {
-            var size = GetStringSize(str, fontname, 100);
+        public static double GuessFontSize(string str, string fontname, double width, double height, double PixelsPerDip) {
+            var size = GetStringSize(str, fontname, 100, PixelsPerDip);
             int n = (int) Math.Sqrt(height * size.Width / (width * size.Height));
             var f = 100 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height));
             while(f > 0) {
-                size = GetStringSize(str, fontname, f);
+                size = GetStringSize(str, fontname, f, PixelsPerDip);
                 int k = (int) (size.Width/width)+1;
                 if(k * size.Height > height) --f;
                 else return f;
