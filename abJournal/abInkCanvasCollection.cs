@@ -104,11 +104,13 @@ namespace abJournal {
         public double Scale {
             get { return scale; }
             set {
-                Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
-                m.Scale(value / scale, value / scale);
-                ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
-                scale = value;
-                Scroll();
+                if (scale != value) {
+                    Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
+                    m.Scale(value / scale, value / scale);
+                    ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+                    scale = value;
+                    Scroll();
+                }
                 OnPropertyChanged("Scale");
             }
         }
@@ -116,10 +118,12 @@ namespace abJournal {
         public bool IgnorePressure {
             get { return ignorePressure; }
             set {
-                ignorePressure = value;
-                foreach(var c in CanvasCollection) {
-                    c.InkData.IgnorePressure = value;
-                    c.ReDraw();
+                if (ignorePressure != value) {
+                    ignorePressure = value;
+                    foreach (var c in CanvasCollection) {
+                        c.InkData.IgnorePressure = value;
+                        c.ReDraw();
+                    }
                 }
                 OnPropertyChanged("IgnorePressure");
             }

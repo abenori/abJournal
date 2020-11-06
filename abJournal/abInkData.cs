@@ -650,8 +650,8 @@ namespace abJournal {
                     ));
                 if(!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.ToArray(), 0);
-                }
-                writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_ROUND);
+                    writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_BUTT);
+                } else writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_ROUND);
                 var state = new iTextSharp.text.pdf.PdfGState();
                 state.StrokeOpacity = s.DrawingAttributes.IsHighlighter ? 0.5f : 1.0f;
                 writer.DirectContent.SetGState(state);
