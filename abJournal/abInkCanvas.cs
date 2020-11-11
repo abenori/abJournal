@@ -491,6 +491,9 @@ namespace abJournal {
             PenID = e.StylusDevice.Id;
             TouchType = STYLUS;
             DrawingStart(e.GetStylusPoints(this)[0]);
+            if (Mode == InkManipulationMode.Selecting) {
+                Stylus.Capture(this);
+            }
         }
 
         public new event StylusEventHandler StylusMove = ((s, e) => { });
@@ -523,6 +526,7 @@ namespace abJournal {
         }
         public new event StylusEventHandler StylusUp = ((s, e) => { });
         protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+            Stylus.Capture(this, CaptureMode.None);
             base.OnStylusUp(e);
             if(!e.Handled) StylusUp(this, e);
             if(e.Handled) return;
@@ -542,19 +546,7 @@ namespace abJournal {
             foreach(var s in InkData.Strokes) {
                 s.ReDraw();
                 StrokeChildren.Add(s.Visual);
-                /*
-                foreach(var spt in s.StylusPoints) {
-                    var pt = spt.ToPoint();
-                    var ell = new Ellipse() {
-                        Stroke = Brushes.Red,
-                        Width = 1,
-                        Height = 1
-                    };
-                    StrokeChildren.Add(ell);
-                    SetLeft(ell, pt.X - 0.5);
-                    SetTop(ell, pt.Y - 0.5);
-                    SetZIndex(ell, 10);
-                }*/
+
             }
             InvalidateVisual();
             return;
