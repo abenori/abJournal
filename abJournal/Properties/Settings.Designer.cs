@@ -37,6 +37,30 @@ namespace abJournal.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("dotNet")]
+        public global::abJournal.DrawingAlgorithm DrawingAlgorithm {
+            get {
+                return ((global::abJournal.DrawingAlgorithm)(this["DrawingAlgorithm"]));
+            }
+            set {
+                this["DrawingAlgorithm"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("dotNet")]
+        public global::abJournal.DrawingAlgorithm PrintDrawingAlgorithm {
+            get {
+                return ((global::abJournal.DrawingAlgorithm)(this["PrintDrawingAlgorithm"]));
+            }
+            set {
+                this["PrintDrawingAlgorithm"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         public global::System.Collections.Specialized.StringCollection History {
             get {
                 return ((global::System.Collections.Specialized.StringCollection)(this["History"]));

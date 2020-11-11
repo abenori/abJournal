@@ -17,8 +17,23 @@ namespace abJournal {
     /// SystemSetting.xaml の相互作用ロジック
     /// </summary>
     public partial class SystemSetting : Window {
+        KeyValuePair<string, DrawingAlgorithm>[] ComboList = new KeyValuePair<string, DrawingAlgorithm>[]{
+                new KeyValuePair<string,DrawingAlgorithm>("Stroke.GetGeometry",DrawingAlgorithm.dotNet),
+                new KeyValuePair<string,DrawingAlgorithm>("独自型その1",DrawingAlgorithm.Type1),
+                new KeyValuePair<string,DrawingAlgorithm>("独自型その1 + 点補正",DrawingAlgorithm.Type1WithHosei),
+                new KeyValuePair<string,DrawingAlgorithm>("直線で結ぶだけ",DrawingAlgorithm.Line),
+        };
         public SystemSetting() {
             InitializeComponent();
+
+            DrawingAlgorithmComboBox.ItemsSource = ComboList;
+            DrawingAlgorithmComboBox.SelectedValuePath = "Value";
+            DrawingAlgorithmComboBox.DisplayMemberPath = "Key";
+
+            PrintDrawingAlgorithmComboBox.ItemsSource = ComboList;
+            PrintDrawingAlgorithmComboBox.SelectedValuePath = "Value";
+            PrintDrawingAlgorithmComboBox.DisplayMemberPath = "Key";
+
             DataContext = Properties.Settings.Default;
         }
 

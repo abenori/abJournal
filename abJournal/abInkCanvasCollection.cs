@@ -17,7 +17,7 @@ namespace abJournal {
     // InkCanvasたちからなる「文書用」
     // InkCanvasの適切な配置とかを担当．一応汎用的にと思いジェネリックにしている．
     // 継承しているCanvasの中にもう一つCanvas（innerCanvas）を置き，その中にabInkCanvasClassを並べる．
-    public class abInkCanvasCollection<abInkCanvasClass> : Canvas, IEnumerable<abInkCanvasClass>, INotifyPropertyChanged where abInkCanvasClass : ABInkCanvas{
+    public class abInkCanvasCollection<abInkCanvasClass> : Canvas, IEnumerable<abInkCanvasClass>, INotifyPropertyChanged where abInkCanvasClass : UIElement, IabInkCanvas{
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             if(PropertyChanged != null) {
@@ -31,13 +31,28 @@ namespace abJournal {
         const double LengthBetweenCanvas = 10;
         #region 公開用のプロパティ
 
-        InkCanvasEditingMode mode;
-        public InkCanvasEditingMode Mode {
+        DrawingAlgorithm drawingAlgorithm = DrawingAlgorithm.dotNet;
+        public DrawingAlgorithm DrawingAlgorithm {
+            get { return drawingAlgorithm; }
+            set {
+                if(drawingAlgorithm != value) {
+                    drawingAlgorithm = value;
+                    foreach(var c in CanvasCollection) {
+                        c.InkData.DrawingAlgorithm = value;
+                        c.ReDraw();
+                    }
+                    OnPropertyChanged("DrawingAlgorithm");
+                }
+            }
+        }
+
+        InkManipulationMode mode;
+        public InkManipulationMode Mode {
             get { return mode; }
             set {
                 if(mode != value) {
                     mode = value;
-                    foreach(var i in CanvasCollection) i.EditingMode = Mode;
+                    foreach(var i in CanvasCollection) i.Mode = Mode;
                     OnPropertyChanged("Mode");
                 }
             }
@@ -46,9 +61,9 @@ namespace abJournal {
         public Color PenColor {
             get { return penColor; }
             set {
-                if (penColor != value) {
+                if(penColor != value) {
                     penColor = value;
-                    foreach (var c in CanvasCollection) c.DefaultDrawingAttributes.Color = penColor;
+                    foreach(var c in CanvasCollection) c.PenColor = penColor;
                     OnPropertyChanged("PenColor");
                 }
             }
@@ -59,9 +74,7 @@ namespace abJournal {
             set {
                 if(penThickness != value) {
                     penThickness = value;
-                    foreach (var c in CanvasCollection) {
-                        c.DefaultDrawingAttributes.Width = c.DefaultDrawingAttributes.Height = penThickness;
-                    }
+                    foreach(var c in CanvasCollection) c.PenThickness = penThickness;
                     OnPropertyChanged("PenThickness");
                 }
             }
@@ -73,7 +86,7 @@ namespace abJournal {
             get { return penDashed; }
             set {
                 penDashed = value;
-                foreach(var c in CanvasCollection) c.DefaultDrawingAttributesPlus.DashArray = value ? DashArray_Dashed : DashArray_Normal;
+                foreach(var c in CanvasCollection) c.PenDashArray = value ? DashArray_Dashed : DashArray_Normal;
                 OnPropertyChanged("PenDashed");
             }
         }
@@ -82,7 +95,7 @@ namespace abJournal {
             get { return penIsHilighter; }
             set {
                 penIsHilighter = value;
-                foreach (var c in CanvasCollection) c.DefaultDrawingAttributes.IsHighlighter = penIsHilighter;
+                foreach (var c in CanvasCollection) c.PenIsHilighter = penIsHilighter;
                 OnPropertyChanged("PenIsHilighter");
             }
         }
@@ -104,8 +117,8 @@ namespace abJournal {
             get { return ignorePressure; }
             set {
                 ignorePressure = value;
-                foreach (var c in CanvasCollection) {
-                    c.DefaultDrawingAttributes.IgnorePressure = value;
+                foreach(var c in CanvasCollection) {
+                    c.InkData.IgnorePressure = value;
                     c.ReDraw();
                 }
                 OnPropertyChanged("IgnorePressure");
@@ -117,11 +130,10 @@ namespace abJournal {
             set {
                 if(landscape != value) {
                     landscape = value;
-                    var tr = innerCanvas.RenderTransform as MatrixTransform;
-                    var m = tr.Matrix;
+                    Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
                     if(landscape) m.Rotate(-90);
                     else m.Rotate(90);
-                    tr.Matrix = m;
+                    ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
                 }
                 Scroll();
                 OnPropertyChanged("Landscape");
@@ -142,22 +154,14 @@ namespace abJournal {
         #endregion
 
         #region 選択
-        //RectTracker SelectedRectTracker = new RectTracker();
-        //abInkCanvasClass CanvasContainingSelection = null;
-        private abInkCanvasClass CanvasContainingSelection {
-            get {
-                foreach(var c in this) {
-                    if (c.GetSelectedStrokes().Count > 0) return c;
-                }
-                return null;
-            }
-        }
+        RectTracker SelectedRectTracker = new RectTracker();
+        abInkCanvasClass CanvasContainingSelection = null;
         #endregion
 
         public abInkCanvasCollection() {
             SizeChanged += InkCanvasCollection_SizeChanged;
-
-            Mode = InkCanvasEditingMode.Ink;
+            
+            Mode = InkManipulationMode.Inking;
             PenThickness = 2;
             Background = Brushes.Gray;
 
@@ -167,7 +171,18 @@ namespace abJournal {
             innerCanvas.Height = 0;
             innerCanvas.Background = Background;
             innerCanvas.RenderTransform = new MatrixTransform();
+
+            innerCanvas.MouseDown += innerCanvas_MouseDown;
+            innerCanvas.TouchDown += innerCanvas_TouchDown;
             Children.Add(innerCanvas);
+
+            SelectedRectTracker.MouseMove += SelectedRectTracker_MouseMove;
+            SelectedRectTracker.TrackerStart += SelectedRectTracker_TrackerStart;
+            SelectedRectTracker.TrackerSizeChanged += SelectedRectTracker_TrackerSizeChanged;
+            SelectedRectTracker.TrackerEnd += SelectedRectTracker_TrackerEnd;
+            innerCanvas.Children.Add(SelectedRectTracker);
+            SelectedRectTracker.Visibility = Visibility.Hidden;
+            Canvas.SetZIndex(SelectedRectTracker, 10);
         }
 
         void VerticalArrangeCanvas() {
@@ -191,10 +206,9 @@ namespace abJournal {
             ScrollWithoutAdjust(scroll - toadjust);
         }
         void ScrollWithoutAdjust(Vector vec) {
-            var tr = innerCanvas.RenderTransform as MatrixTransform;
-            var m = tr.Matrix;
+            Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
             m.Translate(vec.X, vec.Y);
-            tr.Matrix = m;
+            ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
             CalculateCurrentPage(true);
         }
 
@@ -284,23 +298,22 @@ namespace abJournal {
         }
         #endregion
 
-        public void AddCanvas(Size size,Color background) {
-            InsertCanvas(size,background,CanvasCollection.Count);
+        public void AddCanvas(abInkData d,Size size,Color background) {
+            InsertCanvas(d, size,background,CanvasCollection.Count);
         }
         public void InsertCanvas(abInkCanvasClass canvas, int index) {
-            canvas.DefaultDrawingAttributes.IgnorePressure = ignorePressure;
-            canvas.DefaultDrawingAttributes.Color = PenColor;
-            canvas.DefaultDrawingAttributes.Width = canvas.DefaultDrawingAttributes.Height = PenThickness;
-            canvas.DefaultDrawingAttributesPlus.DashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
-            canvas.DefaultDrawingAttributes.IsHighlighter = PenIsHilighter;
             canvas.PropertyChanged += canvas_PropertyChanged;
             CanvasCollection.Insert(index, canvas);
             canvas.UndoChainChanged += InkCanvasCollection_UndoChainChanged;
-            canvas.DefaultDrawingAttributes.Width = canvas.DefaultDrawingAttributes.Height =  PenThickness;
-            canvas.DefaultDrawingAttributes.Color = PenColor;
-            canvas.DefaultDrawingAttributesPlus.DashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
-            canvas.SelectionChanging += Canvas_SelectionChanging;
-            canvas.EditingMode = Mode;
+            canvas.InkData.StrokeSelectedChanged += ((s, e) => { InkData_StrokeSelectedChanged(canvas, e); });
+            canvas.InkData.StrokeAdded += ((s, e) => { InkData_StrokeAdded(canvas, e); });
+            canvas.InkData.StrokeChanged += ((s, e) => { InkData_StrokeChanged(canvas, e); });
+            canvas.InkData.StrokeDeleted += ((s, e) => { InkData_StrokeDeleted(canvas, e); });
+            canvas.PenThickness = PenThickness;
+            canvas.PenColor = PenColor;
+            canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
+            canvas.Mode = Mode;
+            canvas.InkData.DrawingAlgorithm = DrawingAlgorithm;
             canvas.ReDraw();
             AddUndoChain(new AddCanvasCommand(canvas, index));
             innerCanvas.Children.Add(canvas);
@@ -313,18 +326,11 @@ namespace abJournal {
             OnPropertyChanged("Count");
             if(CurrentPage == -1) CurrentPage = 0;
         }
-
-        private void Canvas_SelectionChanging(object sender, InkCanvasSelectionChangingEventArgs e) {
-            if (e.GetSelectedStrokes().Count > 0) {
-                foreach (var c in this) {
-                    if (c != sender) c.ClearSelected();
-                }
-            }
-        }
-
-        public void InsertCanvas(Size size,Color background,int index) {
-            abInkCanvasClass canvas = (abInkCanvasClass) Activator.CreateInstance(typeof(abInkCanvasClass), size.Width, size.Height);
-            canvas.DefaultDrawingAttributes.IgnorePressure = ignorePressure;
+        public void InsertCanvas(abInkData d, Size size,Color background,int index) {
+            d.DrawingAlgorithm = DrawingAlgorithm;
+            //abInkCanvasClass canvas = new abInkCanvasClass(d, size.Width, size.Height);
+            abInkCanvasClass canvas = (abInkCanvasClass) Activator.CreateInstance(typeof(abInkCanvasClass), d, size.Width, size.Height);
+            canvas.InkData.IgnorePressure = ignorePressure;
             canvas.Background = new SolidColorBrush(background);
             canvas.Background.Freeze();
             InsertCanvas(canvas, index);
@@ -379,7 +385,6 @@ namespace abJournal {
         #endregion
 
         #region 選択関係
-        /*
         void innerCanvas_TouchDown(object sender, TouchEventArgs e) {
             if(SelectedRectTracker.Visibility == Visibility.Visible) {
                 var pt = e.GetTouchPoint(innerCanvas).Position;
@@ -407,7 +412,7 @@ namespace abJournal {
             int count = 0;
             Rect bound = new Rect(Canvas.GetLeft(can), Canvas.GetTop(can), can.Width, can.Height);
             bound = can.RenderTransform.TransformBounds(bound);
-            var Strokes = can.Strokes;
+            StrokeDataCollection Strokes = can.InkData.Strokes;
             Rect rect = new Rect();
             foreach(var s in Strokes) {
                 if(s.Selected) {
@@ -521,7 +526,7 @@ namespace abJournal {
                     SelectedRect = new Rect(SelectedRect.X, SelectedRect.Y + shifty, SelectedRect.Width, SelectedRect.Height);
                 }
             }
-        }*/
+        }
         #endregion
 
         #region Undo/Redo関係
@@ -605,12 +610,12 @@ namespace abJournal {
         public static int MaxUndoSize = 1000;
 
         void InkCanvasCollection_UndoChainChanged(object sender, EventArgs e) {
-            AddUndoChain(new CanvasUndoCommand(sender as abInkCanvasClass));
+            AddUndoChain(new CanvasUndoCommand((abInkCanvasClass) sender));
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
         void AddUndoChain(UndoCommand c) {
             if(c is UndoGroup) {
-                if((c as UndoGroup).Count == 0) return;
+                if(((UndoGroup) c).Count == 0) return;
             }
             RedoStack.Clear();
             UndoStack.Add(c);
@@ -655,10 +660,10 @@ namespace abJournal {
         #endregion
 
         public void Delete() {
-            foreach (var c in CanvasCollection) c.DeleteSelection();
+            foreach(var c in CanvasCollection) c.InkData.DeleteSelected();
         }
         public void SelectAll(int page) {
-            CanvasCollection[page].SelectAll();
+            CanvasCollection[page].InkData.SelectAll();
         }
         public void SelectAll() {
             SelectAll(CurrentPage);
@@ -674,7 +679,6 @@ namespace abJournal {
             var c = CanvasCollection[page];
             c.Paste(c.PointFromScreen(pt));
         }
-
         public void Copy() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.Copy();
         }
@@ -684,30 +688,29 @@ namespace abJournal {
         public void ClearSelected() {
             if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
         }
-        /*
         public bool IsSelected {
             get { return SelectedRectTracker.IsVisible; }
-        }*/
+        }
         public bool Updated {
             get {
                 if(EditCount == 0) return false;
                 else if(EditCount > 0) {
                     for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i) {
                         if(!(UndoStack[i] is CanvasUndoCommand)) return true;
-                        if(((CanvasUndoCommand) UndoStack[i]).InkCanvas.Updated) return true;
+                        if(((CanvasUndoCommand) UndoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
                     return false;
                 } else {
                     for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i) {
                         if(!(RedoStack[i] is CanvasUndoCommand)) return true;
-                        if(((CanvasUndoCommand) RedoStack[i]).InkCanvas.Updated) return true;
+                        if(((CanvasUndoCommand) RedoStack[i]).InkCanvas.InkData.Updated) return true;
                     }
                     return false;
                 }
             }
         }
         public void ClearUpdated() {
-            foreach(var c in CanvasCollection) c.ClearUpdated();
+            foreach(var c in CanvasCollection) c.InkData.ClearUpdated();
             EditCount = 0;
             OnPropertyChanged("Updated");
         }
@@ -743,14 +746,7 @@ namespace abJournal {
             if(currentPage < 0) currentPage = 0;
             else if(currentPage >= Count) currentPage = Count - 1;
 
-            Transform transform;
-            if (landscape && (innerCanvas.RenderTransform.Clone() is MatrixTransform tf)) {
-                var m = tf.Matrix;
-                m.Rotate(90);
-                tf.Matrix.Rotate(90);
-                transform = tf;
-            } else transform = innerCanvas.RenderTransform;
-
+            var transform = innerCanvas.RenderTransform;
             var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]),Canvas.GetTop(CanvasCollection[currentPage]),CanvasCollection[currentPage].Width,CanvasCollection[currentPage].Height));
             int start, direction;
             if(currentRect.Top < 0) {

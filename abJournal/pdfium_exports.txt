@@ -1,0 +1,172 @@
+Microsoft (R) COFF/PE Dumper Version 12.00.31101.0
+Copyright (C) Microsoft Corporation.  All rights reserved.
+
+
+Dump of file pdfium.dll
+
+File Type: DLL
+
+  Section contains the following exports for pdfium.dll
+
+    00000000 characteristics
+    54F5B0A8 time date stamp Tue Mar 03 14:01:28 2015
+        0.00 version
+           1 ordinal base
+         145 number of functions
+         145 number of names
+
+    ordinal hint RVA      name
+
+          1    0 00015F40 ?FPDFPageObj_TransformClipPath@@YGXPAXNNNNNN@Z = ?FPDFPageObj_TransformClipPath@@YGXPAXNNNNNN@Z (void __stdcall FPDFPageObj_TransformClipPath(void *,double,double,double,double,double,double))
+          2    1 00015FD0 ?FPDFPage_GetCropBox@@YGHPAXPAM111@Z = ?FPDFPage_GetCropBox@@YGHPAXPAM111@Z (int __stdcall FPDFPage_GetCropBox(void *,float *,float *,float *,float *))
+          3    2 00016060 ?FPDFPage_GetMediaBox@@YGHPAXPAM111@Z = ?FPDFPage_GetMediaBox@@YGHPAXPAM111@Z (int __stdcall FPDFPage_GetMediaBox(void *,float *,float *,float *,float *))
+          4    3 000160F0 ?FPDFPage_InsertClipPath@@YGXPAX0@Z = ?FPDFPage_InsertClipPath@@YGXPAX0@Z (void __stdcall FPDFPage_InsertClipPath(void *,void *))
+          5    4 000163D0 ?FPDFPage_SetCropBox@@YGXPAXMMMM@Z = ?FPDFPage_SetCropBox@@YGXPAXMMMM@Z (void __stdcall FPDFPage_SetCropBox(void *,float,float,float,float))
+          6    5 00016500 ?FPDFPage_SetMediaBox@@YGXPAXMMMM@Z = ?FPDFPage_SetMediaBox@@YGXPAXMMMM@Z (void __stdcall FPDFPage_SetMediaBox(void *,float,float,float,float))
+          7    6 00016630 ?FPDFPage_TransFormWithClip@@YGHPAXPAU_FS_MATRIX_@@PAU_FS_RECTF_@@@Z = ?FPDFPage_TransFormWithClip@@YGHPAXPAU_FS_MATRIX_@@PAU_FS_RECTF_@@@Z (int __stdcall FPDFPage_TransFormWithClip(void *,struct _FS_MATRIX_ *,struct _FS_RECTF_ *))
+          8    7 00016B20 ?FPDF_CreateClipPath@@YGPAXMMMM@Z = ?FPDF_CreateClipPath@@YGPAXMMMM@Z (void * __stdcall FPDF_CreateClipPath(float,float,float,float))
+          9    8 00016BD0 ?FPDF_DestroyClipPath@@YGXPAX@Z = ?FPDF_DestroyClipPath@@YGXPAX@Z (void __stdcall FPDF_DestroyClipPath(void *))
+         51    9 000074C0 FPDFDoc_GetPageMode = _FPDFDoc_GetPageMode
+         10    A 00003050 _FORM_DoDocumentAAction@8 = _FORM_DoDocumentAAction@8
+         11    B 000030D0 _FORM_DoDocumentJSAction@4 = _FORM_DoDocumentJSAction@4
+         12    C 00003110 _FORM_DoDocumentOpenAction@4 = _FORM_DoDocumentOpenAction@4
+         13    D 00003150 _FORM_DoPageAAction@12 = _FORM_DoPageAAction@12
+         14    E 00003220 _FORM_ForceToKillFocus@4 = _FORM_ForceToKillFocus@4
+         15    F 00003250 _FORM_OnAfterLoadPage@8 = _FORM_OnAfterLoadPage@8
+         16   10 00003290 _FORM_OnBeforeClosePage@8 = _FORM_OnBeforeClosePage@8
+         17   11 000032D0 _FORM_OnChar@16 = _FORM_OnChar@16
+         18   12 00003310 _FORM_OnKeyDown@16 = _FORM_OnKeyDown@16
+         19   13 00003350 _FORM_OnKeyUp@16 = _FORM_OnKeyUp@16
+         20   14 00003390 _FORM_OnLButtonDown@28 = _FORM_OnLButtonDown@28
+         21   15 00003400 _FORM_OnLButtonUp@28 = _FORM_OnLButtonUp@28
+         22   16 00003470 _FORM_OnMouseMove@28 = _FORM_OnMouseMove@28
+         23   17 000016A0 _FPDFAction_GetDest@8 = _FPDFAction_GetDest@8
+         24   18 000016D0 _FPDFAction_GetType@4 = _FPDFAction_GetType@4
+         25   19 00001740 _FPDFAction_GetURIPath@16 = _FPDFAction_GetURIPath@16
+         26   1A 00006B80 _FPDFAvail_Create@8 = _FPDFAvail_Create@8
+         27   1B 00006BE0 _FPDFAvail_Destroy@4 = _FPDFAvail_Destroy@4
+         28   1C 00006C20 _FPDFAvail_GetDocument@8 = _FPDFAvail_GetDocument@8
+         29   1D 00006CC0 _FPDFAvail_GetFirstPageNum@4 = _FPDFAvail_GetFirstPageNum@4
+         30   1E 00006CE0 _FPDFAvail_IsDocAvail@8 = _FPDFAvail_IsDocAvail@8
+         31   1F 00006D20 _FPDFAvail_IsFormAvail@8 = _FPDFAvail_IsFormAvail@8
+         32   20 00006D60 _FPDFAvail_IsLinearized@4 = _FPDFAvail_IsLinearized@4
+         33   21 00006D80 _FPDFAvail_IsPageAvail@12 = _FPDFAvail_IsPageAvail@12
+         34   22 000059E0 _FPDFBitmap_Create@12 = _FPDFBitmap_Create@12
+         35   23 00005A30 _FPDFBitmap_CreateEx@20 = _FPDFBitmap_CreateEx@20
+         36   24 00005AB0 _FPDFBitmap_Destroy@4 = _FPDFBitmap_Destroy@4
+         37   25 00005AD0 _FPDFBitmap_FillRect@24 = _FPDFBitmap_FillRect@24
+         38   26 00005B50 _FPDFBitmap_GetBuffer@4 = _FPDFBitmap_GetBuffer@4
+         39   27 00005B70 _FPDFBitmap_GetHeight@4 = _FPDFBitmap_GetHeight@4
+         40   28 00005B90 _FPDFBitmap_GetStride@4 = _FPDFBitmap_GetStride@4
+         41   29 00005BB0 _FPDFBitmap_GetWidth@4 = _FPDFBitmap_GetWidth@4
+         42   2A 000017B0 _FPDFBookmark_Find@8 = _FPDFBookmark_Find@8
+         43   2B 00001820 _FPDFBookmark_GetAction@4 = _FPDFBookmark_GetAction@4
+         44   2C 00001850 _FPDFBookmark_GetDest@8 = _FPDFBookmark_GetDest@8
+         45   2D 000018B0 _FPDFBookmark_GetFirstChild@8 = _FPDFBookmark_GetFirstChild@8
+         46   2E 000018F0 _FPDFBookmark_GetNextSibling@8 = _FPDFBookmark_GetNextSibling@8
+         47   2F 00001930 _FPDFBookmark_GetTitle@12 = _FPDFBookmark_GetTitle@12
+         48   30 000034E0 _FPDFDOC_ExitFormFillEnvironment@4 = _FPDFDOC_ExitFormFillEnvironment@4
+         49   31 00003530 _FPDFDOC_InitFormFillEnvironment@8 = _FPDFDOC_InitFormFillEnvironment@8
+         50   32 000019B0 _FPDFDest_GetPageIndex@8 = _FPDFDest_GetPageIndex@8
+         52   33 00001EF0 _FPDFImageObj_LoadJpegFile@16 = _FPDFImageObj_LoadJpegFile@16
+         53   34 00001F70 _FPDFImageObj_SetBitmap@16 = _FPDFImageObj_SetBitmap@16
+         54   35 00001FE0 _FPDFImageObj_SetMatrix@52 = _FPDFImageObj_SetMatrix@52
+         55   36 00005AB0 _FPDFLink_CloseWebLinks@4 = _FPDFBitmap_Destroy@4
+         56   37 000019E0 _FPDFLink_CountQuadPoints@4 = _FPDFLink_CountQuadPoints@4
+         57   38 00004CA0 _FPDFLink_CountRects@8 = _FPDFLink_CountRects@8
+         58   39 00004E80 _FPDFLink_CountWebLinks@4 = _FPDFLink_CountWebLinks@4
+         59   3A 00001A20 _FPDFLink_Enumerate@12 = _FPDFLink_Enumerate@12
+         60   3B 00001B00 _FPDFLink_GetAction@4 = _FPDFLink_GetAction@4
+         61   3C 00001B30 _FPDFLink_GetAnnotRect@8 = _FPDFLink_GetAnnotRect@8
+         62   3D 00001BA0 _FPDFLink_GetDest@8 = _FPDFLink_GetDest@8
+         63   3E 00001C00 _FPDFLink_GetLinkAtPoint@20 = _FPDFLink_GetLinkAtPoint@20
+         64   3F 00001C90 _FPDFLink_GetQuadPoints@12 = _FPDFLink_GetQuadPoints@12
+         65   40 00004CF0 _FPDFLink_GetRect@28 = _FPDFLink_GetRect@28
+         66   41 00004D80 _FPDFLink_GetURL@16 = _FPDFLink_GetURL@16
+         67   42 00004E10 _FPDFLink_LoadWebLinks@4 = _FPDFLink_LoadWebLinks@4
+         68   43 000021A0 _FPDFPageObj_HasTransparency@4 = _FPDFPageObj_HasTransparency@4
+         69   44 00002060 _FPDFPageObj_NewImgeObj@4 = _FPDFPageObj_NewImgeObj@4
+         70   45 00002230 _FPDFPageObj_Transform@52 = _FPDFPageObj_Transform@52
+         71   46 000022A0 _FPDFPage_CountObject@4 = _FPDFPage_CountObject@4
+         72   47 00002380 _FPDFPage_Delete@8 = _FPDFPage_Delete@8
+         73   48 00008680 _FPDFPage_Flatten@8 = _FPDFPage_Flatten@8
+         74   49 000023B0 _FPDFPage_GenerateContent@4 = _FPDFPage_GenerateContent@4
+         75   4A 000024B0 _FPDFPage_GetObject@8 = _FPDFPage_GetObject@8
+         76   4B 00002570 _FPDFPage_GetRotation@4 = _FPDFPage_GetRotation@4
+         77   4C 000027F0 _FPDFPage_HasTransparency@4 = _FPDFPage_HasTransparency@4
+         78   4D 00002810 _FPDFPage_InsertObject@8 = _FPDFPage_InsertObject@8
+         79   4E 00002950 _FPDFPage_New@24 = _FPDFPage_New@24
+         80   4F 00002B50 _FPDFPage_SetRotation@8 = _FPDFPage_SetRotation@8
+         81   50 00002C70 _FPDFPage_TransformAnnots@52 = _FPDFPage_TransformAnnots@52
+         82   51 00005AB0 _FPDFText_ClosePage@4 = _FPDFBitmap_Destroy@4
+         83   52 00004E40 _FPDFText_CountChars@4 = _FPDFText_CountChars@4
+         84   53 00004E60 _FPDFText_CountRects@12 = _FPDFText_CountRects@12
+         85   54 00005AB0 _FPDFText_FindClose@4 = _FPDFBitmap_Destroy@4
+         86   55 00004E80 _FPDFText_FindNext@4 = _FPDFLink_CountWebLinks@4
+         87   56 00004EA0 _FPDFText_FindPrev@4 = _FPDFText_FindPrev@4
+         88   57 00004EC0 _FPDFText_FindStart@16 = _FPDFText_FindStart@16
+         89   58 00004F20 _FPDFText_GetBoundedText@44 = _FPDFText_GetBoundedText@44
+         90   59 00005020 _FPDFText_GetCharBox@24 = _FPDFText_GetCharBox@24
+         91   5A 000050A0 _FPDFText_GetCharIndexAtPos@36 = _FPDFText_GetCharIndexAtPos@36
+         92   5B 00009500 _FPDFText_GetCharIndexFromTextIndex@8 = _FPDFText_GetCharIndexFromTextIndex@8
+         93   5C 00005100 _FPDFText_GetFontSize@8 = _FPDFText_GetFontSize@8
+         94   5D 00005160 _FPDFText_GetRect@24 = _FPDFText_GetRect@24
+         95   5E 000051F0 _FPDFText_GetSchCount@4 = _FPDFText_GetSchCount@4
+         96   5F 00005210 _FPDFText_GetSchResultIndex@4 = _FPDFText_GetSchResultIndex@4
+         97   60 00005230 _FPDFText_GetText@16 = _FPDFText_GetText@16
+         98   61 00005310 _FPDFText_GetUnicode@8 = _FPDFText_GetUnicode@8
+         99   62 00005370 _FPDFText_LoadPage@4 = _FPDFText_LoadPage@4
+        100   63 00009840 _FPDF_AddInstalledFont@12 = _FPDF_AddInstalledFont@12
+        101   64 00005BD0 _FPDF_CloseDocument@4 = _FPDF_CloseDocument@4
+        102   65 00005C10 _FPDF_ClosePage@4 = _FPDF_ClosePage@4
+        103   66 000049B0 _FPDF_CopyViewerPreferences@8 = _FPDF_CopyViewerPreferences@8
+        104   67 00005C50 _FPDF_CountNamedDests@4 = _FPDF_CountNamedDests@4
+        105   68 00002E90 _FPDF_CreateNewDocument@0 = _FPDF_CreateNewDocument@0
+        106   69 00005CD0 _FPDF_DestroyLibrary@0 = _FPDF_DestroyLibrary@0
+        107   6A 00005CF0 _FPDF_DeviceToPage@40 = _FPDF_DeviceToPage@40
+        108   6B 000035B0 _FPDF_FFLDraw@36 = _FPDF_FFLDraw@36
+        109   6C 00009870 _FPDF_GetDefaultSystemFontInfo@0 = _FPDF_GetDefaultSystemFontInfo@0
+        110   6D 00005DE0 _FPDF_GetDocPermissions@4 = _FPDF_GetDocPermissions@4
+        111   6E 00005E30 _FPDF_GetFileVersion@8 = _FPDF_GetFileVersion@8
+        112   6F 00005E70 _FPDF_GetLastError@0 = ?GetLastError@OS@base@v8@@SAHXZ (public: static int __cdecl v8::base::OS::GetLastError(void))
+        113   70 00001DB0 _FPDF_GetMetaText@16 = _FPDF_GetMetaText@16
+        114   71 00005E90 _FPDF_GetNamedDest@16 = _FPDF_GetNamedDest@16
+        115   72 00006060 _FPDF_GetNamedDestByName@8 = _FPDF_GetNamedDestByName@8
+        116   73 000060D0 _FPDF_GetPageCount@4 = _FPDF_GetPageCount@4
+        117   74 000060F0 _FPDF_GetPageHeight@4 = _FPDF_GetPageHeight@4
+        118   75 00006110 _FPDF_GetPageSizeByIndex@16 = _FPDF_GetPageSizeByIndex@16
+        119   76 000061A0 _FPDF_GetPageWidth@4 = _FPDF_GetPageWidth@4
+        120   77 000061C0 _FPDF_GetSecurityHandlerRevision@4 = _FPDF_GetSecurityHandlerRevision@4
+        121   78 00004A30 _FPDF_ImportPages@16 = _FPDF_ImportPages@16
+        122   79 00006200 _FPDF_InitLibrary@0 = _FPDF_InitLibrary@0
+        123   7A 00006280 _FPDF_LoadCustomDocument@8 = _FPDF_LoadCustomDocument@8
+        124   7B 00006350 _FPDF_LoadDocument@8 = _FPDF_LoadDocument@8
+        125   7C 000063D0 _FPDF_LoadMemDocument@12 = _FPDF_LoadMemDocument@12
+        126   7D 00006490 _FPDF_LoadPage@8 = _FPDF_LoadPage@8
+        127   7E 00006510 _FPDF_PageToDevice@48 = _FPDF_PageToDevice@48
+        128   7F 00003760 _FPDF_RemoveFormFieldHighlight@4 = _FPDF_RemoveFormFieldHighlight@4
+        129   80 000065E0 _FPDF_RenderPage@32 = _FPDF_RenderPage@32
+        130   81 000067F0 _FPDF_RenderPageBitmap@32 = _FPDF_RenderPageBitmap@32
+        131   82 00009340 _FPDF_RenderPageBitmap_Start@36 = _FPDF_RenderPageBitmap_Start@36
+        132   83 00009430 _FPDF_RenderPage_Close@4 = _FPDF_RenderPage_Close@4
+        133   84 00009480 _FPDF_RenderPage_Continue@8 = _FPDF_RenderPage_Continue@8
+        134   85 00004C10 _FPDF_SaveAsCopy@12 = _FPDF_SaveAsCopy@12
+        135   86 00004C30 _FPDF_SaveWithVersion@16 = _FPDF_SaveWithVersion@16
+        136   87 00003790 _FPDF_SetFormFieldHighlightAlpha@8 = _FPDF_SetFormFieldHighlightAlpha@8
+        137   88 000037C0 _FPDF_SetFormFieldHighlightColor@12 = _FPDF_SetFormFieldHighlightColor@12
+        138   89 000068B0 _FPDF_SetSandBoxPolicy@8 = _FPDF_SetSandBoxPolicy@8
+        139   8A 000098D0 _FPDF_SetSystemFontInfo@4 = _FPDF_SetSystemFontInfo@4
+        140   8B 000068E0 _FPDF_VIEWERREF_GetDuplex@4 = _FPDF_VIEWERREF_GetDuplex@4
+        141   8C 00006A00 _FPDF_VIEWERREF_GetNumCopies@4 = _FPDF_VIEWERREF_GetNumCopies@4
+        142   8D 00006A40 _FPDF_VIEWERREF_GetPrintPageRange@4 = _FPDF_VIEWERREF_GetPrintPageRange@4
+        143   8E 00006A80 _FPDF_VIEWERREF_GetPrintScaling@4 = _FPDF_VIEWERREF_GetPrintScaling@4
+        144   8F 000037F0 _FPDPage_HasFormFieldAtPoint@24 = _FPDPage_HasFormFieldAtPoint@24
+        145   90 00007660 _FSDK_SetUnSpObjProcessHandler@4 = _FSDK_SetUnSpObjProcessHandler@4
+
+  Summary
+
+       17000 .data
+      381000 .rdata
+       2A000 .reloc
+        1000 .rsrc
+      501000 .text

@@ -68,13 +68,13 @@ namespace abJournal {
                 penMode = value;
                 switch (penMode) {
                 case InkMode.Erasing:
-                    mainCanvas.Mode = InkCanvasEditingMode.EraseByStroke;
+                    mainCanvas.Mode = InkManipulationMode.Erasing;
                     break;
                 case InkMode.Selecting:
-                    mainCanvas.Mode = InkCanvasEditingMode.Select;
+                    mainCanvas.Mode = InkManipulationMode.Selecting;
                     break;
                 default:
-                    mainCanvas.Mode = InkCanvasEditingMode.Ink;
+                    mainCanvas.Mode = InkManipulationMode.Inking;
                     int index = (int)penMode;
                     mainCanvas.PenColor = PenColor[index];
                     mainCanvas.PenThickness = PenThickness[index];
@@ -161,7 +161,7 @@ namespace abJournal {
             }
 
             InitializeComponent();
-            ABInkCanvas.ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
+            abInkCanvas.ErasingCursor = Img2Cursor.MakeCursor(abJournal.Properties.Resources.eraser_cursor, new Point(2, 31), new Point(0, 0));
             DataContext = this;
             SetLowLevelKeyboardHook();
 
@@ -175,6 +175,7 @@ namespace abJournal {
 
             ScaleComboBoxIndex = 0;// デフォルトは横幅に合わせる．
             PenMode = InkMode.Pen0;
+            mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
             mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
             mainCanvas.Landscape = Properties.Settings.Default.Landscape;
 
@@ -422,7 +423,7 @@ namespace abJournal {
             if(pd.ShowDialog() == true) {
                 WindowTitle = "印刷準備中……";
                 FixedDocument doc = new FixedDocument();
-                var canvases = mainCanvas.GetPrintingCanvases();
+                var canvases = mainCanvas.GetPrintingCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
                 foreach(var c in canvases){
                     FixedPage page = new FixedPage();
                     page.Width = c.Width;
@@ -485,6 +486,7 @@ namespace abJournal {
         private void SystemSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             SystemSetting dialog = new SystemSetting();
             if(dialog.ShowDialog() == true) {
+                mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
                 SetLowLevelKeyboardHook();
                 mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
                 mainCanvas.Landscape = Properties.Settings.Default.Landscape;

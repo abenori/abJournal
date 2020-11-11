@@ -1,125 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Ink;
+using System.Windows.Shapes;
 using System.Windows.Media;
+using System.Diagnostics;
 using System.ComponentModel;
-using System.Windows.Input.StylusPlugIns;
+using ProtoBuf;
 
 namespace abJournal {
-    public class ABInkCanvas : InkCanvas {
-        public DrawingAttributesPlus DefaultDrawingAttributesPlus { get; set; } = new DrawingAttributesPlus();
-
+    public class abInkCanvas : FrameworkElement, IabInkCanvas {
         public event PropertyChangedEventHandler PropertyChanged;
-        public ABInkCanvas(double width, double height) {
-            Init(new List<abStroke>(), new DrawingAttributes(), new DrawingAttributesPlus(), width, height);
-        }
-        public ABInkCanvas(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
-            Init(strokes, dattr, dattrp, width, height);
-        }
-        private void Init(List<abStroke> strokes, DrawingAttributes dattr, DrawingAttributesPlus dattrp, double width, double height) {
-            VisualChildren = new VisualCollection(this);
-            Focusable = false;// Copyなどのコマンドが奪われなくなる
-            base.Width = width;
-            base.Height = height;
-            foreach (var s in strokes) {
-                base.Strokes.Add(s);
-            }
-            DefaultDrawingAttributes = dattr.Clone();
-            DefaultDrawingAttributesPlus = dattrp.Clone();
-            base.Background = null;
-            Background = Brushes.White;
-            ABDynamicRender abDynamicRender = new ABDynamicRender() {
-                DrawingAttributes = DefaultDrawingAttributes,
-                DrawingAttributesPlus = DefaultDrawingAttributesPlus,
-            };
-            DynamicRenderer = abDynamicRender;
-            EditingMode = InkCanvasEditingMode.Ink;
-            EditingModeInverted = InkCanvasEditingMode.EraseByStroke;
-            UseCustomCursor = true;
-            SetCursor();
-            ClipToBounds = false;
-            DefaultDrawingAttributes.AttributeChanged += DefaultDrawingAttributes_AttributeChanged;
-            EditingModeChanged += ABInkCanvas_EditingModeChanged;
-        }
-
-        private void ABInkCanvas_EditingModeChanged(object sender, RoutedEventArgs e) {
-            SetCursor();
-        }
-
-        private void DefaultDrawingAttributes_AttributeChanged(object sender, PropertyDataChangedEventArgs e) {
-            foreach(var s in Strokes) { s.DrawingAttributes.IgnorePressure = DefaultDrawingAttributes.IgnorePressure; }
-            SetCursor();
-        }
-
-        InkCanvasEditingMode editingMode;
-        public new InkCanvasEditingMode EditingMode {
-            get { return editingMode; }
-            set {
-                editingMode = value;
-                base.EditingMode = editingMode;
-                switch (value) {
-                case InkCanvasEditingMode.Ink: System.Diagnostics.Debug.WriteLine("EditingMode switches to Ink");break;
-                case InkCanvasEditingMode.EraseByStroke: System.Diagnostics.Debug.WriteLine("EditingMode switches to EraseByStroke"); break;
-                case InkCanvasEditingMode.Select: System.Diagnostics.Debug.WriteLine("EditingMode switches to Select"); break;
-                }
-                SetCursor(); 
-            }
-        }
-
-        void RestoreEditingMode() {
-            base.EditingMode = editingMode;
-        }
-
-        // 消しゴムで消したのはUndoの際にまとめる．
-        // ずっとペンをおいているつもりなのにOnPreviewStylusUp/OnPreviewStylusDownが発生することがあるので
-        // 前回と今回が消しゴムでUpとDownの時間差が短い場合はUndoStackを前のものとくっつける．
-        bool is_erasing_at_last_time = false;
-        System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
-        protected override void OnPreviewStylusUp(StylusEventArgs e) {
-            stopwatch.Reset();
-            stopwatch.Start();
-            System.Diagnostics.Debug.WriteLine("OnPreviewStylusUp");
-            if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
-                is_erasing_at_last_time = true;
-                EndUndoGroup();
-            } else is_erasing_at_last_time = false;
-            if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
-            base.OnPreviewStylusUp(e);
-        }
-        protected override void OnPreviewStylusDown(StylusDownEventArgs e) {
-            if (GetSelectedStrokes().Count > 0) {
-                base.EditingMode = InkCanvasEditingMode.Select;
-            } else {
-                if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
-                    base.EditingMode = InkCanvasEditingMode.None;
-                } else {
-                    // VAIO Duo 13の場合
-                    // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
-                    // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
-                    // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
-                    if (e.StylusDevice.Name == "Eraser") {
-                        base.EditingMode = InkCanvasEditingMode.EraseByStroke;
-                    } else if (
-                         e.StylusDevice.StylusButtons.Count > 1 &&
-                         e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
-                     ) {
-                        base.EditingMode = InkCanvasEditingMode.Select;
-                    } else RestoreEditingMode();
-                }
-            }
-            stopwatch.Stop();
-            System.Diagnostics.Debug.WriteLine("OnPreviewStylusDown, Elapsed = " + stopwatch.ElapsedMilliseconds);
-            if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
-                if (!is_erasing_at_last_time || stopwatch.ElapsedMilliseconds >= 300) BeginAppendUndoGroup();
-                BeginUndoGroup(true);
-            }
-            SetCursor();
-            base.OnPreviewStylusDown(e);
-        }
-
         protected void OnPropertyChanged(string name) {
             if (PropertyChanged != null) {
                 var e = new PropertyChangedEventArgs(name);
@@ -127,220 +23,608 @@ namespace abJournal {
             }
         }
 
-        protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
-            System.Diagnostics.Debug.WriteLine("OnStrokeCollected");
-            var abStroke = new abStroke(e.Stroke.StylusPoints, e.Stroke.DrawingAttributes, DefaultDrawingAttributesPlus);
-            for (int i = this.Strokes.Count - 1; i >= 0; --i) {
-                if (e.Stroke == this.Strokes[i]) {
-                    this.Strokes[i] = abStroke;
-                    break;
-                }
-            }
-            InkCanvasStrokeCollectedEventArgs args = new InkCanvasStrokeCollectedEventArgs(abStroke);
-            AddUndo(new AddStrokeCommand(abStroke));
-            base.OnStrokeCollected(args);
-        }
+        #region 公開用プロパティ
+        // データ
+        public abInkData InkData { get; set; }
 
-        public void Copy() { CopySelection(); }
-        public void Cut() { CutSelection(); }
-        public void SelectAll() { Select(Strokes); }
-        public bool Updated { get { return EditCount != 0; } }
-        public void ClearUpdated() { EditCount = 0; }
-        public new void Paste() {
-            if (CanPaste()) {
-                base.Paste();
-                var added = new StrokeCollection();
-                for (int i = 0; i < Strokes.Count; ++i) {
-                    if (!(Strokes[i] is abStroke)) {
-                        var abs = new abStroke(Strokes[i].StylusPoints, Strokes[i].DrawingAttributes, new DrawingAttributesPlus());
-                        Strokes[i] = abs;
-                        added.Add(abs);
-                    }
+        // 設定用
+        InkManipulationMode mode;
+        public InkManipulationMode Mode {
+            get { return mode; }
+            set {
+                if(PenID == 0) {
+                    mode = value;
+                    SetCursor();
+                    OnPropertyChanged("Mode");
                 }
-                AddUndo(new AddStrokeCommand(added));
-            }
-        }
-        public new void Paste(Point pt) {
-            if (CanPaste()) {
-                base.Paste(pt);
-                var added = new StrokeCollection();
-                for (int i = 0; i < Strokes.Count; ++i) {
-                    if (!(Strokes[i] is abStroke)) {
-                        var abs = new abStroke(Strokes[i].StylusPoints, Strokes[i].DrawingAttributes, new DrawingAttributesPlus());
-                        Strokes[i] = abs;
-                        added.Add(abs);
-                    }
-                }
-                AddUndo(new AddStrokeCommand(added));
-            }
-        }
-        public void DeleteSelection() {
-            UndoGroup ug = new UndoGroup();
-            var selected = GetSelectedStrokes();
-            if (selected.Count > 0) {
-                ug.Add(new SelectCommand(selected, new StrokeCollection()));
-                foreach (var s in selected) {
-                    ug.Add(new DeleteStrokeCommand(s as abStroke));
-                    Strokes.Remove(s);
-                }
-                AddUndo(ug);
-                RestoreEditingMode();
             }
         }
 
-        [System.Diagnostics.Conditional("DEBUG")]
-        void DUMP_UNDOSTACK() {
-            var s = "Current UndoStack = ";
-            for(int i = 0; i < UndoStack.Count; ++i) {
-                s += "[" + i.ToString() + "] " + UndoStack[i].ToString() + "  ";
+        DrawingAttributes StrokeDrawingAttributes = new DrawingAttributes();
+        SolidColorBrush StrokeBrush = Brushes.Black;
+        public Color PenColor {
+            get { return StrokeBrush.Color; }
+            set {
+                StrokeBrush = new SolidColorBrush(value);
+                StrokeBrush.Opacity = PenIsHilighter ? 0.5 : 1;
+                StrokeBrush.Freeze();
+                StrokeDrawingAttributes.Color = value;
+                SetCursor();
+                OnPropertyChanged("PenColor");
             }
-            s += "CurrentUndoPosition = " + CurrentUndoPosition.ToString();
-            System.Diagnostics.Debug.WriteLine(s);
         }
-        public class UndoChainChangedEventArgs : EventArgs { }
-        public delegate void UndoChainChangedEventhandler(object sender, UndoChainChangedEventArgs e);
-        public event UndoChainChangedEventhandler UndoChainChanged;
-        UndoGroup UndoGroup = null;
-        List<UndoCommand> UndoStack = new List<UndoCommand>();
-        int CurrentUndoPosition = 0;
-        int EditCount = 0;
-        bool append_to_last_undogroup = false;
-        int append_start_index = -1;
-        // BeginAppendUndoGroup()が呼ばれると，その時点でのUndo履歴の場所が記録される．
-        // その後BeginUndoGroup(true)を呼び出すと，EndUndoGroup()の段階で記録された場所からのUndo履歴がすべて一つにまとめられる．
-        // この記録はBeginUndoGroup(false)，Redo()，Undo()，Begin/Endで囲まれていないAddUndoで解除される．
-        void BeginAppendUndoGroup() {
-            append_start_index = CurrentUndoPosition;
-            System.Diagnostics.Debug.WriteLine("BeginAppendUndoGroup, append_start_index = " + append_start_index.ToString());
+        public double PenThickness {
+            get { return StrokeDrawingAttributes.Width; }
+            set {
+                StrokeDrawingAttributes.Width = StrokeDrawingAttributes.Height = value;
+                SetCursor();
+                OnPropertyChanged("PenThickness");
+            }
         }
-        void BeginUndoGroup(bool append = false) {
-            System.Diagnostics.Debug.WriteLine("BeginUndoGroup: append = " + append.ToString() + ", CurrentUndoPosition = " + CurrentUndoPosition.ToString());
-            append_to_last_undogroup = append;
-            if (!append) append_start_index = -1;
-            if (UndoGroup == null) UndoGroup = new UndoGroup();
-        }
-        void EndUndoGroup() {
-            System.Diagnostics.Debug.WriteLine("EndUndoGroup, UndoStack.Count = " + UndoStack.Count.ToString() + ", append_to_last_undogroup = " + append_to_last_undogroup.ToString());
-            if (UndoGroup != null && UndoGroup.Count > 0) {
-                if (append_to_last_undogroup && append_start_index >= 0) {
-                    var call_event = (append_start_index >= CurrentUndoPosition);
-                    var undog = new UndoGroup();
-                    for(int i = append_start_index; i < CurrentUndoPosition; ++i) {
-                        undog.Add(UndoStack[i]);
-                    }
-                    undog.Add(UndoGroup);
-                    undog.Normalize();
-                    UndoStack.RemoveRange(append_start_index, UndoStack.Count - append_start_index);
-                    System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + undog.ToString());
-                    UndoStack.Add(undog);
-                    if (call_event) {
-                        UndoChainChanged(this, new UndoChainChangedEventArgs());
-                        ++EditCount;
-                    }
-                    CurrentUndoPosition = append_start_index + 1;
 
-                } else {
-                    UndoStack.RemoveRange(CurrentUndoPosition, UndoStack.Count - CurrentUndoPosition);
-                    System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + UndoGroup.ToString());
-                    UndoGroup.Normalize();
-                    UndoStack.Add(UndoGroup);
-                    ++CurrentUndoPosition;
-                    ++EditCount;
-                    UndoChainChanged(this, new UndoChainChangedEventArgs());
+        public DrawingAttributesPlus StrokeDrawingAttributesPlus = new DrawingAttributesPlus();
+        public List<double> PenDashArray {
+            get { return StrokeDrawingAttributesPlus.DashArray; }
+            set { StrokeDrawingAttributesPlus.DashArray = value; OnPropertyChanged("PenDashArray"); }
+        }
+        public bool PenIsHilighter {
+            get { return StrokeDrawingAttributes.IsHighlighter; }
+            set {
+                StrokeDrawingAttributes.IsHighlighter = value;
+                StrokeBrush = new SolidColorBrush(PenColor);
+                StrokeBrush.Opacity = value ? 0.5 : 0;
+                StrokeBrush.Freeze();
+                OnPropertyChanged("PenIsHilighter");
+            }
+        }
+
+        public new double Height {
+            get { return base.Height; }
+            set { base.Height = value; OnPropertyChanged("Height"); }
+        }
+        public new double Width {
+            get { return base.Width; }
+            set { base.Width = value; OnPropertyChanged("Width"); }
+        }
+        #endregion
+
+        // 一時退避
+        InkManipulationMode SavedMode;
+        void SaveMode() {
+            SavedMode = Mode;
+        }
+
+        void RestoreMode() {
+            Mode = SavedMode;
+        }
+        // newしまくらないためだけ
+        static List<double> DottedDoubleCollection = new List<double>(new double[] { 1, 1 });
+
+        #region カーソル
+        // Cursors.Noneを指定してCanvasに書いて動かそうと思ったけど，
+        // Cursors.Noneを指定しても変わらないことが多々あるので，
+        // 直接造ることにした……Webからのコピペ（Img2Cursor.MakeCursor）に丸投げだけど．
+        static Dictionary<Tuple<Color, double>, Cursor> InkingCursors = new Dictionary<Tuple<Color, double>, Cursor>();
+        static Cursor MakeInkingCursor(double thickness, Color color) {
+            var key = new Tuple<Color, double>(color, thickness);
+            try { return InkingCursors[key]; }
+            catch(KeyNotFoundException) {
+                thickness *= 2;
+                const int cursorsize = 254;
+                using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
+                using(var g = System.Drawing.Graphics.FromImage(img)) {
+                    g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
+                    g.FillEllipse(
+                        new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
+                        new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
+                    var c = Img2Cursor.MakeCursor(img, new Point(cursorsize / 2, cursorsize / 2), new Point(0, 0));
+                    InkingCursors[key] = c;
+                    return c;
                 }
             }
-            UndoGroup = null;
-            System.Diagnostics.Debug.WriteLine("DONE: UndoStack.Count = " + UndoStack.Count.ToString());
-            DUMP_UNDOSTACK();
         }
-        bool do_not_add_to_undo_stack = false;
-        public void StopAddToUndo() { do_not_add_to_undo_stack = true; }
-        public void StartAddToUndo() { do_not_add_to_undo_stack = false; }
+        // 消しゴムカーソル
+        public static Cursor ErasingCursor = null;
 
-        void AddUndo(UndoCommand undo) {
-            if (do_not_add_to_undo_stack) return;
-            System.Diagnostics.Debug.WriteLine("AddUndo: UndoType = " + undo.GetType().ToString());
-            if (UndoGroup == null) {
-                UndoStack.RemoveRange(CurrentUndoPosition, UndoStack.Count - CurrentUndoPosition);
-                ++CurrentUndoPosition;
-                ++EditCount;
-                System.Diagnostics.Debug.WriteLine("Add to UndoStack : " + undo.ToString());
-                UndoStack.Add(undo);
-                UndoChainChanged(this, new UndoChainChangedEventArgs());
-                append_start_index = -1;
-                append_to_last_undogroup = false;
-            } else UndoGroup.Add(undo);
-            DUMP_UNDOSTACK();
-        }
-        protected override void OnStrokeErasing(InkCanvasStrokeErasingEventArgs e) {
-            System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
-            if (e.Stroke is abStroke s) {
-                AddUndo(new DeleteStrokeCommand(s));
+        void SetCursor() {
+            switch(Mode) {
+            case InkManipulationMode.Inking:
+                SetCursor(MakeInkingCursor(PenThickness, PenColor)); break;
+            case InkManipulationMode.Erasing:
+                SetCursor(ErasingCursor); break;
+            default:
+                SetCursor(Cursors.Cross); break;
             }
-            System.Diagnostics.Debug.WriteLine("OnStrokeErasing");
-            base.OnStrokeErasing(e);
         }
-        protected override void OnStrokesReplaced(InkCanvasStrokesReplacedEventArgs e) {
-            var undog = new UndoGroup();
-            undog.Add(new DeleteStrokeCommand(e.PreviousStrokes));
-            undog.Add(new AddStrokeCommand(e.NewStrokes));
-            AddUndo(undog);
-            base.OnStrokesReplaced(e);
+        // Curosr = とすればいいんだけど，気分的にSetCursor経由でカーソルの設定はすることにしたい．
+        void SetCursor(Cursor c) {
+            if(c != Cursor) Cursor = c;
         }
-        protected override void OnSelectionMoving(InkCanvasSelectionEditingEventArgs e) {
-            var matrix = new Matrix(1, 0, 0, 1, e.NewRectangle.Left - e.OldRectangle.Left, e.NewRectangle.Top - e.OldRectangle.Top);
-            AddUndo(new AffineTransformStrokeCommand(GetSelectedStrokes(), matrix));
-            base.OnSelectionMoving(e);
-        }
-        protected override void OnSelectionResizing(InkCanvasSelectionEditingEventArgs e) {
-            var xscale = e.NewRectangle.Width / e.OldRectangle.Width;
-            var yscale = e.NewRectangle.Height / e.OldRectangle.Height;
-            var xshift = e.NewRectangle.Left - e.OldRectangle.Left * xscale;
-            var yshift = e.NewRectangle.Top - e.OldRectangle.Top * yscale;
-            AddUndo(new AffineTransformStrokeCommand(GetSelectedStrokes(), new Matrix(xscale, 0, 0, yscale, xshift, yshift)));
-            base.OnSelectionResizing(e);
-        }
-        protected override void OnSelectionChanging(InkCanvasSelectionChangingEventArgs e) {
-            AddUndo(new SelectCommand(GetSelectedStrokes(), e.GetSelectedStrokes()));
-            base.OnSelectionChanging(e);
-        }
-        protected override void OnSelectionChanged(EventArgs e) {
+        #endregion
+
+        public abInkCanvas(abInkData d, double width, double height) {
+            StrokeChildren = new VisualCollection(this);
+            Children = new VisualCollection(this);
+
+            InkData = d;
+            Width = width; Height = height;
+            PenThickness = 2;
+            InkData.IgnorePressure = true;
+            PenColor = Colors.Black;
+            Mode = InkManipulationMode.Inking;
+            Background = Brushes.White;
+            StrokeDrawingAttributes.FitToCurve = true;
+            StrokeDrawingAttributes.IgnorePressure = true;
             SetCursor();
-            System.Diagnostics.Debug.WriteLine("OnSelectionChanged, SelectedStrokes.Count = " + GetSelectedStrokes().Count.ToString());
-            if (GetSelectedStrokes().Count == 0) {
-                // https://ja.stackoverflow.com/questions/22573/
-                Dispatcher.BeginInvoke((Action)(() => { RestoreEditingMode(); System.Diagnostics.Debug.WriteLine("RestoreEditingMode in BeginInvoke"); }), System.Windows.Threading.DispatcherPriority.Render); ;
-            }
-            base.OnSelectionChanged(e);
+
+            InkData.StrokeAdded += InkData_StrokeAdded;
+            InkData.StrokeDeleted += InkData_StrokeDeleted;
+            InkData.StrokeChanged += InkData_StrokeChanged;
+            InkData.StrokeSelectedChanged += InkData_StrokeSelectedChanged;
+            InkData.UndoChainChanged += InkData_UndoChainChanged;
+
+            TouchDown += ((s, e) => {
+//                var pt = e.GetTouchPoint(this);
+//                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+                e.Handled = true;
+            });
         }
+
+        #region InkDataからの通知を受け取る
+        public event abInkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
+
+        protected virtual void OnUndoChainChanged(abInkData.UndoChainChangedEventArgs e) {
+            UndoChainChanged(this, e);
+        }
+
+        void InkData_StrokeSelectedChanged(object sender, abInkData.StrokeChangedEventArgs e) {
+            foreach(var s in e.Strokes) {
+                s.UpdateVisual();
+            }
+        }
+
+        void InkData_StrokeChanged(object sender, abInkData.StrokeChangedEventArgs e) {
+            foreach(var s in e.Strokes) {
+                s.UpdateVisual();
+            }
+        }
+
+        void InkData_StrokeDeleted(object sender, abInkData.StrokeChangedEventArgs e) {
+            foreach(var s in e.Strokes) {
+                StrokeChildren.Remove(s.Visual);
+            }
+        }
+
+        void InkData_StrokeAdded(object sender, abInkData.StrokeChangedEventArgs e) {
+            foreach(var s in e.Strokes) {
+                StrokeChildren.Add(s.Visual);
+            }
+        }
+
+        void InkData_UndoChainChanged(object sender, abInkData.UndoChainChangedEventArgs e) {
+            OnUndoChainChanged(e);
+        }
+        #endregion
+
+        #region 描画
+        // 内部状態保持用変数
+        PenRunningVisual RunningVisual = null;
+
+        void DrawingStart(StylusPoint pt) {
+            InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
+            if(Mode == InkManipulationMode.Selecting) {
+                var dattr = new DrawingAttributes();
+                dattr.Color = Brushes.Orange.Color;
+                dattr.Height = dattr.Width = 2;
+                dattr.IgnorePressure = true;
+                var dattrp = new DrawingAttributesPlus();
+                dattrp.DashArray = DottedDoubleCollection;
+                RunningVisual = new PenRunningVisual(this, Mode, dattr, dattrp, InkData.DrawingAlgorithm);
+                StrokeChildren.Add(RunningVisual.Visual);
+                RunningVisual.StartPoint(pt);
+            } else if(Mode == InkManipulationMode.Inking) {
+                RunningVisual = new PenRunningVisual(this, Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, InkData.DrawingAlgorithm);
+                StrokeChildren.Add(RunningVisual.Visual);
+                RunningVisual.StartPoint(pt);
+            }
+        }
+
+        void Drawing(StylusPoint pt) {
+            if(Mode == InkManipulationMode.Selecting) {
+                var prev = RunningVisual.PrevPoint;
+	            // さぼることでHitTestを速くさせる．
+                if((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
+            }
+            InkData.ProcessPointerUpdate(pt);
+            if(Mode != InkManipulationMode.Erasing) {
+                RunningVisual.AddPoint(pt);
+            }
+        }
+
+        void DrawingEnd(StylusPoint pt) {
+            if(Mode != InkManipulationMode.Erasing) {
+                for(int i = StrokeChildren.Count - 1 ; i >= 0 ; --i) {
+                    if(StrokeChildren[i] == RunningVisual.Visual) {
+                        StrokeChildren.RemoveAt(i);
+                        break;
+                    }
+                }
+            }
+            RunningVisual = null;
+            InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
+        }
+
+		// ペンを走らせている時の描画を担当するクラス．
+        class PenRunningVisual { 
+            public StylusPoint PrevPoint;
+            public Visual Visual = null;
+            InkManipulationMode Mode;
+            DrawingAttributes DrawingAttribute;
+            DrawingAttributesPlus DrawingAttributePlus;
+            DrawingAlgorithm DrawingAlgorithm;
+            StrokeData StrokeData;
+
+            DrawingGroup DrawingGroup;
+            Pen Pen;
+            double DashOffset = 0;
+
+            abInkCanvas Parent;
+
+            const double SwitchAlgorithmThickness = 8;
+
+            public PenRunningVisual(abInkCanvas parent, InkManipulationMode m, DrawingAttributes attr, DrawingAttributesPlus dattrp, DrawingAlgorithm algo) {
+                Parent = parent;
+                Mode = m;
+                DrawingAttribute = attr;
+                DrawingAttributePlus = dattrp;
+                DrawingAlgorithm = algo;
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    Visual = new ContainerVisual();
+                } else {
+                    var brush = new SolidColorBrush(DrawingAttribute.Color);
+                    if (DrawingAttribute.IsHighlighter) brush.Opacity = 0.5;
+                    Pen = new Pen(brush, DrawingAttribute.Width);
+                    Pen.DashStyle = new DashStyle(DrawingAttributePlus.DashArray, 0);
+                    Pen.DashCap = PenLineCap.Flat;
+                    Pen.Freeze();
+                    Visual = new DrawingVisual();
+                    DrawingGroup = new DrawingGroup();
+                    using (var dc = ((DrawingVisual)Visual).RenderOpen()) { dc.DrawDrawing(DrawingGroup); }
+                }
+            }
+            public void StartPoint(StylusPoint pt) {
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    var pts = new StylusPointCollection(pt.Description);
+                    pts.Add(pt);
+                    StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
+                    ((ContainerVisual)Visual).Children.Add(StrokeData.Visual);
+                }
+                PrevPoint = pt;
+            }
+            public void AddPoint(StylusPoint pt) {
+                if (DrawingAttribute.Width > SwitchAlgorithmThickness) {
+                    StrokeData.StylusPoints.Add(pt);
+                    StrokeData.ReDraw();
+                    if (StrokeData.StylusPoints.Count > 100) {
+                        var pts = new StylusPointCollection(pt.Description);
+                        pts.Add(pt);
+                        StrokeData = new StrokeData(pts, DrawingAttribute, DrawingAttributePlus, DrawingAlgorithm);
+                        ((ContainerVisual)Visual).Children.Add(StrokeData.Visual);
+                    }
+                    for (int i = Parent.StrokeChildren.Count - 1; i >= 0; i--) {
+                        if (Parent.StrokeChildren[i] == Visual) {
+                            Parent.StrokeChildren.RemoveAt(i);
+                            break;
+                        }
+                    }
+                    Parent.StrokeChildren.Add(Visual);
+                } else {
+                    Pen p;
+                    if (DrawingAttribute.IgnorePressure && DrawingAttributePlus.DashArray.Count == 0) {
+                        p = Pen;
+                    } else {
+                        p = Pen.Clone();
+                        if (!DrawingAttribute.IgnorePressure) p.Thickness *= pt.PressureFactor * 2;
+                        if (DrawingAttributePlus.DashArray.Count > 0) {
+                            p.DashStyle.Offset = DashOffset;
+                            DashOffset += (Math.Sqrt((PrevPoint.X - pt.X) * (PrevPoint.X - pt.X) + (PrevPoint.Y - pt.Y) * (PrevPoint.Y - pt.Y))) / Pen.Thickness;
+                        }
+                        p.Freeze();
+                    }
+                    using (var dc = DrawingGroup.Append()) { dc.DrawLine(p, PrevPoint.ToPoint(), pt.ToPoint()); }
+                }
+                PrevPoint = pt;
+            }
+        }
+        #endregion
+
+        #region イベントハンドラ
+        int PenID = 0;
+        int TouchType = 0;
+        const int STYLUS = 1;
+        const int TOUCH = 2;
+        const int MOUSE = 3;
+        public new event MouseButtonEventHandler MouseLeftButtonDown = ((s, e) => { });
+        protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
+            base.OnMouseLeftButtonDown(e);
+            if(!e.Handled) MouseLeftButtonDown(this,e);
+            if(e.Handled) return;
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            var pt = e.GetPosition(this);
+            SetCursor();
+            DrawingStart(new StylusPoint(pt.X, pt.Y));
+            TouchType = MOUSE;
+            e.Handled = true;
+        }
+        public new event MouseEventHandler MouseMove = ((s, e) => { });
+        protected override void OnMouseMove(MouseEventArgs e) {
+			base.OnMouseMove(e);
+            if(!e.Handled) MouseMove(this, e);
+            if(e.Handled) return;
+            if(TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
+                var pt = e.GetPosition(this);
+                Drawing(new StylusPoint(pt.X, pt.Y));
+                e.Handled = true;
+            } else {
+                if(e.StylusDevice == null) SetCursor(null);
+            }
+        }
+        public new event MouseButtonEventHandler MouseLeftButtonUp = ((s, e) => { });
+        protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
+            base.OnMouseLeftButtonUp(e);
+            if(!e.Handled) MouseLeftButtonUp(this, e);
+            if(e.Handled) return;
+            if(TouchType != MOUSE) return;
+            var pt = e.GetPosition(this);
+            DrawingEnd(new StylusPoint(pt.X, pt.Y));
+            e.Handled = true;
+            TouchType = 0;
+            SetCursor(null);
+        }
+        public new event MouseEventHandler MouseLeave = ((s, e) => { });
+        protected override void OnMouseLeave(MouseEventArgs e) {
+            base.OnMouseLeave(e);
+            if(!e.Handled) MouseLeave(this, e);
+            if(e.Handled) return;
+            if(e.LeftButton == MouseButtonState.Pressed) {
+                if(TouchType != MOUSE) return;
+                var pt = e.GetPosition(this);
+                DrawingEnd(new StylusPoint(pt.X, pt.Y));
+                e.Handled = true;
+                TouchType = 0;
+            }
+        }
+        public new event EventHandler<TouchEventArgs> TouchDown = ((s, e) => { });
+        protected override void OnTouchDown(TouchEventArgs e) {
+            base.OnTouchDown(e);
+            if(!e.Handled) TouchDown(this, e);
+            if(e.Handled) { e.Handled = false; return; }
+            SetCursor();
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            var pt = e.GetTouchPoint(this);
+            //System.Diagnostics.Debug.WriteLine(pt.Size);
+            DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
+            PenID = e.TouchDevice.Id;
+            TouchType = TOUCH;
+            e.Handled = true;
+        }
+        public new event EventHandler<TouchEventArgs> TouchMove = ((s, e) => { });
+        protected override void OnTouchMove(TouchEventArgs e) {
+            base.OnTouchMove(e);
+            if(!e.Handled) TouchMove(this, e);
+            if(e.Handled) return;
+            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
+                var pt = e.GetTouchPoint(this);
+                Drawing(new StylusPoint(pt.Position.X, pt.Position.Y));
+                e.Handled = true;
+            }
+        }
+        void OnTouchUpLeave(TouchEventArgs e) {
+            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
+                var pt = e.GetTouchPoint(this);
+                DrawingEnd(new StylusPoint(pt.Position.X, pt.Position.Y));
+                PenID = 0;
+                TouchType = 0;
+                e.Handled = true;
+            }
+        }
+        public new event EventHandler<TouchEventArgs> TouchUp = ((s, e) => { });
+        protected override void OnTouchUp(TouchEventArgs e) {
+            base.OnTouchUp(e);
+            if(!e.Handled) TouchUp(this, e);
+            if(e.Handled) return;
+            OnTouchUpLeave(e);
+        }
+        public new event EventHandler<TouchEventArgs> TouchLeave = ((s, e) => { });
+        protected override void OnTouchLeave(TouchEventArgs e) {
+            base.OnTouchLeave(e);
+            if(!e.Handled) TouchLeave(this, e);
+            if(e.Handled) return;
+            OnTouchUpLeave(e);
+        }
+        public new event StylusEventHandler StylusInAirMove = ((s, e) => { });
+        protected override void OnStylusInAirMove(StylusEventArgs e) {
+            base.OnStylusInAirMove(e);
+            if(!e.Handled) StylusInAirMove(this, e);
+            if(e.Handled) return;
+            SetCursor();
+        }
+        public new event StylusEventHandler StylusOutOfRange = ((s, e) => { });
+        protected override void OnStylusOutOfRange(StylusEventArgs e) {
+            base.OnStylusOutOfRange(e);
+            if(!e.Handled) StylusOutOfRange(this, e);
+            if(e.Handled) return;
+            SetCursor(null);
+        }
+        public new event StylusEventHandler StylusInRange = ((s, e) => { });
+        protected override void OnStylusInRange(StylusEventArgs e) {
+            base.OnStylusInRange(e);
+            if(!e.Handled) StylusInRange(this, e);
+            if(e.Handled) return;
+            SetCursor();
+        }
+        public new event StylusDownEventHandler StylusDown = ((s, e) => { });
+        protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
+            base.OnStylusDown(e);
+            if(!e.Handled) StylusDown(this, e);
+            if(e.Handled) return;
+            if(PenID != 0) return;
+            if(TouchType != 0) return;
+            //base.OnStylusDown(e);
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            SaveMode();
+
+            // VAIO Duo 13の場合
+            // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
+            // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
+            // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
+            if(e.StylusDevice.Name == "Eraser") {
+                Mode = InkManipulationMode.Erasing;
+            } else if(
+                 e.StylusDevice.StylusButtons.Count > 1 &&
+                 e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
+             ) {
+                Mode = InkManipulationMode.Selecting;
+            }
+            PenID = e.StylusDevice.Id;
+            TouchType = STYLUS;
+            DrawingStart(e.GetStylusPoints(this)[0]);
+        }
+
+        public new event StylusEventHandler StylusMove = ((s, e) => { });
+        protected override void OnStylusMove(System.Windows.Input.StylusEventArgs e) {
+            base.OnStylusMove(e);
+            if(!e.Handled) StylusMove(this, e);
+            if(e.Handled) return;
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
+                /*
+                System.Diagnostics.Debug.WriteLine("TouchMove");
+                System.Diagnostics.Debug.WriteLine(e.GetStylusPoints(this)[0].ToPoint());
+                System.Diagnostics.Debug.WriteLine(e.GetPosition(this));
+                 */
+                return;
+            }
+            if(TouchType != STYLUS) return;
+            if(PenID != e.StylusDevice.Id) return;
+            var pt = e.GetStylusPoints(this)[0];
+            Drawing(pt);
+        }
+
+        void OnStylusUpLeave(System.Windows.Input.StylusEventArgs e) {
+            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            if(PenID != e.StylusDevice.Id) return;
+            if(TouchType != STYLUS) return;
+            PenID = 0;// 描画終了
+            TouchType = 0;
+            DrawingEnd(e.GetStylusPoints(this)[0]);
+            RestoreMode();
+        }
+        public new event StylusEventHandler StylusUp = ((s, e) => { });
+        protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+            base.OnStylusUp(e);
+            if(!e.Handled) StylusUp(this, e);
+            if(e.Handled) return;
+            OnStylusUpLeave(e);
+        }
+        public new event StylusEventHandler StylusLeave = ((s, e) => { });
+        protected override void OnStylusLeave(System.Windows.Input.StylusEventArgs e) {
+            base.OnStylusLeave(e);
+            if(!e.Handled) StylusLeave(this, e);
+            if(e.Handled) return;
+            OnStylusUpLeave(e);
+        }
+        #endregion
+
+        public void ReDraw() {
+            StrokeChildren.Clear();
+            foreach(var s in InkData.Strokes) {
+                s.ReDraw();
+                StrokeChildren.Add(s.Visual);
+                /*
+                foreach(var spt in s.StylusPoints) {
+                    var pt = spt.ToPoint();
+                    var ell = new Ellipse() {
+                        Stroke = Brushes.Red,
+                        Width = 1,
+                        Height = 1
+                    };
+                    StrokeChildren.Add(ell);
+                    SetLeft(ell, pt.X - 0.5);
+                    SetTop(ell, pt.Y - 0.5);
+                    SetZIndex(ell, 10);
+                }*/
+            }
+            InvalidateVisual();
+            return;
+        }
+
+        public void RemovedFromView() { }
+        public void AddedToView() { }
+
+        public void Copy() {
+            InkData.Copy();
+        }
+
+        public void Cut() {
+            InkData.Cut();
+        }
+
+        public void Paste() {
+            InkData.Paste();
+        }
+        public void Paste(Point pt) {
+            InkData.Paste(pt);
+        }
+
         public bool Undo() {
-            append_to_last_undogroup = false;
-            append_start_index = -1;
-            EndUndoGroup();
-            System.Diagnostics.Debug.WriteLine("Undo: UndoStack.Count = " + UndoStack.Count.ToString() + ", CurrentUndoPosition = " + CurrentUndoPosition.ToString());
-            DUMP_UNDOSTACK();
-            if (CurrentUndoPosition <= 0 || CurrentUndoPosition > UndoStack.Count) return false;
-            else {
-                --CurrentUndoPosition;
-                --EditCount;
-                UndoStack[CurrentUndoPosition].Undo(this);
-                return true;
-            }
+            return InkData.Undo();
         }
+
         public bool Redo() {
-            append_to_last_undogroup = false;
-            append_start_index = -1;
-            EndUndoGroup();
-            if (CurrentUndoPosition < 0 || CurrentUndoPosition >= UndoStack.Count) return false;
-            else {
-                UndoStack[CurrentUndoPosition].Redo(this);
-                ++CurrentUndoPosition;
-                ++EditCount;
-                return true;
+            return InkData.Redo();
+        }
+        
+        public void ClearSelected() {
+            InkData.ClearSelected();
+        }
+
+        #region FrameworkElementでの描画のため
+        // StrokeChldrenがChildrenより前に描画される．
+        VisualCollection StrokeChildren; // Stroke描画オブジェトをと入れる
+        public VisualCollection Children; // それ以外の描画オブジェクトを入れる．外部公開．
+        Brush background;
+        public Brush Background {
+            get { return background; }
+            set { background = value; InvalidateVisual(); }
+        }
+        protected override int VisualChildrenCount {
+            get {
+                return StrokeChildren.Count + Children.Count;
             }
         }
+        protected override Visual GetVisualChild(int index) {
+            if(index < Children.Count) return Children[index];
+            else return StrokeChildren[index - Children.Count];
+        }
+        protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) {
+            return new PointHitTestResult(this, hitTestParameters.HitPoint);
+        }
+        protected override void OnRender(DrawingContext drawingContext) {
+            if(Background != null) {
+                drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
+            }
+            base.OnRender(drawingContext);
+        }
+        #endregion
 
         public Rect Viewport { get; protected set; }
+        #region Viewport制御
+        public void SetViewport(Rect rc) {
+            OnViewportChanged(new ViewportChangedEventArgs(Viewport, rc));
+            Viewport = rc;
+        }
         public class ViewportChangedEventArgs : EventArgs {
             public Rect OldViewport { get; private set; }
             public Rect NewViewport { get; private set; }
@@ -349,319 +633,38 @@ namespace abJournal {
                 NewViewport = n;
             }
         }
-        public void SetViewport(Rect rc) {
-            OnViewportChanged(new ViewportChangedEventArgs(Viewport, rc));
-            Viewport = rc;
-        }
         protected virtual void OnViewportChanged(ViewportChangedEventArgs e) {
             ViewportChanged(this, e);
             //System.Diagnostics.Debug.WriteLine("OnViewportChanged: old = " + e.OldViewport.ToString() + ", nwe = " + e.NewViewport.ToString());
         }
         public delegate void ViewportChangedEventHandler(object sender, ViewportChangedEventArgs e);
         public event ViewportChangedEventHandler ViewportChanged = ((s, e) => { });
-        // Canvasに入る/から出る時にABInkCanvasCollectionから呼び出される．
-        public void RemovedFromView() { }
-        public void AddedToView() { }
-        public void ReDraw() { base.InvalidateVisual(); }
-        public void ClearSelected() { Select(new StrokeCollection()); }
-
-        public static Cursor ErasingCursor = null;
-        static Dictionary<Tuple<Color, double>, Cursor> InkingCursors = new Dictionary<Tuple<Color, double>, Cursor>();
-        static Cursor MakeInkingCursor(double thickness, Color color) {
-            var key = new Tuple<Color, double>(color, thickness);
-            try { return InkingCursors[key]; }
-            catch (KeyNotFoundException) {
-                thickness *= 2;
-                const int cursorsize = 254;
-                using (var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
-                using (var g = System.Drawing.Graphics.FromImage(img)) {
-                    g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
-                    g.FillEllipse(
-                        new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
-                        new System.Drawing.Rectangle((int)(cursorsize / 2 - thickness / 2), (int)(cursorsize / 2 - thickness / 2), (int)thickness, (int)thickness));
-                    var c = Img2Cursor.MakeCursor(img, new Point(cursorsize / 2, cursorsize / 2), new Point(0, 0));
-                    InkingCursors[key] = c;
-                    return c;
-                }
-            }
-        }
-        void SetCursor() {
-            if (GetSelectedStrokes().Count > 0) {
-                UseCustomCursor = false;
-                SetCursor(Cursors.Arrow);
-            } else {
-                UseCustomCursor = true;
-                switch (EditingMode) {
-                case InkCanvasEditingMode.Ink:
-                    SetCursor(MakeInkingCursor(DefaultDrawingAttributes.Width, DefaultDrawingAttributes.Color)); break;
-                case InkCanvasEditingMode.EraseByStroke:
-                    SetCursor(ErasingCursor); break;
-                default:
-                    SetCursor(Cursors.Cross); break;
-                }
-            }
-        }
-        void SetCursor(Cursor c) {
-            if (c != Cursor) Cursor = c;
-        }
-
-        public VisualCollection VisualChildren { get; private set; }
-        Dictionary<Visual, Brush> VisualChildrenBrushes = new Dictionary<Visual, Brush>();
-        Brush backGround = null;
-        public new Brush Background {
-            get { return backGround; }
-            set { backGround = value; InvalidateVisual(); }
-        }
-        protected override void OnRender(DrawingContext drawingContext) {
-            var rect = new Rect(0, 0, RenderSize.Width, RenderSize.Height);
-            if (Background != null) {
-                drawingContext.DrawRectangle(Background, null, rect);
-            }
-            foreach (var v in VisualChildren) {
-                if (!VisualChildrenBrushes.ContainsKey(v)) {
-                    var b = new VisualBrush(v);
-                    b.Stretch = Stretch.None;
-                    b.AlignmentX = AlignmentX.Left;
-                    b.AlignmentY = AlignmentY.Top;
-                    VisualChildrenBrushes[v] = b;
-                }
-                if (v is ContainerVisual cv) drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, cv.ContentBounds);
-                else drawingContext.DrawRectangle(VisualChildrenBrushes[v], null, rect);
-            }
-            base.OnRender(drawingContext);
-        }
+        #endregion
     }
 
-    public class abStroke : Stroke {
-        public DrawingAttributesPlus DrawingAttributesPlus { get; set; }
-        Pen Pen;
-        public abStroke(StylusPointCollection pts) : base(pts) { }
-        public abStroke(StylusPointCollection pts, DrawingAttributes datt, DrawingAttributesPlus dattp)
-            : base(pts, datt) {
-            DrawingAttributesPlus = dattp.Clone();
-            DrawingAttributes.PropertyDataChanged += (s, e) => { Pen = null; };
-            DrawingAttributesPlus.PropertyChanged += (s, e) => { Pen = null; };
-        }
-
-        void GetPen() {
-            if (Pen == null) {
-                var brush = new SolidColorBrush(DrawingAttributes.Color);
-                brush.Opacity = DrawingAttributes.IsHighlighter ? 0.5 : 1;
-                Pen = new Pen(brush, DrawingAttributes.Width);
-                Pen.EndLineCap = Pen.StartLineCap = PenLineCap.Round;
-                if (!DrawingAttributesPlus.IsNormalDashArray) {
-                    Pen.DashStyle = new DashStyle(DrawingAttributesPlus.DashArray, 0);
-                    Pen.DashCap = PenLineCap.Flat;
-                }
-                Pen.Freeze();
-            }
-        }
-
-        protected override void DrawCore(DrawingContext drawingContext, DrawingAttributes drawingAttributes) {
-            if (DrawingAttributesPlus.IsNormalDashArray) base.DrawCore(drawingContext, drawingAttributes);
-            else {
-                GetPen();
-                DrawingStrokes.DrawOriginalType1(drawingContext, DrawingStrokes.MabikiPointsType1(StylusPoints, drawingAttributes), drawingAttributes, DrawingAttributesPlus, Pen);
-            }
-        }
-    }
-
-    public class ABDynamicRender : DynamicRenderer {
-        private Point? prevPoint = null;
-        public DrawingAttributesPlus DrawingAttributesPlus { get; set; }
-        double DashOffset = 0;
-        Pen Pen = null;
-        void GetPen() {
-            if (Pen == null) {
-                var brush = new SolidColorBrush(DrawingAttributes.Color);
-                brush.Opacity = DrawingAttributes.IsHighlighter ? 0.5 : 1;
-                Pen = new Pen(brush, DrawingAttributes.Width);
-                Pen.DashStyle = new DashStyle(DrawingAttributesPlus.DashArray, 0);
-                Pen.DashCap = PenLineCap.Flat;
-                Pen.Freeze();
-            }
-        }
-        protected override void OnStylusDown(RawStylusInput rawStylusInput) {
-            prevPoint = null;
-            DashOffset = 0;
-            base.OnStylusDown(rawStylusInput);
-        }
-        protected override void OnDraw(DrawingContext drawingContext, StylusPointCollection stylusPoints, Geometry geometry, Brush fillBrush) {
-            if (DrawingAttributesPlus.IsNormalDashArray) base.OnDraw(drawingContext, stylusPoints, geometry, fillBrush);
-            else {
-                GetPen();
-                int i = 0;
-                if (prevPoint == null) {
-                    prevPoint = stylusPoints[0].ToPoint();
-                    i = 1;
-                }
-                for (; i < stylusPoints.Count; ++i) {
-                    var pt = stylusPoints[i];
-                    var p = Pen.Clone();
-                    if (!DrawingAttributes.IgnorePressure) p.Thickness *= pt.PressureFactor * 2;
-                    if (!DrawingAttributesPlus.IsNormalDashArray) {
-                        p.DashStyle.Offset = DashOffset;
-                    }
-                    drawingContext.DrawLine(p, prevPoint.Value, stylusPoints[i].ToPoint());
-                    DashOffset += (Math.Sqrt((prevPoint.Value.X - pt.X) * (prevPoint.Value.X - pt.X) + (prevPoint.Value.Y - pt.Y) * (prevPoint.Value.Y - pt.Y))) / Pen.Thickness;
-                    prevPoint = stylusPoints[i].ToPoint();
-                }
-            }
-        }
-    }
-
-    interface UndoCommand {
-        void Undo(ABInkCanvas stroke);
-        void Redo(ABInkCanvas stroke);
-    }
-    interface UndoCommandComibinable : UndoCommand {
-        // UndoCommand.Undoの呼び出しがかなり遅いっぽいので，
-        // UndoGroupで使う場合に，くっつけられるUndoCommandはくっつけるようにする．
-        void Combine(UndoCommand c);
-    }
-
-    class UndoGroup : UndoCommand, IEnumerable<UndoCommand> {
-        List<UndoCommand> Commands = new List<UndoCommand>();
-        public int Count { get { return Commands.Count; } }
-        public UndoGroup() { }
-        public void Add(UndoCommand c) { Commands.Add(c); }
-        public void Undo(ABInkCanvas data) {
-            for (int i = Commands.Count - 1; i >= 0; --i) Commands[i].Undo(data);
-        }
-        public void Redo(ABInkCanvas data) {
-            for (int i = 0; i < Commands.Count; ++i) Commands[i].Redo(data);
-        }
-        // undoCommandCombinableなコマンドを全て展開し，Combineでくっつけておく．
-        public void Normalize() {
-            List<UndoCommand> cmds = new List<UndoCommand>();
-            UndoGroup.ExpandGroups(this, ref cmds);
-            Commands.Clear();
-            for (int i = 0; i < cmds.Count; ++i) {
-                if (cmds[i] is UndoCommandComibinable cmd) {
-                    System.Type type = cmd.GetType();
-                    ++i;
-                    for (; i < cmds.Count; ++i) {
-                        if (type == cmds[i].GetType()) {
-                            cmd.Combine(cmds[i]);
-                        } else {
-                            --i;
-                            break;
-                        }
-                    }
-                    Commands.Add(cmd);
-                } else {
-                    Commands.Add(cmds[i]);
-                }
-            }
-        }
-        // UndoGroupを全て展開し，一連のUndoCommandの配列とする．
-        static void ExpandGroups(UndoGroup undo, ref List<UndoCommand> cmds) {
-            for (int i = 0; i < undo.Count; ++i) {
-                if (undo.Commands[i] is UndoGroup ug) UndoGroup.ExpandGroups(ug, ref cmds);
-                else cmds.Add(undo.Commands[i]);
-            }
-        }
-        public IEnumerator<UndoCommand> GetEnumerator() { return Commands.GetEnumerator(); }
-        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() { return Commands.GetEnumerator(); }
-
-        // Commandも全部表示するようにしておく．Debug用．
-        public override string ToString() {
-            string rv = base.ToString() + "[";
-            for (int i = 0; i < Commands.Count; ++i) {
-                if (i == 0) rv += Commands[i].ToString();
-                else rv += " ; " + Commands[i].ToString();
-            }
-            return rv + "]";
-        }
-    }
-
-    // deleteした時に入れる
-    class DeleteStrokeCommand : UndoCommandComibinable {
-        public StrokeCollection stroke;
-        public DeleteStrokeCommand(abStroke s) {
-            stroke = new StrokeCollection(); stroke.Add(s);
-        }
-        public DeleteStrokeCommand(StrokeCollection s) { stroke = s; }
-        public void Undo(ABInkCanvas data) {
-            foreach (var s in stroke) data.Strokes.Add(s);
-            //data.StrokeAdded(data, new StrokeChangedEventArgs(stroke));
-        }
-        public void Redo(ABInkCanvas data) {
-            foreach (var s in stroke) data.Strokes.Remove(s);
-            //data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
-        }
-        public void Combine(UndoCommand del) {
-            foreach (var s in (del as DeleteStrokeCommand).stroke) stroke.Add(s);
-        }
-    }
-    class AddStrokeCommand : UndoCommandComibinable {
-        StrokeCollection stroke;
-        public AddStrokeCommand(StrokeCollection s) { stroke = s; }
-        public AddStrokeCommand(Stroke s) {
-            stroke = new StrokeCollection(); stroke.Add(s);
-        }
-        public void Redo(ABInkCanvas data) {
-            data.Strokes.Add(stroke);
-        }
-        public void Undo(ABInkCanvas data) {
-            data.Strokes.Remove(stroke);
-        }
-        public void Combine(UndoCommand add) {
-            stroke.Add((add as AddStrokeCommand).stroke);
-        }
-    }
-    class SelectCommand : UndoCommand {
-        StrokeCollection beforeStroke, afterStroke;
-        public SelectCommand(StrokeCollection before, StrokeCollection after) {
-            beforeStroke = before; afterStroke = after;
-        }
-        public void Undo(ABInkCanvas c) {
-            c.StopAddToUndo();
-            c.Select(beforeStroke);
-            c.StartAddToUndo();
-        }
-        public void Redo(ABInkCanvas c) {
-            c.StopAddToUndo();
-            c.Select(afterStroke);
-            c.StartAddToUndo();
-        }
-    }
-
-    class AffineTransformStrokeCommand : UndoCommandComibinable {
-        struct MatrixPair {
-            public MatrixPair(Matrix m) {
-                matrix = m; invMatrix = m;
-                invMatrix.Invert();
-            }
-            public MatrixPair Combine(MatrixPair mp) {
-                matrix *= mp.matrix;
-                invMatrix = mp.invMatrix * invMatrix;
-                return this;
-            }
-            public Matrix matrix, invMatrix;
-        }
-        Dictionary<Stroke, MatrixPair> Matrices;
-        public AffineTransformStrokeCommand(StrokeCollection sc, Matrix matrix) {
-            Matrices = new Dictionary<Stroke, MatrixPair>();
-            foreach (var s in sc) Matrices[s] = new MatrixPair(matrix);
-        }
-        public void Undo(ABInkCanvas data) {
-            foreach (var x in Matrices) {
-                x.Key.Transform(x.Value.invMatrix, false);
-            }
-        }
-        public void Redo(ABInkCanvas data) {
-            foreach (var x in Matrices) {
-                x.Key.Transform(x.Value.matrix, true);
-            }
-        }
-        // this * moveを各行列に対して計算する
-        public void Combine(UndoCommand m) {
-            var move = m as AffineTransformStrokeCommand;
-            foreach (var x in move.Matrices) {
-                if (!Matrices.ContainsKey(x.Key)) Matrices.Add(x.Key, x.Value);
-                else Matrices[x.Key] = Matrices[x.Key].Combine(x.Value);
-            }
-        }
+    public interface IabInkCanvas : INotifyPropertyChanged{
+        double Height { get; set; }
+        double Width { get; set; }
+        abInkData InkData { get; set; }
+        Brush Background { get; set; }
+        double PenThickness { get; set; }
+        List<double> PenDashArray { get; set; }
+        Color PenColor { get; set; }
+        bool PenIsHilighter { get; set; }
+        InkManipulationMode Mode { get; set; }
+        void Copy();
+        void Cut();
+        void Paste();
+        void Paste(Point pt);
+        bool Undo();
+        bool Redo();
+        event abInkData.UndoChainChangedEventhandelr UndoChainChanged;
+        void SetViewport(Rect rc);
+        // Canvasに入る/から出る時にabInkCanvasCollectionから呼び出される．
+        void RemovedFromView();
+        void AddedToView();
+        void ReDraw();
+        void ClearSelected();
     }
 }
+

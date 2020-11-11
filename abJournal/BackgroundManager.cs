@@ -11,7 +11,7 @@ using System.Windows.Xps.Packaging;
 namespace abJournal {
     public partial class abJournalInkCanvas {
         public BackgroundImage.BackgroundData BackgroundData = null;
-        protected override void OnViewportChanged(ABInkCanvas.ViewportChangedEventArgs e) {
+        protected override void OnViewportChanged(abInkCanvas.ViewportChangedEventArgs e) {
             if(BackgroundData != null) BackgroundData.SetViewport(this, e);
             base.OnViewportChanged(e);
         }
@@ -20,13 +20,13 @@ namespace abJournal {
     namespace BackgroundImage {
         public interface BackgroundData {
             void Dispose(abJournalInkCanvas c);
-            void SetViewport(abJournalInkCanvas c,ABInkCanvas.ViewportChangedEventArgs e);
+            void SetViewport(abJournalInkCanvas c,abInkCanvas.ViewportChangedEventArgs e);
         }
     }
 
     public class BackgroundColor : BackgroundImage.BackgroundData {
         public void Dispose(abJournalInkCanvas c) { c.Background = null; }
-        public void SetViewport(abJournalInkCanvas c, ABInkCanvas.ViewportChangedEventArgs e) { }
+        public void SetViewport(abJournalInkCanvas c, abJournalInkCanvas.ViewportChangedEventArgs e) { }
         public static void SetBackground(abJournalInkCanvas c, Color color) {
             if(c.BackgroundData != null) c.BackgroundData.Dispose(c);
             c.BackgroundData = new BackgroundColor();
@@ -62,7 +62,7 @@ namespace abJournal {
         }*/
 
         static double scale = 1;
-        public static async void ScaleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
+        public static void ScaleChanged(object sender, System.ComponentModel.PropertyChangedEventArgs e) {
             if(e.PropertyName == "Scale") {
                 //System.Diagnostics.Debug.WriteLine("ScaleChanged");
                 var collection = (abJournalInkCanvasCollection) sender;
@@ -73,7 +73,7 @@ namespace abJournal {
                         if(c.Background != null) {
                             var bd = c.BackgroundData as BackgroundPDF;
                             if(bd != null) { 
-                                await bd.SetBackgroundImage(c);
+                                bd.SetBackgroundImage(c);
                             }
                         }
                     }
@@ -81,39 +81,31 @@ namespace abJournal {
             }
         }
 
-        static async System.Threading.Tasks.Task SetBackground(abJournalInkCanvas c, BackgroundPDF page) {
+        static void SetBackground(abJournalInkCanvas c, BackgroundPDF page) {
             c.BackgroundData?.Dispose(c);
             c.BackgroundData = page;
-            if(c.Viewport.Height != 0) await page.SetBackgroundImage(c);
+            if(c.Viewport.Height != 0) page.SetBackgroundImage(c);
         }
 
         static object lockObj = new object();
-        async System.Threading.Tasks.Task SetBackgroundImage(abJournalInkCanvas c) {
+        async void SetBackgroundImage(abJournalInkCanvas c) {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
-                // 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
-                lock (lockObj) {
-                    try {
-                        using (var doc = new pdfium.PDFDocument(File.FileName)) {
-                            using (var pdfpage = doc.GetPage(PageNum)) {
-                                var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
-                                if (b != null) {
-                                    b.Freeze();
-                                    return b;
-                                }
-                                return null;
-                            }
+            	// 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
+                lock(lockObj){
+                    using(var doc = new pdfium.PDFDocument(File.FileName)) {
+                        using(var pdfpage = doc.GetPage(PageNum)){
+                            var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
+                            b.Freeze();
+                            return b;
                         }
                     }
-                    catch (Exception) { return null; }
                 }
             });
-            if (bitmap != null) {
-                var visual = new DrawingVisual();
-                using (var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
-                if (c.Viewport.Height != 0) c.Background = new VisualBrush(visual);
-            }
+            var visual = new DrawingVisual();
+            using(var dc = visual.RenderOpen()) { dc.DrawImage(bitmap, new Rect(0, 0, width, height)); }
+            if (c.Viewport.Height != 0) c.Background = new VisualBrush(visual);
         }
 
         public void Dispose(abJournalInkCanvas c) {
@@ -122,11 +114,11 @@ namespace abJournal {
             c.BackgroundData = null;
         }
 
-        public async void SetViewport(abJournalInkCanvas canvas, ABInkCanvas.ViewportChangedEventArgs e) {
+        public void SetViewport(abJournalInkCanvas canvas, abInkCanvas.ViewportChangedEventArgs e) {
             if(e.OldViewport.Height == 0) {
                 if(e.NewViewport.Height != 0) {
                     canvas.Background = new SolidColorBrush(canvas.Info.BackgroundColor);
-                    await SetBackgroundImage(canvas);
+                    SetBackgroundImage(canvas);
                 }
             } else {
                 if(e.NewViewport.Height == 0) {
@@ -135,9 +127,9 @@ namespace abJournal {
             }
         }
 
-        public static async void SetBackground(abJournalInkCanvas c, AttachedFile file, int pageNum) {
+        public static void SetBackground(abJournalInkCanvas c, AttachedFile file, int pageNum) {
             var page = new BackgroundPDF(file, pageNum);
-            await SetBackground(c, page);
+            SetBackground(c, page);
         }
 
         public static void SetBackground_IgnoreViewport(abJournalInkCanvas c, AttachedFile file, int pageNum) {
@@ -155,7 +147,7 @@ namespace abJournal {
                 if(page != null) page.File.Dispose();
             }
         }
-        public static async System.Threading.Tasks.Task LoadFile(AttachedFile file, abJournalInkCanvasCollection collection) {
+        public static void LoadFile(AttachedFile file, abJournalInkCanvasCollection collection) {
             using(var doc = new pdfium.PDFDocument(file.FileName)) {
                 int pageCount = doc.GetPageCount();
                 double scale = (double) 254 * Paper.mmToSize / (double) 720;
@@ -166,10 +158,10 @@ namespace abJournal {
                         var size = new Size(pdfpage.Size.Width * scale, pdfpage.Size.Height * scale);
                         var ps = Paper.GetPaperSize(size);
                         if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                        collection.AddCanvas(size, collection.Info.InkCanvasInfo.BackgroundColor);
+                        collection.AddCanvas(new abInkData(), size, collection.Info.InkCanvasInfo.BackgroundColor);
                     }
                     var c = collection[collection.Count - 1];
-                    await SetBackground(c, page);
+                    SetBackground(c, page);
                 }
             }
         }
@@ -224,7 +216,7 @@ namespace abJournal {
             c.BackgroundData = page;
         }
 
-        public void SetViewport(abJournalInkCanvas canvas, ABInkCanvas.ViewportChangedEventArgs e) {
+        public void SetViewport(abJournalInkCanvas canvas, abInkCanvas.ViewportChangedEventArgs e) {
             if(e.OldViewport.Height == 0) {
                 if(e.NewViewport.Height != 0) {
                     using(var pagedoc = GetPage()) {
@@ -273,7 +265,7 @@ namespace abJournal {
                     var size = new Size(pagedoc.Size.Width * scale, pagedoc.Size.Height * scale);
                     var ps = Paper.GetPaperSize(size);
                     if(ps != Paper.PaperSize.Other) size = Paper.GetSize(ps);
-                    collection.AddCanvas(size,collection.Info.InkCanvasInfo.BackgroundColor);
+                    collection.AddCanvas(new abInkData(),size,collection.Info.InkCanvasInfo.BackgroundColor);
                     SetBackground(collection[collection.Count - 1], page);
                 }
             }
