@@ -22,7 +22,7 @@ namespace abJournal {
     public enum DrawingAlgorithm { dotNet = 0, Type1 = 1, Type1WithHosei = 2, Line = 3 };
 
     [ProtoContract]
-    public class abInkData : System.ComponentModel.INotifyPropertyChanged{
+    public class abInkData : System.ComponentModel.INotifyPropertyChanged {
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged = (s, e) => { };
         private void OnPropertyChanged(string name) {
             PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
@@ -40,9 +40,9 @@ namespace abJournal {
         public DrawingAlgorithm DrawingAlgorithm {
             get { return drawingAlgorithm; }
             set {
-                if(drawingAlgorithm != value) {
+                if (drawingAlgorithm != value) {
                     drawingAlgorithm = value;
-                    foreach(var s in Strokes) s.Algorithm = value;
+                    foreach (var s in Strokes) s.Algorithm = value;
                     OnPropertyChanged("DrawingAlgorithm");
                 }
             }
@@ -51,39 +51,39 @@ namespace abJournal {
         public bool IgnorePressure {
             get { return ignorePressure; }
             set {
-                if(ignorePressure != value){
+                if (ignorePressure != value) {
                     ignorePressure = value;
-                    foreach(var s in Strokes) s.DrawingAttributes.IgnorePressure = value;
+                    foreach (var s in Strokes) s.DrawingAttributes.IgnorePressure = value;
                     OnPropertyChanged("IgnorePressure");
                 }
             }
         }
         bool UpdatedUndoGroup(UndoGroup undo) {
-            foreach(var u in undo) {
-                if(UpdatedUndoCommand(u)) return true;
+            foreach (var u in undo) {
+                if (UpdatedUndoCommand(u)) return true;
             }
             return false;
         }
         bool UpdatedUndoCommand(UndoCommand undo) {
             var type = undo.GetType();
-            if(type != typeof(SelectChangeCommand)) {
-                if(type == typeof(UndoGroup)) {
-                    if(UpdatedUndoGroup((UndoGroup) undo)) return true;
+            if (type != typeof(SelectChangeCommand)) {
+                if (type == typeof(UndoGroup)) {
+                    if (UpdatedUndoGroup((UndoGroup)undo)) return true;
                 } else return true;
             }
             return false;
         }
         public bool Updated {
             get {
-                if(EditCount == 0) return false;
-                else if(EditCount > 0) {
-					for(int i = UndoStack.Count - 1 ; i >= UndoStack.Count - EditCount && i >= 0 ; --i){
-                        if(UpdatedUndoCommand(UndoStack[i])) return true;
+                if (EditCount == 0) return false;
+                else if (EditCount > 0) {
+                    for (int i = UndoStack.Count - 1; i >= UndoStack.Count - EditCount && i >= 0; --i) {
+                        if (UpdatedUndoCommand(UndoStack[i])) return true;
                     }
                     return false;
                 } else {
-					for(int i = RedoStack.Count - 1 ; i >= RedoStack.Count + EditCount && i >= 0 ; --i){
-                        if(UpdatedUndoCommand(RedoStack[i])) return true;
+                    for (int i = RedoStack.Count - 1; i >= RedoStack.Count + EditCount && i >= 0; --i) {
+                        if (UpdatedUndoCommand(RedoStack[i])) return true;
                     }
                     return false;
                 }
@@ -99,26 +99,26 @@ namespace abJournal {
         public void Select(StylusPointCollection spc, int percent) {
             PointCollection pc = new PointCollection(spc.Select(p => p.ToPoint()));
             var changed = new StrokeDataCollection();
-            foreach(var s in Strokes) {
+            foreach (var s in Strokes) {
                 bool hittest = s.HitTest(pc, percent);
-                if(hittest != s.Selected) {
+                if (hittest != s.Selected) {
                     s.Selected = hittest;
                     changed.Add(s);
                 }
             }
-            if(changed.Count > 0) {
+            if (changed.Count > 0) {
                 AddUndoList(new SelectChangeCommand(changed));
                 OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
             }
         }
         public void SelectAll() {
             var changed = new StrokeDataCollection(Strokes.Where(s => {
-                if(!s.Selected) {
+                if (!s.Selected) {
                     s.Selected = true;
                     return true;
                 } else return false;
             }));
-            if(changed.Count > 0) {
+            if (changed.Count > 0) {
                 AddUndoList(new SelectChangeCommand(changed));
                 StrokeSelectedChanged(this, new StrokeChangedEventArgs(changed));
             }
@@ -134,13 +134,13 @@ namespace abJournal {
             Matrix matrix = new Matrix(ax, 0, 0, ay, bx, by);
             List<Matrix> matrices = new List<Matrix>();
             StrokeDataCollection changed = new StrokeDataCollection(Strokes.Where(s => {
-                if(s.Selected) {
+                if (s.Selected) {
                     s.Transform(matrix, false);
                     matrices.Add(matrix);
                     return true;
                 } else return false;
             }));
-            if(changed.Count > 0) {
+            if (changed.Count > 0) {
                 OnStrokeChanged(new StrokeChangedEventArgs(changed));
                 AddUndoList(new MoveStrokeCommand(changed, matrices));
             }
@@ -148,25 +148,25 @@ namespace abJournal {
         public void DeleteSelected() {
             StrokeDataCollection deleted = new StrokeDataCollection();
             Strokes.RemoveAll(s => {
-                if(s.Selected) {
+                if (s.Selected) {
                     deleted.Add(s);
                     return true;
                 } else return false;
 
             });
-            if(deleted.Count > 0) {
+            if (deleted.Count > 0) {
                 OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
                 AddUndoList(new DeleteStrokeCommand(deleted));
             }
         }
         public void ClearSelected() {
             var changed = new StrokeDataCollection(Strokes.Where(s => {
-                if(s.Selected){
+                if (s.Selected) {
                     s.Selected = false;
                     return true;
-                }else return false;
+                } else return false;
             }));
-            if(changed.Count > 0) {
+            if (changed.Count > 0) {
                 OnStrokeSelectedChanged(new StrokeChangedEventArgs(changed));
                 AddUndoList(new SelectChangeCommand(changed));
             }
@@ -192,30 +192,30 @@ namespace abJournal {
         }
         public void ProcessPointerUpdate(StylusPoint point) {
             ProcessStylusPointCollection.Add(point);
-            if(ProcessMode == InkManipulationMode.Erasing) {
+            if (ProcessMode == InkManipulationMode.Erasing) {
                 StrokeDataCollection deleted = new StrokeDataCollection();
                 Strokes.RemoveAll(s => {
-                    if(s.HitTest(point.ToPoint(), 3)) {
+                    if (s.HitTest(point.ToPoint(), 3)) {
                         deleted.Add(s);
                         return true;
                     } else return false;
                 });
                 ProcessUndoGroup.Add(new DeleteStrokeCommand(deleted));
                 OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
-            } else if(ProcessMode == InkManipulationMode.Selecting) {
+            } else if (ProcessMode == InkManipulationMode.Selecting) {
                 //if(ProcessStylusPointCollection.Count % 50 == 0) {
                 //Select(ProcessStylusPointCollection, 3);
                 //}
             }
         }
         public void ProcessPointerUp() {
-            if(ProcessMode == InkManipulationMode.Inking) {
+            if (ProcessMode == InkManipulationMode.Inking) {
                 Strokes.Add(new StrokeData(ProcessStylusPointCollection, ProcessDrawingAttributes, ProcessDrawingAttributesPlus, DrawingAlgorithm));
                 AddUndoList(new AddStrokeCommand(Strokes.Last()));
                 OnStrokeAdded(new StrokeChangedEventArgs(Strokes.Last()));
-            } else if(ProcessMode == InkManipulationMode.Erasing) {
+            } else if (ProcessMode == InkManipulationMode.Erasing) {
                 AddUndoList(ProcessUndoGroup);
-            } else if(ProcessMode == InkManipulationMode.Selecting) {
+            } else if (ProcessMode == InkManipulationMode.Selecting) {
                 Select(ProcessStylusPointCollection, 80);
             }
         }
@@ -232,25 +232,25 @@ namespace abJournal {
         List<UndoCommand> UndoStack = new List<UndoCommand>(), RedoStack = new List<UndoCommand>();
         public static int MaxUndoSize = 1000;
         void AddUndoList(UndoCommand undo) {
-            if(undo is UndoGroup) {
-                if(((UndoGroup) undo).Count == 0) return;
+            if (undo is UndoGroup) {
+                if (((UndoGroup)undo).Count == 0) return;
             }
-            if(undoGroup != null) {
+            if (undoGroup != null) {
                 undoGroup.Add(undo);
                 return;
             }
             //System.Diagnostics.Debug.WriteLine("Added undo Hash = " + undo.GetHashCode() + ", " + undo.ToString());
-            if(undo is UndoGroup) ((UndoGroup) undo).Normalize();
+            if (undo is UndoGroup) ((UndoGroup)undo).Normalize();
             RedoStack.Clear();
             UndoStack.Add(undo);
-            if(UndoStack.Count > MaxUndoSize) {
+            if (UndoStack.Count > MaxUndoSize) {
                 UndoStack.RemoveAt(0);
             }
             ++EditCount;
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
         public bool Undo() {
-            if(UndoStack.Count == 0) return false;
+            if (UndoStack.Count == 0) return false;
             UndoCommand undo = UndoStack.Last();
             System.Diagnostics.Debug.WriteLine("Undo: " + undo.ToString());
             undo.Undo(this);
@@ -260,7 +260,7 @@ namespace abJournal {
             return true;
         }
         public bool Redo() {
-            if(RedoStack.Count == 0) return false;
+            if (RedoStack.Count == 0) return false;
             UndoCommand redo = RedoStack.Last();
             redo.Redo(this);
             RedoStack.RemoveAt(RedoStack.Count - 1);
@@ -271,12 +271,12 @@ namespace abJournal {
 
         UndoGroup undoGroup = null;
         public void BeginUndoGroup() {
-            if(undoGroup != null) return;
+            if (undoGroup != null) return;
             undoGroup = new UndoGroup();
         }
         public void EndUndoGroup() {
-            if(undoGroup == null) return;
-            if(undoGroup.Count != 0) {
+            if (undoGroup == null) return;
+            if (undoGroup.Count != 0) {
                 // AddUndoList内でundoGroup = nullか否かで場合わけしている．
                 UndoGroup u = undoGroup;
                 undoGroup = null;
@@ -294,29 +294,29 @@ namespace abJournal {
             void Combine(UndoCommand c);
         }
 
-        class UndoGroup : UndoCommand,IEnumerable<UndoCommand> {
+        class UndoGroup : UndoCommand, IEnumerable<UndoCommand> {
             List<UndoCommand> Commands = new List<UndoCommand>();
             public int Count { get { return Commands.Count; } }
             public UndoGroup() { }
             public void Add(UndoCommand c) { Commands.Add(c); }
             public void Undo(abInkData data) {
-                for(int i = Commands.Count - 1 ; i >= 0 ; --i) Commands[i].Undo(data);
+                for (int i = Commands.Count - 1; i >= 0; --i) Commands[i].Undo(data);
             }
             public void Redo(abInkData data) {
-                for(int i = 0 ; i < Commands.Count ; ++i) Commands[i].Redo(data);
+                for (int i = 0; i < Commands.Count; ++i) Commands[i].Redo(data);
             }
             // undoCommandCombinableなコマンドを全て展開し，Combineでくっつけておく．
             public void Normalize() {
                 List<UndoCommand> cmds = new List<UndoCommand>();
                 UndoGroup.ExpandGroups(this, ref cmds);
                 Commands.Clear();
-                for(int i = 0 ; i < cmds.Count ; ++i) {
-                    if(cmds[i] is UndoCommandComibinable) {
+                for (int i = 0; i < cmds.Count; ++i) {
+                    if (cmds[i] is UndoCommandComibinable) {
                         UndoCommandComibinable cmd = cmds[i] as UndoCommandComibinable;
                         System.Type type = cmd.GetType();
                         ++i;
-                        for( ; i < cmds.Count ; ++i) {
-                            if(type == cmds[i].GetType()) {
+                        for (; i < cmds.Count; ++i) {
+                            if (type == cmds[i].GetType()) {
                                 cmd.Combine(cmds[i]);
                             } else break;
                         }
@@ -328,8 +328,8 @@ namespace abJournal {
             }
             // UndoGroupを全て展開し，一連のUndoCommandの配列とする．
             static void ExpandGroups(UndoGroup undo, ref List<UndoCommand> cmds) {
-                for(int i = 0 ; i < undo.Count ; ++i) {
-                    if(undo.Commands[i] is UndoGroup) UndoGroup.ExpandGroups((UndoGroup) undo.Commands[i], ref cmds);
+                for (int i = 0; i < undo.Count; ++i) {
+                    if (undo.Commands[i] is UndoGroup) UndoGroup.ExpandGroups((UndoGroup)undo.Commands[i], ref cmds);
                     else cmds.Add(undo.Commands[i]);
                 }
             }
@@ -339,8 +339,8 @@ namespace abJournal {
             // Commandも全部表示するようにしておく．Debug用．
             public override string ToString() {
                 string rv = base.ToString() + "[";
-                for(int i = 0 ; i < Commands.Count ; ++i) {
-                    if(i == 0) rv += Commands[i].ToString();
+                for (int i = 0; i < Commands.Count; ++i) {
+                    if (i == 0) rv += Commands[i].ToString();
                     else rv += " ; " + Commands[i].ToString();
                 }
                 return rv + "]";
@@ -355,11 +355,11 @@ namespace abJournal {
             }
             public DeleteStrokeCommand(StrokeDataCollection s) { stroke = s; }
             public void Undo(abInkData data) {
-                foreach(var s in stroke) data.Strokes.Add(s);
+                foreach (var s in stroke) data.Strokes.Add(s);
                 data.StrokeAdded(data, new StrokeChangedEventArgs(stroke));
             }
             public void Redo(abInkData data) {
-                foreach(var s in stroke) data.Strokes.Remove(s);
+                foreach (var s in stroke) data.Strokes.Remove(s);
                 data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
             }
             public void Combine(UndoCommand del) {
@@ -373,13 +373,13 @@ namespace abJournal {
                 stroke = new StrokeDataCollection(); stroke.Add(s);
             }
             public void Redo(abInkData data) {
-                foreach(var s in stroke) {
+                foreach (var s in stroke) {
                     data.Strokes.Add(s);
                 }
                 data.OnStrokeAdded(new StrokeChangedEventArgs(stroke));
             }
             public void Undo(abInkData data) {
-                foreach(var s in stroke) {
+                foreach (var s in stroke) {
                     data.Strokes.Remove(s);
                 }
                 data.StrokeDeleted(data, new StrokeChangedEventArgs(stroke));
@@ -394,7 +394,7 @@ namespace abJournal {
                 Strokes = strokes;
             }
             public void Undo(abInkData data) {
-                for(int i = 0 ; i < Strokes.Count ; ++i) {
+                for (int i = 0; i < Strokes.Count; ++i) {
                     Strokes[i].Selected = !Strokes[i].Selected;
                 }
                 data.StrokeSelectedChanged(data, new StrokeChangedEventArgs(Strokes));
@@ -419,15 +419,15 @@ namespace abJournal {
             }
             Dictionary<StrokeData, MatrixPair> Matrices;
             public MoveStrokeCommand(StrokeDataCollection sdc, List<Matrix> matrices) {
-                if(sdc.Count != matrices.Count) throw new ArgumentException("Count is not matched");
+                if (sdc.Count != matrices.Count) throw new ArgumentException("Count is not matched");
                 Matrices = new Dictionary<StrokeData, MatrixPair>();
-                for(int i = 0 ; i < sdc.Count ; ++i) {
+                for (int i = 0; i < sdc.Count; ++i) {
                     Matrices.Add(sdc[i], new MatrixPair(matrices[i]));
                 }
             }
             public void Undo(abInkData data) {
                 StrokeDataCollection sdc = new StrokeDataCollection();
-                foreach(var x in Matrices) {
+                foreach (var x in Matrices) {
                     x.Key.Transform(x.Value.invMatrix, false);
                     sdc.Add(x.Key);
                 }
@@ -435,7 +435,7 @@ namespace abJournal {
             }
             public void Redo(abInkData data) {
                 StrokeDataCollection sdc = new StrokeDataCollection();
-                foreach(var x in Matrices) {
+                foreach (var x in Matrices) {
                     x.Key.Transform(x.Value.matrix, true);
                     sdc.Add(x.Key);
                 }
@@ -444,8 +444,8 @@ namespace abJournal {
             // this * moveを各行列に対して計算する
             public void Combine(UndoCommand m) {
                 var move = m as MoveStrokeCommand;
-                foreach(var x in move.Matrices) {
-                    if(!Matrices.ContainsKey(x.Key)) Matrices.Add(x.Key, x.Value);
+                foreach (var x in move.Matrices) {
+                    if (!Matrices.ContainsKey(x.Key)) Matrices.Add(x.Key, x.Value);
                     else Matrices[x.Key] = Matrices[x.Key].Combine(x.Value);
                 }
             }
@@ -510,7 +510,7 @@ namespace abJournal {
             public double[] DashArray;
 
             public StrokeDataForCopy(StrokeData sdc) {
-                foreach(var pt in sdc.StylusPoints) {
+                foreach (var pt in sdc.StylusPoints) {
                     StylusPoints.Add(new StylusPointForCopy() { X = pt.X, Y = pt.Y, PressureFactor = pt.PressureFactor });
                 }
                 Red = sdc.DrawingAttributes.Color.R;
@@ -520,11 +520,11 @@ namespace abJournal {
                 Width = sdc.DrawingAttributes.Width;
                 Height = sdc.DrawingAttributes.Height;
                 DashArray = new double[sdc.DrawingAttributesPlus.DashArray.Count];
-                for(int i = 0 ; i < DashArray.Count() ; ++i) {
+                for (int i = 0; i < DashArray.Count(); ++i) {
                     DashArray[i] = sdc.DrawingAttributesPlus.DashArray[i];
                 }
             }
-            public StrokeData ToOriginalType(bool ignorePressure,DrawingAlgorithm algo) {
+            public StrokeData ToOriginalType(bool ignorePressure, DrawingAlgorithm algo) {
                 var spc = new StylusPointCollection(StylusPoints.Select(s => new StylusPoint(s.X, s.Y, s.PressureFactor)));
                 var attr = new DrawingAttributes() {
                     Color = Color.FromArgb(this.Alpha, this.Red, this.Green, this.Blue),
@@ -552,16 +552,16 @@ namespace abJournal {
             //DoubleCollection DashArray = new DoubleCollection(new double[] { 1, 1 });
             StrokeDataCollection strokeData = null;
             var dataObj = Clipboard.GetDataObject();
-            if(dataObj != null && dataObj.GetDataPresent(typeof(List<StrokeDataForCopy>))){
-                var data = (List<StrokeDataForCopy>) dataObj.GetData(typeof(List<StrokeDataForCopy>));
+            if (dataObj != null && dataObj.GetDataPresent(typeof(List<StrokeDataForCopy>))) {
+                var data = (List<StrokeDataForCopy>)dataObj.GetData(typeof(List<StrokeDataForCopy>));
                 strokeData = new StrokeDataCollection(data.Select(d => {
                     var r = d.ToOriginalType(IgnorePressure, DrawingAlgorithm);
                     r.Selected = true;
                     return r;
                 }));
             }
-            if(strokeData == null && Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
-                System.IO.MemoryStream stream = (System.IO.MemoryStream) Clipboard.GetData(StrokeCollection.InkSerializedFormat);
+            if (strokeData == null && Clipboard.ContainsData(StrokeCollection.InkSerializedFormat)) {
+                System.IO.MemoryStream stream = (System.IO.MemoryStream)Clipboard.GetData(StrokeCollection.InkSerializedFormat);
                 StrokeCollection strokes = new StrokeCollection(stream);
                 var dattrplus = new DrawingAttributesPlus();
                 strokeData = new StrokeDataCollection(strokes.Select(s => {
@@ -569,13 +569,13 @@ namespace abJournal {
                     return sd;
                 }));
             }
-            if(strokeData != null) {
-	            var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
-                if(delmargine) {
+            if (strokeData != null) {
+                var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
+                if (delmargine) {
                     var rect = strokeData.GetBounds();
                     shift.Translate(-rect.Left, -rect.Top);
                 }
-                foreach(var s in strokeData) s.Transform(shift, true);
+                foreach (var s in strokeData) s.Transform(shift, true);
                 Strokes.AddRange(strokeData);
                 AddUndoList(new AddStrokeCommand(strokeData));
                 OnStrokeAdded(new StrokeChangedEventArgs(strokeData));
@@ -591,8 +591,8 @@ namespace abJournal {
             StrokeCollection sc = new StrokeCollection(Strokes.Where(s => s.Selected).Select(s => new Stroke(s.StylusPoints, s.DrawingAttributes)));
             sc.Save(stream);
             DataObject obj = new DataObject(StrokeCollection.InkSerializedFormat, stream);
-            //var sdc = new List<StrokeDataForCopy>(Strokes.Select(d => new StrokeDataForCopy(d)));
-            //obj.SetData(typeof(List<StrokeDataForCopy>), sdc);
+            var sdc = new List<StrokeDataForCopy>(Strokes.Select(d => new StrokeDataForCopy(d)));
+            obj.SetData(typeof(List<StrokeDataForCopy>), sdc);
             Clipboard.SetDataObject(obj, true);
         }
 
@@ -602,7 +602,7 @@ namespace abJournal {
         public void LoadSavingData(abJournal.Saving.InkData data) {
             Strokes = data.Strokes.ToOriginalType();
             //foreach(var s in Strokes) {
-                //s.DrawingAttributesPlus.DashArray.Clear();
+            //s.DrawingAttributesPlus.DashArray.Clear();
             //}
             Texts = data.Texts.ToOriginalType();
         }
@@ -640,15 +640,15 @@ namespace abJournal {
         }
 
         public static void AddPdfGarphic(iTextSharp.text.pdf.PdfWriter writer, double scale, List<StrokeDataStruct> Strokes) {
-            if(Strokes.Count == 0) return;
-            foreach(var s in Strokes) {
+            if (Strokes.Count == 0) return;
+            foreach (var s in Strokes) {
                 writer.DirectContent.SetColorStroke(new iTextSharp.text.BaseColor(
                         s.DrawingAttributes.Color.R,
                         s.DrawingAttributes.Color.G,
                         s.DrawingAttributes.Color.B,
                         s.DrawingAttributes.Color.A
                     ));
-                if(!s.DrawingAttributesPlus.IsNormalDashArray) {
+                if (!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(s.DrawingAttributesPlus.DashArray.ToArray(), 0);
                     writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_BUTT);
                 } else writer.DirectContent.SetLineCap(iTextSharp.text.pdf.PdfContentByte.LINE_CAP_ROUND);
@@ -657,7 +657,7 @@ namespace abJournal {
                 writer.DirectContent.SetGState(state);
                 writer.DirectContent.SetLineWidth(s.DrawingAttributes.Width * scale);
                 StrokeData.DrawPath(writer, scale, s.StylusPoints, s.DrawingAttributes);
-                if(!s.DrawingAttributesPlus.IsNormalDashArray) {
+                if (!s.DrawingAttributesPlus.IsNormalDashArray) {
                     writer.DirectContent.SetLineDash(0);
                 }
             }
@@ -666,9 +666,9 @@ namespace abJournal {
         #region Proto-bufferのためのクラス
         [ProtoContract]
         class ProtoStylusPointCollection {
-            [ProtoMember(1,OverwriteList=true)]
+            [ProtoMember(1, OverwriteList = true)]
             List<StylusPoint> Points = new List<StylusPoint>();
-            public ProtoStylusPointCollection(StylusPointCollection spc){
+            public ProtoStylusPointCollection(StylusPointCollection spc) {
                 Points = spc == null ? null : new List<StylusPoint>(spc.ToList());
                 //Points = spc.ToList();
             }
@@ -683,7 +683,7 @@ namespace abJournal {
         class ProtoFontFamily {
             [ProtoMember(1)]
             string name;
-            public ProtoFontFamily(FontFamily ff){
+            public ProtoFontFamily(FontFamily ff) {
                 name = ff.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.ToString())];
             }
             public static implicit operator ProtoFontFamily(FontFamily ff) {
@@ -693,33 +693,33 @@ namespace abJournal {
                 return new FontFamily(pff.name);
             }
         }
-        [ProtoContract(SkipConstructor=true)]
+        [ProtoContract(SkipConstructor = true)]
         class ProtoFontStyle {
             enum Style { Normal = 1, Italic = 2, Oblique = 3 };
             [ProtoMember(1)]
             Style style;
             ProtoFontStyle(Style s) { style = s; }
-            public static implicit operator FontStyle(ProtoFontStyle pfs){
-                switch(pfs.style) {
+            public static implicit operator FontStyle(ProtoFontStyle pfs) {
+                switch (pfs.style) {
                 case Style.Italic: return FontStyles.Italic;
                 case Style.Oblique: return FontStyles.Oblique;
                 default: return FontStyles.Normal;
                 }
             }
             public static implicit operator ProtoFontStyle(FontStyle fs) {
-                if(fs == FontStyles.Italic) return new ProtoFontStyle(Style.Italic);
-                else if(fs == FontStyles.Oblique) return new ProtoFontStyle(Style.Oblique);
+                if (fs == FontStyles.Italic) return new ProtoFontStyle(Style.Italic);
+                else if (fs == FontStyles.Oblique) return new ProtoFontStyle(Style.Oblique);
                 else return new ProtoFontStyle(Style.Normal);
             }
         }
-        [ProtoContract(SkipConstructor=true)]
+        [ProtoContract(SkipConstructor = true)]
         class ProtoFontWeight {
-            enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16};
+            enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16 };
             [ProtoMember(1)]
             Weight weight;
-            ProtoFontWeight(Weight w){weight = w;}
+            ProtoFontWeight(Weight w) { weight = w; }
             public static implicit operator FontWeight(ProtoFontWeight pfw) {
-                switch(pfw.weight) {
+                switch (pfw.weight) {
                 case Weight.Thin: return FontWeights.Thin;
                 case Weight.ExtraLight: return FontWeights.ExtraLight;
                 case Weight.UltraLight: return FontWeights.UltraLight;
@@ -739,32 +739,32 @@ namespace abJournal {
                 }
             }
             public static implicit operator ProtoFontWeight(FontWeight fw) {
-                if(fw == FontWeights.Thin) return new ProtoFontWeight(Weight.Thin);
-                else if(fw == FontWeights.ExtraLight) return new ProtoFontWeight(Weight.ExtraLight);
-                else if(fw == FontWeights.UltraLight) return new ProtoFontWeight(Weight.UltraLight);
-                else if(fw == FontWeights.Light) return new ProtoFontWeight(Weight.Light);
-                else if(fw == FontWeights.Regular) return new ProtoFontWeight(Weight.Regular);
-                else if(fw == FontWeights.Medium) return new ProtoFontWeight(Weight.Medium);
-                else if(fw == FontWeights.DemiBold) return new ProtoFontWeight(Weight.DemiBold);
-                else if(fw == FontWeights.SemiBold) return new ProtoFontWeight(Weight.SemiBold);
-                else if(fw == FontWeights.Bold) return new ProtoFontWeight(Weight.Bold);
-                else if(fw == FontWeights.ExtraBold) return new ProtoFontWeight(Weight.ExtraBold);
-                else if(fw == FontWeights.UltraBold) return new ProtoFontWeight(Weight.UltraBold);
-                else if(fw == FontWeights.Black) return new ProtoFontWeight(Weight.Black);
-                else if(fw == FontWeights.Heavy) return new ProtoFontWeight(Weight.Heavy);
-                else if(fw == FontWeights.ExtraBlack) return new ProtoFontWeight(Weight.ExtraBlack);
-                else if(fw == FontWeights.UltraBlack) return new ProtoFontWeight(Weight.UltraBlack);
+                if (fw == FontWeights.Thin) return new ProtoFontWeight(Weight.Thin);
+                else if (fw == FontWeights.ExtraLight) return new ProtoFontWeight(Weight.ExtraLight);
+                else if (fw == FontWeights.UltraLight) return new ProtoFontWeight(Weight.UltraLight);
+                else if (fw == FontWeights.Light) return new ProtoFontWeight(Weight.Light);
+                else if (fw == FontWeights.Regular) return new ProtoFontWeight(Weight.Regular);
+                else if (fw == FontWeights.Medium) return new ProtoFontWeight(Weight.Medium);
+                else if (fw == FontWeights.DemiBold) return new ProtoFontWeight(Weight.DemiBold);
+                else if (fw == FontWeights.SemiBold) return new ProtoFontWeight(Weight.SemiBold);
+                else if (fw == FontWeights.Bold) return new ProtoFontWeight(Weight.Bold);
+                else if (fw == FontWeights.ExtraBold) return new ProtoFontWeight(Weight.ExtraBold);
+                else if (fw == FontWeights.UltraBold) return new ProtoFontWeight(Weight.UltraBold);
+                else if (fw == FontWeights.Black) return new ProtoFontWeight(Weight.Black);
+                else if (fw == FontWeights.Heavy) return new ProtoFontWeight(Weight.Heavy);
+                else if (fw == FontWeights.ExtraBlack) return new ProtoFontWeight(Weight.ExtraBlack);
+                else if (fw == FontWeights.UltraBlack) return new ProtoFontWeight(Weight.UltraBlack);
                 else return new ProtoFontWeight(Weight.Normal);
             }
         }
         public static ProtoBuf.Meta.RuntimeTypeModel SetProtoBufTypeModel(ProtoBuf.Meta.RuntimeTypeModel model) {
             model.Add(typeof(Stroke), true);
-            model[typeof(Stroke)].Add("StylusPoints","DrawingAttributes");
+            model[typeof(Stroke)].Add("StylusPoints", "DrawingAttributes");
             model[typeof(Stroke)].AddSubType(100, typeof(StrokeData));
             model.Add(typeof(StylusPoint), true);
-            model[typeof(StylusPoint)].Add("X","Y","PressureFactor");
+            model[typeof(StylusPoint)].Add("X", "Y", "PressureFactor");
             model.Add(typeof(DrawingAttributes), true);
-            model[typeof(DrawingAttributes)].Add("Color","FitToCurve","Height","IgnorePressure","IsHighlighter","StylusTip","Width");
+            model[typeof(DrawingAttributes)].Add("Color", "FitToCurve", "Height", "IgnorePressure", "IsHighlighter", "StylusTip", "Width");
             model.Add(typeof(Color), true);
             model[typeof(Color)].Add("A", "R", "G", "B");
             model.Add(typeof(StylusPointCollection), false).SetSurrogate(typeof(ProtoStylusPointCollection));
@@ -799,9 +799,9 @@ namespace abJournal {
 
         public abInkData Clone() {
             var strokes = new StrokeDataCollection(Strokes.Count);
-            foreach(var d in Strokes) strokes.Add(d.Clone());
+            foreach (var d in Strokes) strokes.Add(d.Clone());
             var texts = new TextDataCollection();
-            foreach(var d in Texts) texts.Add(d);
+            foreach (var d in Texts) texts.Add(d);
             var rv = new abInkData();
             rv.Strokes = strokes;
             rv.Texts = texts;
@@ -825,13 +825,13 @@ namespace abJournal {
             }
         }
         public class StylusPointCollection : List<StylusPoint> {
-            public StylusPointCollection(System.Windows.Input.StylusPointCollection pts) : base(pts.Count){
-                foreach(var pt in pts) base.Add(new StylusPoint(pt));
+            public StylusPointCollection(System.Windows.Input.StylusPointCollection pts) : base(pts.Count) {
+                foreach (var pt in pts) base.Add(new StylusPoint(pt));
             }
             public StylusPointCollection() { }
             public System.Windows.Input.StylusPointCollection ToOriginalType() {
                 var rv = new System.Windows.Input.StylusPointCollection(Count);
-                for(int i = 0 ; i < Count ; ++i) rv.Add(this[i].ToOriginalType());
+                for (int i = 0; i < Count; ++i) rv.Add(this[i].ToOriginalType());
                 return rv;
             }
         }
@@ -861,13 +861,13 @@ namespace abJournal {
             }
         }
         public class StrokeDataCollection : List<StrokeData> {
-            public StrokeDataCollection(abJournal.StrokeDataCollection sdc) : base(sdc.Count){
-                foreach(var sd in sdc) base.Add(new StrokeData(sd));
+            public StrokeDataCollection(abJournal.StrokeDataCollection sdc) : base(sdc.Count) {
+                foreach (var sd in sdc) base.Add(new StrokeData(sd));
             }
             public StrokeDataCollection() { }
             public abJournal.StrokeDataCollection ToOriginalType() {
                 var rv = new abJournal.StrokeDataCollection(Count);
-                for(int i = 0 ; i < Count ; ++i) rv.Add(this[i].ToOriginalType());
+                for (int i = 0; i < Count; ++i) rv.Add(this[i].ToOriginalType());
                 return rv;
             }
         }
@@ -879,31 +879,31 @@ namespace abJournal {
             FontWeight FontWeight { get; set; }
             double FontSize { get; set; }
             public Color Color { get; set; }
-	        public TextData(){}
-	        public TextData(abJournal.TextData td){
-				Text = td.Text;
-				Rect = td.Rect;
+            public TextData() { }
+            public TextData(abJournal.TextData td) {
+                Text = td.Text;
+                Rect = td.Rect;
                 FontFamily = td.FontFamily.FamilyNames[System.Windows.Markup.XmlLanguage.GetLanguage(System.Globalization.CultureInfo.CurrentCulture.Name)];
                 FontStyle = td.FontStyle;
                 FontWeight = td.FontWeight;
                 FontSize = td.FontSize;
-				Color = td.Color;
-			}
-			public abJournal.TextData ToOriginalType(){
+                Color = td.Color;
+            }
+            public abJournal.TextData ToOriginalType() {
                 return new abJournal.TextData(Text, Rect, new FontFamily(FontFamily), FontSize, FontStyle, FontWeight, Color);
-			}
-	    }
-        public class TextDataCollection : List<TextData> { 
-			public TextDataCollection(abJournal.TextDataCollection tdc) : base(tdc.Count){
-				foreach(var td in tdc)base.Add(new TextData(td));
-			}
-			public TextDataCollection(){}
-			public abJournal.TextDataCollection ToOriginalType(){
-				var rv = new abJournal.TextDataCollection();
-				for(int i = 0 ; i < Count ; ++i)rv.Add(this[i].ToOriginalType());
-				return rv;
-			}
-		}
+            }
+        }
+        public class TextDataCollection : List<TextData> {
+            public TextDataCollection(abJournal.TextDataCollection tdc) : base(tdc.Count) {
+                foreach (var td in tdc) base.Add(new TextData(td));
+            }
+            public TextDataCollection() { }
+            public abJournal.TextDataCollection ToOriginalType() {
+                var rv = new abJournal.TextDataCollection();
+                for (int i = 0; i < Count; ++i) rv.Add(this[i].ToOriginalType());
+                return rv;
+            }
+        }
         public class InkData {
             public StrokeDataCollection Strokes;
             public TextDataCollection Texts;
