@@ -351,6 +351,9 @@ namespace abJournal {
             if(e.Handled) return;
             if(PenID != 0) return;
             if(TouchType != 0) return;
+            if (Mode == InkManipulationMode.Selecting || Mode == InkManipulationMode.Erasing) {
+                Mouse.Capture(this);
+            }
             var pt = e.GetPosition(this);
             SetCursor();
             DrawingStart(new StylusPoint(pt.X, pt.Y));
@@ -373,9 +376,10 @@ namespace abJournal {
         public new event MouseButtonEventHandler MouseLeftButtonUp = ((s, e) => { });
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
             base.OnMouseLeftButtonUp(e);
-            if(!e.Handled) MouseLeftButtonUp(this, e);
-            if(e.Handled) return;
-            if(TouchType != MOUSE) return;
+            if (!e.Handled) MouseLeftButtonUp(this, e);
+            if (e.Handled) return;
+            if (TouchType != MOUSE) return;
+            if (Mouse.Captured == this) Mouse.Capture(this, CaptureMode.None);
             var pt = e.GetPosition(this);
             DrawingEnd(new StylusPoint(pt.X, pt.Y));
             e.Handled = true;
@@ -403,23 +407,12 @@ namespace abJournal {
             SetCursor();
             if(PenID != 0) return;
             if(TouchType != 0) return;
-            var pt = e.GetTouchPoint(this);
-            //System.Diagnostics.Debug.WriteLine(pt.Size);
-            DrawingStart(new StylusPoint(pt.Position.X, pt.Position.Y));
-            PenID = e.TouchDevice.Id;
-            TouchType = TOUCH;
-            e.Handled = true;
         }
         public new event EventHandler<TouchEventArgs> TouchMove = ((s, e) => { });
         protected override void OnTouchMove(TouchEventArgs e) {
             base.OnTouchMove(e);
             if(!e.Handled) TouchMove(this, e);
             if(e.Handled) return;
-            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
-                var pt = e.GetTouchPoint(this);
-                Drawing(new StylusPoint(pt.Position.X, pt.Position.Y));
-                e.Handled = true;
-            }
         }
         void OnTouchUpLeave(TouchEventArgs e) {
             if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
@@ -435,7 +428,6 @@ namespace abJournal {
             base.OnTouchUp(e);
             if(!e.Handled) TouchUp(this, e);
             if(e.Handled) return;
-            OnTouchUpLeave(e);
         }
         public new event EventHandler<TouchEventArgs> TouchLeave = ((s, e) => { });
         protected override void OnTouchLeave(TouchEventArgs e) {
@@ -468,21 +460,21 @@ namespace abJournal {
         public new event StylusDownEventHandler StylusDown = ((s, e) => { });
         protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
             base.OnStylusDown(e);
-            if(!e.Handled) StylusDown(this, e);
-            if(e.Handled) return;
-            if(PenID != 0) return;
-            if(TouchType != 0) return;
+            if (!e.Handled) StylusDown(this, e);
+            if (e.Handled) return;
+            if (PenID != 0) return;
+            if (TouchType != 0) return;
             //base.OnStylusDown(e);
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
             SaveMode();
 
             // VAIO Duo 13の場合
             // どっちも押していない：Name = "Stylus", Button[0] = Down, Button[1] = Up
             // 上のボタンを押している：Name = "Eraser"，Button[0] = Down, Button[1] = Up
             // 下のボタンを押している：Name = "Stylus"，Button[0] = Down, Button[1] = Down
-            if(e.StylusDevice.Name == "Eraser") {
+            if (e.StylusDevice.Name == "Eraser") {
                 Mode = InkManipulationMode.Erasing;
-            } else if(
+            } else if (
                  e.StylusDevice.StylusButtons.Count > 1 &&
                  e.StylusDevice.StylusButtons[1].StylusButtonState == StylusButtonState.Down
              ) {
@@ -491,9 +483,7 @@ namespace abJournal {
             PenID = e.StylusDevice.Id;
             TouchType = STYLUS;
             DrawingStart(e.GetStylusPoints(this)[0]);
-            if (Mode == InkManipulationMode.Selecting) {
-                Stylus.Capture(this);
-            }
+            if (Mode == InkManipulationMode.Selecting) Stylus.Capture(this);
         }
 
         public new event StylusEventHandler StylusMove = ((s, e) => { });
