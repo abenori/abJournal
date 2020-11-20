@@ -294,7 +294,6 @@ namespace abJournal {
                     } else {
                         await mainCanvas.SaveAsync();
                     }
-                    SaveButton.IsEnabled = true;
                     mainCanvas.ClearUpdated();
                     AddHistory(mainCanvas.FileName);
                     OnPropertyChanged("abmainCanvas");
@@ -302,6 +301,7 @@ namespace abJournal {
                 catch(Exception ex) {
                     MessageBox.Show(ex.Message);
                 }
+                SaveButton.IsEnabled = true;
             }
         }
         private void NewCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
