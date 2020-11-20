@@ -92,9 +92,11 @@ namespace abJournal {
         public void ClearUpdated() { EditCount = 0; }
 
         public void AddStroke(StrokeDataCollection sc) {
-            Strokes.AddRange(sc);
-            AddUndoList(new AddStrokeCommand(sc));
-            OnStrokeAdded(new StrokeChangedEventArgs(sc));
+            if (sc.Count > 0) {
+                Strokes.AddRange(sc);
+                AddUndoList(new AddStrokeCommand(sc));
+                OnStrokeAdded(new StrokeChangedEventArgs(sc));
+            }
         }
         public void Select(StylusPointCollection spc, int percent) {
             PointCollection pc = new PointCollection(spc.Select(p => p.ToPoint()));
@@ -200,8 +202,10 @@ namespace abJournal {
                         return true;
                     } else return false;
                 });
-                ProcessUndoGroup.Add(new DeleteStrokeCommand(deleted));
-                OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
+                if (deleted.Count > 0) {
+                    ProcessUndoGroup.Add(new DeleteStrokeCommand(deleted));
+                    OnStrokeDeleted(new StrokeChangedEventArgs(deleted));
+                }
             } else if (ProcessMode == InkManipulationMode.Selecting) {
                 //if(ProcessStylusPointCollection.Count % 50 == 0) {
                 //Select(ProcessStylusPointCollection, 3);
@@ -214,7 +218,7 @@ namespace abJournal {
                 AddUndoList(new AddStrokeCommand(Strokes.Last()));
                 OnStrokeAdded(new StrokeChangedEventArgs(Strokes.Last()));
             } else if (ProcessMode == InkManipulationMode.Erasing) {
-                AddUndoList(ProcessUndoGroup);
+                if (ProcessUndoGroup.Count > 0) AddUndoList(ProcessUndoGroup);
             } else if (ProcessMode == InkManipulationMode.Selecting) {
                 Select(ProcessStylusPointCollection, 80);
             }
@@ -232,15 +236,15 @@ namespace abJournal {
         List<UndoCommand> UndoStack = new List<UndoCommand>(), RedoStack = new List<UndoCommand>();
         public static int MaxUndoSize = 1000;
         void AddUndoList(UndoCommand undo) {
-            if (undo is UndoGroup) {
-                if (((UndoGroup)undo).Count == 0) return;
+            if (undo is UndoGroup u) {
+                if (u.Count == 0) return;
             }
             if (undoGroup != null) {
                 undoGroup.Add(undo);
                 return;
             }
             //System.Diagnostics.Debug.WriteLine("Added undo Hash = " + undo.GetHashCode() + ", " + undo.ToString());
-            if (undo is UndoGroup) ((UndoGroup)undo).Normalize();
+            if (undo is UndoGroup uu) uu.Normalize();
             RedoStack.Clear();
             UndoStack.Add(undo);
             if (UndoStack.Count > MaxUndoSize) {
@@ -569,7 +573,7 @@ namespace abJournal {
                     return sd;
                 }));
             }
-            if (strokeData != null) {
+            if (strokeData != null && strokeData.Count > 0) {
                 var shift = new Matrix(1, 0, 0, 1, pt.X, pt.Y);
                 if (delmargine) {
                     var rect = strokeData.GetBounds();
