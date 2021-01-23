@@ -91,11 +91,13 @@ namespace abJournal {
         async void SetBackgroundImage(abJournalInkCanvas c) {
             double width = c.Width, height = c.Height;
             var backcolor = c.Info.BackgroundColor;
+            var f = File.FileName.Substring(0);
+            var p = PageNum;
             var bitmap = await System.Threading.Tasks.Task.Run(() => {
             	// 同一ファイルに別スレッドからアクセスするとおかしくなるのでロック
                 lock(lockObj){
-                    using(var doc = new pdfium.PDFDocument(File.FileName)) {
-                        using(var pdfpage = doc.GetPage(PageNum)){
+                    using(var doc = new pdfium.PDFDocument(f)) {
+                        using(var pdfpage = doc.GetPage(p)){
                             var b = pdfpage.GetBitmapSource(new Rect(0, 0, width, height), scale, backcolor);
                             b.Freeze();
                             return b;
