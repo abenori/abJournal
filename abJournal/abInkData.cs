@@ -595,7 +595,7 @@ namespace abJournal {
             StrokeCollection sc = new StrokeCollection(Strokes.Where(s => s.Selected).Select(s => new Stroke(s.StylusPoints, s.DrawingAttributes)));
             sc.Save(stream);
             DataObject obj = new DataObject(StrokeCollection.InkSerializedFormat, stream);
-            var sdc = new List<StrokeDataForCopy>(Strokes.Select(d => new StrokeDataForCopy(d)));
+            var sdc = new List<StrokeDataForCopy>(Strokes.Where(d => d.Selected).Select(d => new StrokeDataForCopy(d)));
             obj.SetData(typeof(List<StrokeDataForCopy>), sdc);
             Clipboard.SetDataObject(obj, true);
         }

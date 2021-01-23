@@ -365,7 +365,9 @@ namespace abJournal {
 			base.OnMouseMove(e);
             if(!e.Handled) MouseMove(this, e);
             if(e.Handled) return;
-            if(TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
+            if (PenID != 0) return;
+            if (TouchType != MOUSE) return;
+            if (TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
                 var pt = e.GetPosition(this);
                 Drawing(new StylusPoint(pt.X, pt.Y));
                 e.Handled = true;
@@ -404,9 +406,9 @@ namespace abJournal {
             base.OnTouchDown(e);
             if(!e.Handled) TouchDown(this, e);
             if(e.Handled) { e.Handled = false; return; }
-            SetCursor();
             if(PenID != 0) return;
             if(TouchType != 0) return;
+            SetCursor();
         }
         public new event EventHandler<TouchEventArgs> TouchMove = ((s, e) => { });
         protected override void OnTouchMove(TouchEventArgs e) {

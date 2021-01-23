@@ -104,7 +104,9 @@
                 <MenuItem Header="ページを削除" Command="{x:Static local:MainWindow.DeletePage}"/>
                 </MenuItem>
             <MenuItem Header="ツール(_T)">
+              <!--
                 <MenuItem Header="鉛筆(_P)" Command="{x:Static local:MainWindow.ModeChangeToPen}"/>
+              -->
                 <MenuItem Header="消しゴム(_E)" Command="{x:Static local:MainWindow.ModeChangeToEraser}"/>
                 <MenuItem Header="選択" Command="{x:Static local:MainWindow.ModeChangeToSelection}"/>
                 <MenuItem Header="鉛筆設定" Command="{x:Static local:MainWindow.PenSetting}"/>
