@@ -665,9 +665,16 @@ namespace abJournal {
             mainCanvas.IsEnabled = true;
         }
 
-        private void CommandBinding_Executed(object sender, ExecutedRoutedEventArgs e)
-        {
 
+        private void Page_KeyDown(object sender, KeyEventArgs e) {
+            if(e.Key == Key.Enter) {
+                int newpage;
+                if (int.TryParse(Page.Text, out newpage)) {
+                    if(newpage >= 1 && newpage <= mainCanvas.Count) {
+                        mainCanvas.CurrentPage = newpage - 1;
+                    }
+                }
+            }
         }
     }
 }

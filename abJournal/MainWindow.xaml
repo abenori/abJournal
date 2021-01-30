@@ -216,7 +216,8 @@
             <ToggleButton Command="{x:Static local:MainWindow.FullScreen}" ToolTip="全画面切り替え" x:Name="FullScreenButton">
                 <Image Height="18" Source="icon/FullScreen.png"/>
             </ToggleButton>
-            <TextBlock Margin="5"><TextBlock Text="{Binding ElementName=mainCanvas,Path=CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}"/> / <Run Text="{Binding ElementName=mainCanvas,Path=Count,Mode=OneWay}"/>（ページ）</TextBlock>
+            <TextBox Margin="5 0 0 0" Padding="5 0 5 0" VerticalAlignment="Center" BorderBrush="Gray" Text="{Binding ElementName=mainCanvas,Path=CurrentPage,Mode=OneWay,Converter={StaticResource PlusOneConverter}}" Name="Page" KeyDown="Page_KeyDown"/>
+        <TextBlock Margin="5">/ <Run Text="{Binding ElementName=mainCanvas,Path=Count,Mode=OneWay}"/>（ページ）</TextBlock>
         </ToolBar>
         </DockPanel>
         <local:abJournalInkCanvasCollection x:Name="mainCanvas" Background="Gray" ContextMenu="{StaticResource CanvasCollectionMenu}" 

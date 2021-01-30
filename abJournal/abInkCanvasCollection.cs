@@ -382,9 +382,9 @@ namespace abJournal {
         public void MovePage(int page) {
             if(page < 0 || page >= Count) return;
             var c = CanvasCollection[page];
-            var transform = innerCanvas.RenderTransform;
-            var targetRect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
-            Scroll(new Vector(0, -targetRect.Top));
+            var targetRect = innerCanvas.RenderTransform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
+            if(landscape) Scroll(new Vector(-targetRect.Left,0));
+            else Scroll(new Vector(0, -targetRect.Top));
         }
         #endregion
 
@@ -739,7 +739,13 @@ namespace abJournal {
         int currentPage = -1;
         public int CurrentPage {
             get { return currentPage; }
-            set { currentPage = value; OnPropertyChanged("CurrentPage"); }
+            set {
+                if (currentPage != value) {
+                    currentPage = value;
+                    MovePage(value);
+                    OnPropertyChanged("CurrentPage");
+                }
+            }
         }
 
         void CalculateCurrentPage(bool callSetPort) {
