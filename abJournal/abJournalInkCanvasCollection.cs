@@ -424,15 +424,15 @@ namespace abJournal {
                 var zip = new ZipArchive(fs);
                 var data = zip.GetEntry("_data.abjnt");
                 using(var reader = data.Open()) {
-                    protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData>(reader, new ablibInkCanvasCollectionSavingProtobufData());
                 }
                 AttachedFile.Open(zip, protodata.AttachedFiles);
             }
             catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             // protobufデシリアライズ
             if(protodata == null) {
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
-                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                try { protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData>(fs, new ablibInkCanvasCollectionSavingProtobufData()); }
+                catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             }
             if(protodata != null) {
                 Clear();
@@ -452,15 +452,15 @@ namespace abJournal {
                 var zip = new ZipArchive(fs);
                 var data = zip.GetEntry("_data.abjnt");
                 using(var reader = data.Open()) {
-                    protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData2(), typeof(ablibInkCanvasCollectionSavingProtobufData2));
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData2>(reader, new ablibInkCanvasCollectionSavingProtobufData2());
                 }
                 AttachedFile.Open(zip, protodata.AttachedFiles);
             }
             catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             // protobufデシリアライズ
             if(protodata == null) {
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData2)); }
-                catch(Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
+                try { protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData2>(fs, new ablibInkCanvasCollectionSavingProtobufData2()); }
+                catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             }
             if(protodata != null) {
                 Clear();
