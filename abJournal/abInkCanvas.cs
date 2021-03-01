@@ -129,7 +129,13 @@ namespace abJournal {
         void SetCursor() {
             switch(Mode) {
             case InkManipulationMode.Inking:
-                SetCursor(MakeInkingCursor(PenThickness, PenColor)); break;
+                double scale = 1;
+                if(Parent is UIElement p) {
+                    // 縦横の倍率は同じと仮定
+                    scale = p.RenderTransform.TransformBounds(new Rect(0, 0, 1.0, 1.0)).Width;
+                }
+                SetCursor(MakeInkingCursor(PenThickness * scale, PenColor));
+                break;
             case InkManipulationMode.Erasing:
                 SetCursor(ErasingCursor); break;
             default:
@@ -345,6 +351,10 @@ namespace abJournal {
         const int TOUCH = 2;
         const int MOUSE = 3;
         public new event MouseButtonEventHandler MouseLeftButtonDown = ((s, e) => { });
+        protected override void OnMouseEnter(MouseEventArgs e) {
+            base.OnMouseEnter(e);
+            SetCursor();
+        }
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
             base.OnMouseLeftButtonDown(e);
             if(!e.Handled) MouseLeftButtonDown(this,e);

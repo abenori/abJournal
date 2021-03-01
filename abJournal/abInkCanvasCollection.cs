@@ -313,6 +313,7 @@ namespace abJournal {
             canvas.InkData.StrokeAdded += ((s, e) => { InkData_StrokeAdded(canvas, e); });
             canvas.InkData.StrokeChanged += ((s, e) => { InkData_StrokeChanged(canvas, e); });
             canvas.InkData.StrokeDeleted += ((s, e) => { InkData_StrokeDeleted(canvas, e); });
+            innerCanvas.Children.Add(canvas);
             canvas.PenThickness = PenThickness;
             canvas.PenColor = PenColor;
             canvas.PenDashArray = PenDashed ? DashArray_Dashed : DashArray_Normal;
@@ -320,7 +321,6 @@ namespace abJournal {
             canvas.InkData.DrawingAlgorithm = DrawingAlgorithm;
             canvas.ReDraw();
             AddUndoChain(new AddCanvasCommand(canvas, index));
-            innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             canvas.AddedToView();
             VerticalArrangeCanvas();
