@@ -221,7 +221,11 @@ namespace abJournal {
             if(Mode == InkManipulationMode.Selecting) {
                 var dattr = new DrawingAttributes();
                 dattr.Color = Brushes.Orange.Color;
-                dattr.Height = dattr.Width = 2;
+                if (Parent is UIElement p) {
+                    var r = p.RenderTransform.Inverse.TransformBounds(new Rect(0, 0, 3.0, 3.0));
+                    dattr.Height = r.Height;
+                    dattr.Width = r.Width;
+                } else dattr.Height = dattr.Width = 3.0;
                 dattr.IgnorePressure = true;
                 var dattrp = new DrawingAttributesPlus();
                 dattrp.DashArray = DottedDoubleCollection;
