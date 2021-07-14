@@ -354,12 +354,15 @@ namespace abJournal {
         const int STYLUS = 1;
         const int TOUCH = 2;
         const int MOUSE = 3;
+        const int IGNORING = -1;
+        System.Diagnostics.Stopwatch stopwatch = new System.Diagnostics.Stopwatch();
         public new event MouseButtonEventHandler MouseLeftButtonDown = ((s, e) => { });
         protected override void OnMouseEnter(MouseEventArgs e) {
             base.OnMouseEnter(e);
             SetCursor();
         }
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("OnMouseLeftButtonDown");
             base.OnMouseLeftButtonDown(e);
             if(!e.Handled) MouseLeftButtonDown(this,e);
             if(e.Handled) return;
@@ -391,6 +394,7 @@ namespace abJournal {
         }
         public new event MouseButtonEventHandler MouseLeftButtonUp = ((s, e) => { });
         protected override void OnMouseLeftButtonUp(MouseButtonEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("OnMouseLeftButtonUp");
             base.OnMouseLeftButtonUp(e);
             if (!e.Handled) MouseLeftButtonUp(this, e);
             if (e.Handled) return;
@@ -417,6 +421,7 @@ namespace abJournal {
         }
         public new event EventHandler<TouchEventArgs> TouchDown = ((s, e) => { });
         protected override void OnTouchDown(TouchEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("OnTouchDown");
             base.OnTouchDown(e);
             if(!e.Handled) TouchDown(this, e);
             if(e.Handled) { e.Handled = false; return; }
@@ -441,6 +446,7 @@ namespace abJournal {
         }
         public new event EventHandler<TouchEventArgs> TouchUp = ((s, e) => { });
         protected override void OnTouchUp(TouchEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("OnTouchUp");
             base.OnTouchUp(e);
             if(!e.Handled) TouchUp(this, e);
             if(e.Handled) return;
@@ -475,11 +481,23 @@ namespace abJournal {
         }
         public new event StylusDownEventHandler StylusDown = ((s, e) => { });
         protected override void OnStylusDown(System.Windows.Input.StylusDownEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("Stylus Down: device id = " + e.StylusDevice.Id.ToString());
             base.OnStylusDown(e);
             if (!e.Handled) StylusDown(this, e);
             if (e.Handled) return;
             if (PenID != 0) return;
+            if (TouchType == IGNORING) TouchType = 0;
             if (TouchType != 0) return;
+            // 消しゴムボタンを話した直後にStylusUp / StylusDownが来ることがあるので
+            // 時間差が短い場合は無視することにする．
+            if (e.StylusDevice.Name != "Eraser") {
+//                System.Diagnostics.Debug.WriteLine("Check time, " + stopwatch.ElapsedMilliseconds.ToString());
+                if (stopwatch.IsRunning && stopwatch.ElapsedMilliseconds < 500) {
+                    TouchType = IGNORING;
+                    return;
+                }
+                stopwatch.Reset();
+            }
             //base.OnStylusDown(e);
             if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
             SaveMode();
@@ -499,7 +517,7 @@ namespace abJournal {
             PenID = e.StylusDevice.Id;
             TouchType = STYLUS;
             DrawingStart(e.GetStylusPoints(this)[0]);
-            if (Mode == InkManipulationMode.Selecting) Stylus.Capture(this);
+            if (Mode != InkManipulationMode.Inking) Stylus.Capture(this);
         }
 
         public new event StylusEventHandler StylusMove = ((s, e) => { });
@@ -522,9 +540,9 @@ namespace abJournal {
         }
 
         void OnStylusUpLeave(System.Windows.Input.StylusEventArgs e) {
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
-            if(PenID != e.StylusDevice.Id) return;
-            if(TouchType != STYLUS) return;
+            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
+            if (PenID != e.StylusDevice.Id) return;
+            if (TouchType != STYLUS && TouchType != IGNORING) return;
             PenID = 0;// 描画終了
             TouchType = 0;
             DrawingEnd(e.GetStylusPoints(this)[0]);
@@ -532,10 +550,16 @@ namespace abJournal {
         }
         public new event StylusEventHandler StylusUp = ((s, e) => { });
         protected override void OnStylusUp(System.Windows.Input.StylusEventArgs e) {
+            System.Diagnostics.Debug.WriteLine("Stylus Up: device id = " + e.StylusDevice.Id.ToString());
             Stylus.Capture(this, CaptureMode.None);
             base.OnStylusUp(e);
             if(!e.Handled) StylusUp(this, e);
             if(e.Handled) return;
+            if(Mode == InkManipulationMode.Erasing) {
+//                System.Diagnostics.Debug.WriteLine("stopwatch on");
+                stopwatch.Reset();
+                stopwatch.Start();
+            }
             OnStylusUpLeave(e);
         }
         public new event StylusEventHandler StylusLeave = ((s, e) => { });
