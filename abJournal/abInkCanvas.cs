@@ -490,13 +490,16 @@ namespace abJournal {
             if (TouchType != 0) return;
             // 消しゴムボタンを話した直後にStylusUp / StylusDownが来ることがあるので
             // 時間差が短い場合は無視することにする．
-            if (e.StylusDevice.Name != "Eraser") {
-//                System.Diagnostics.Debug.WriteLine("Check time, " + stopwatch.ElapsedMilliseconds.ToString());
-                if (stopwatch.IsRunning && stopwatch.ElapsedMilliseconds < 500) {
-                    TouchType = IGNORING;
-                    return;
+            if (Properties.Settings.Default.WaitAfterErase > 0) {
+                if (e.StylusDevice.Name != "Eraser") {
+                    System.Diagnostics.Debug.WriteLine("Check time, " + stopwatch.ElapsedMilliseconds.ToString());
+
+                    if (stopwatch.IsRunning && stopwatch.ElapsedMilliseconds < Properties.Settings.Default.WaitAfterErase) {
+                        TouchType = IGNORING;
+                        return;
+                    }
+                    stopwatch.Reset();
                 }
-                stopwatch.Reset();
             }
             //base.OnStylusDown(e);
             if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) return;
@@ -553,12 +556,14 @@ namespace abJournal {
             System.Diagnostics.Debug.WriteLine("Stylus Up: device id = " + e.StylusDevice.Id.ToString());
             Stylus.Capture(this, CaptureMode.None);
             base.OnStylusUp(e);
-            if(!e.Handled) StylusUp(this, e);
-            if(e.Handled) return;
-            if(Mode == InkManipulationMode.Erasing) {
-//                System.Diagnostics.Debug.WriteLine("stopwatch on");
-                stopwatch.Reset();
-                stopwatch.Start();
+            if (!e.Handled) StylusUp(this, e);
+            if (e.Handled) return;
+            if (Properties.Settings.Default.WaitAfterErase > 0) { 
+                if (Mode == InkManipulationMode.Erasing) {
+                    System.Diagnostics.Debug.WriteLine("stopwatch on");
+                    stopwatch.Reset();
+                    stopwatch.Start();
+                }
             }
             OnStylusUpLeave(e);
         }
