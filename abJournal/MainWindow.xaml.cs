@@ -17,39 +17,51 @@ using System.IO;
 /* 
  * TODO（やりたい）：
  * テキストボックスのサポート（なくてもいい気がしてきた）
- */ 
+ */
 
 namespace abJournal {
     /// <summary>
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged,IDisposable {
+    public partial class MainWindow : Window, INotifyPropertyChanged, IDisposable {
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         bool FitScaleToWidth = true;
+        bool FitScaleToHeight = false;
         public int ScaleComboBoxIndex {
             get {
-                if(FitScaleToWidth) return 0;
-                if(mainCanvas.Scale == 0.5) return 1;
-                else if(mainCanvas.Scale == 0.7) return 2;
-                else if(mainCanvas.Scale == 1) return 3;
-                else if(mainCanvas.Scale == 1.5) return 4;
-                else if(mainCanvas.Scale == 2) return 5;
+                if (FitScaleToWidth) return 0;
+                if (FitScaleToHeight) return 1;
+                if (mainCanvas.Scale == 0.5) return 2;
+                else if (mainCanvas.Scale == 0.7) return 3;
+                else if (mainCanvas.Scale == 1) return 4;
+                else if (mainCanvas.Scale == 1.5) return 5;
+                else if (mainCanvas.Scale == 2) return 6;
                 else return 0;
             }
             set {
                 FitScaleToWidth = false;
+                FitScaleToHeight = false;
                 var scales = new double[] { 0.5, 0.7, 1, 1.1, 1.25, 1.5, 2 };
-                if(value >= 1 && value <= scales.Length) {
+                if (value >= 2 && value <= scales.Length + 1) {
                     mainCanvas.Scale = scales[value - 1];
+                } else if (value == 1) {
+                    FitScaleToHeight = true;
+                    if (mainCanvas.Count == 0) return;
+                    double maxHeight = mainCanvas.Select(c => c.Height).Max();
+                    if (mainCanvas.Landscape) {
+                        mainCanvas.Scale = mainCanvas.ActualWidth / maxHeight;
+                    } else {
+                        mainCanvas.Scale = mainCanvas.ActualHeight / maxHeight;
+                    }
                 } else {
                     FitScaleToWidth = true;
-                    if(mainCanvas.Count == 0) return;
+                    if (mainCanvas.Count == 0) return;
                     double maxWidth = mainCanvas.Select(c => c.Width).Max();
-                    if(mainCanvas.Landscape) {
+                    if (mainCanvas.Landscape) {
                         mainCanvas.Scale = mainCanvas.ActualHeight / maxWidth;
                     } else {
                         mainCanvas.Scale = mainCanvas.ActualWidth / maxWidth;
@@ -58,8 +70,8 @@ namespace abJournal {
             }
         }
 
-        public enum InkMode{
-            Pen0 = 0,Pen1 = 1,Pen2 = 2,Pen3 = 3,Pen4 = 4,Pen5 = 5,Pen6 = 6,Pen7 = 7,Erasing,Selecting
+        public enum InkMode {
+            Pen0 = 0, Pen1 = 1, Pen2 = 2, Pen3 = 3, Pen4 = 4, Pen5 = 5, Pen6 = 6, Pen7 = 7, Erasing, Selecting
         }
         InkMode penMode = InkMode.Pen0;
         public InkMode PenMode {
@@ -93,11 +105,11 @@ namespace abJournal {
                 OnPropertyChanged("WindowTitle");
             }
             get {
-                if(windowTitle != null)return windowTitle; 
+                if (windowTitle != null) return windowTitle;
                 string rv;
-                if(mainCanvas.FileName == null) rv = "無題ノート";
+                if (mainCanvas.FileName == null) rv = "無題ノート";
                 else rv = System.IO.Path.GetFileName(mainCanvas.FileName);
-                if(mainCanvas.Updated) rv += " （更新）";
+                if (mainCanvas.Updated) rv += " （更新）";
                 rv += "  abJournal";
 #if DEBUG
                 rv += " (Debug)";
@@ -144,8 +156,8 @@ namespace abJournal {
             };
             List<string> files = opt.Parse(Environment.GetCommandLineArgs());
             files.RemoveAt(0);
-            if(topdf) {
-                foreach(var f in files) {
+            if (topdf) {
+                foreach (var f in files) {
                     var pdf = Path.Combine(Path.GetDirectoryName(f), Path.GetFileNameWithoutExtension(f) + ".pdf");
                     pdf = Path.GetFullPath(pdf);
                     var c = new abJournalInkCanvasCollection();
@@ -153,7 +165,7 @@ namespace abJournal {
                         c.Open(f);
                         c.SavePDF(pdf);
                     }
-                    catch(Exception e) {
+                    catch (Exception e) {
                         MessageBox.Show(f + " のPDFへの変換に失敗．\n" + e.Message + "\n" + e.StackTrace);
                     }
                 }
@@ -169,7 +181,7 @@ namespace abJournal {
             mainCanvas.UndoChainChanged += ((s, e) => { OnPropertyChanged("WindowTitle"); });
             mainCanvas.MouseDown += ((s, e) => { mainCanvas.Focus(); });
             mainCanvas.StylusDown += ((s, e) => { mainCanvas.Focus(); });
-            mainCanvas.PropertyChanged += ((s, e) => { if(e.PropertyName == "Updated")OnPropertyChanged("WindowTitle"); });
+            mainCanvas.PropertyChanged += ((s, e) => { if (e.PropertyName == "Updated") OnPropertyChanged("WindowTitle"); });
 
             Panel.SetZIndex(mainCanvas, -4);
 
@@ -180,7 +192,7 @@ namespace abJournal {
             mainCanvas.Landscape = Properties.Settings.Default.Landscape;
 
             files.RemoveAll(f => {
-                if(!System.IO.File.Exists(f)) {
+                if (!System.IO.File.Exists(f)) {
                     MessageBox.Show("ファイル " + f + " は存在しません．");
                     return true;
                 } else return false;
@@ -190,37 +202,37 @@ namespace abJournal {
 
         ~MainWindow() {
             Properties.Settings.Default.Save();
-            if(blockWindows != null) {
+            if (blockWindows != null) {
                 blockWindows.Dispose();
                 blockWindows = null;
             }
         }
         void SetLowLevelKeyboardHook() {
-            if(Properties.Settings.Default.IsBlockWindowsKey && blockWindows == null) {
+            if (Properties.Settings.Default.IsBlockWindowsKey && blockWindows == null) {
                 blockWindows = new BlockWndowsKey();
-            } else if(!Properties.Settings.Default.IsBlockWindowsKey && blockWindows != null) {
+            } else if (!Properties.Settings.Default.IsBlockWindowsKey && blockWindows != null) {
                 blockWindows.Dispose();
                 blockWindows = null;
             }
         }
 
         class BlockWndowsKey : LowLevelKeyboardHook {
-	        protected override void OnKeyDown(object sender, LowLevelKeyEventArgs e) {
-	            if(e.Key == Key.LWin) e.Handled = true;
-	        }
-	        protected override void OnKeyUp(object sender, LowLevelKeyEventArgs e) {
-	            if(e.Key == Key.LWin) e.Handled = true;
-	        }
-	    }
+            protected override void OnKeyDown(object sender, LowLevelKeyEventArgs e) {
+                if (e.Key == Key.LWin) e.Handled = true;
+            }
+            protected override void OnKeyUp(object sender, LowLevelKeyEventArgs e) {
+                if (e.Key == Key.LWin) e.Handled = true;
+            }
+        }
 
         private void Window_Closing(object sender, CancelEventArgs e) {
-            if(!BeforeClose()) e.Cancel = true;
+            if (!BeforeClose()) e.Cancel = true;
         }
         private void Window_Closed(object sender, EventArgs e) {
             Dispose();
         }
         private void Window_Loaded(object sender, RoutedEventArgs e) {
-            if(mainCanvas.Count == 0)AddPage.Execute(null, this);
+            if (mainCanvas.Count == 0) AddPage.Execute(null, this);
             mainCanvas.ClearUpdated();
             mainCanvas.ClearUndoChain();
             Window_SizeChanged(sender, null);
@@ -246,36 +258,36 @@ namespace abJournal {
             fd.InitialDirectory = System.IO.Path.GetDirectoryName(mainCanvas.FileName);
             fd.FileName = System.IO.Path.GetFileName(mainCanvas.FileName);
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|PDF ファイル (*.pdf)|*.pdf|全てのファイル|*.*";
-            if(fd.ShowDialog() == true) {
+            if (fd.ShowDialog() == true) {
                 try {
                     var ext = System.IO.Path.GetExtension(fd.FileName).ToLower();
                     WindowTitle = "保存中……";
                     SaveButton.IsEnabled = false;
-                    if(ext == ".pdf") {
+                    if (ext == ".pdf") {
                         try {
                             await mainCanvas.SavePDFAsync(fd.FileName);
                         }
-                        catch(Exception ex) {
+                        catch (Exception ex) {
                             MessageBox.Show("PDFファイルの作成に失敗しました．\n" + ex.Message);
                         }
                         //abmainCanvas.SavePDFWithiText(fd.FileName);
                     } else {
                         try {
-                            if(Properties.Settings.Default.SaveWithPDF) {
+                            if (Properties.Settings.Default.SaveWithPDF) {
                                 await mainCanvas.SaveDataAndPDFAsync(fd.FileName);
                             } else {
                                 await mainCanvas.SaveAsync(fd.FileName);
                             }
                         }
-                        catch(Exception ex) {
+                        catch (Exception ex) {
                             MessageBox.Show("ファイルの保存に失敗しました．\n" + ex.Message);
                         }
                         mainCanvas.ClearUpdated();
                         AddHistory(fd.FileName);
                     }
                 }
-                catch(System.IO.IOException) {
-                    MessageBox.Show("他のアプリケーションが\n" + fd.FileName + "\nを開いているようです．","abJournal");
+                catch (System.IO.IOException) {
+                    MessageBox.Show("他のアプリケーションが\n" + fd.FileName + "\nを開いているようです．", "abJournal");
                 }
                 finally {
                     WindowTitle = null;
@@ -285,7 +297,7 @@ namespace abJournal {
             }
         }
         private async void SaveCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
+            if (mainCanvas.FileName == null) SaveAsCommandExecuted(sender, e);
             else {
                 SaveButton.IsEnabled = false;
                 try {
@@ -298,7 +310,7 @@ namespace abJournal {
                     AddHistory(mainCanvas.FileName);
                     OnPropertyChanged("abmainCanvas");
                 }
-                catch(Exception ex) {
+                catch (Exception ex) {
                     MessageBox.Show(ex.Message);
                 }
                 SaveButton.IsEnabled = true;
@@ -306,7 +318,7 @@ namespace abJournal {
         }
         private void NewCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             string me = System.Reflection.Assembly.GetExecutingAssembly().Location;
-            using(var proc = new Process()) {
+            using (var proc = new Process()) {
                 proc.StartInfo.FileName = me;
                 try { proc.Start(); }
                 catch { MessageBox.Show("新しいノートの作成に失敗しました．", "abJournal"); }
@@ -315,7 +327,7 @@ namespace abJournal {
         private void OpenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var fd = new OpenFileDialog();
             fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
-            if(fd.ShowDialog() == true) {
+            if (fd.ShowDialog() == true) {
                 FileOpen(new List<string>() { fd.FileName });
                 OnPropertyChanged("abmainCanvas");
             }
@@ -324,11 +336,11 @@ namespace abJournal {
         private void ReOpenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             var file = mainCanvas.FileName;
             var page = mainCanvas.CurrentPage;
-            if(file == null) {
+            if (file == null) {
                 SaveAsCommandExecuted(sender, e);
                 return;
             }
-            if(!BeforeClose()) return;
+            if (!BeforeClose()) return;
             mainCanvas.Clear();
             mainCanvas.Open(file);
             mainCanvas.MovePage(page);
@@ -339,52 +351,51 @@ namespace abJournal {
             var ofd = new OpenFileDialog();
             ofd.Title = "インポートするファイルを選んでください";
             ofd.Filter = "pdfファイル (*.pdf)|*.pdf|xpsファイル (*.xps)|*.xps";
-            if(ofd.ShowDialog() == true) {
+            if (ofd.ShowDialog() == true) {
                 try {
-					WindowTitle = "インポート中……";
-                    if(Path.GetExtension(ofd.FileName).ToLower() == ".pdf") {
+                    WindowTitle = "インポート中……";
+                    if (Path.GetExtension(ofd.FileName).ToLower() == ".pdf") {
                         try {
                             using (var pdfdoc = new iTextSharp.text.pdf.PdfReader(ofd.FileName)) { }
                         }
-                        catch(System.Exception) {
-                            if(MessageBox.Show("このPDFファイルは使用しているiTextSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "abJournal", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
+                        catch (System.Exception) {
+                            if (MessageBox.Show("このPDFファイルは使用しているiTextSharpが対応していない可能性があるため，このPDFファイルを含む文書をPDFへと変換できない可能性があります．続行しますか？", "abJournal", MessageBoxButton.YesNo) != MessageBoxResult.Yes) {
                                 WindowTitle = null;
                                 return;
                             }
                         }
                     }
                     mainCanvas.Import(ofd.FileName);
-					WindowTitle = null;
-                    // Importで横幅が変わる可能性があるので，「横幅にあわせる」の場合は計算し直し．
-                    if(ScaleComboBoxIndex == 0) {
-                        ScaleComboBoxIndex = 0;
-                    }
+                    WindowTitle = null;
+                    // Importで縦/横幅が変わる可能性があるので，計算し直し．
+                    if (ScaleComboBoxIndex == 0) ScaleComboBoxIndex = 0;
+                    if (ScaleComboBoxIndex == 1) ScaleComboBoxIndex = 1;
                 }
-                catch(NotImplementedException) {
+                catch (NotImplementedException) {
                     MessageBox.Show("サポートされていない形式です．", "abJournal");
                 }
-                catch(System.IO.FileNotFoundException) {
+                catch (System.IO.FileNotFoundException) {
                     MessageBox.Show("ファイルが見付かりません．", "abJournal");
                 }
             }
         }
 
         private bool BeforeClose() {
-            if(mainCanvas.Updated) {
+            if (mainCanvas.Updated) {
                 MessageBoxResult res = MessageBoxResult.No;
-                if(mainCanvas.FileName != null) {
+                if (mainCanvas.FileName != null) {
                     res = MessageBox.Show("\"" + mainCanvas.FileName + "\" への変更を保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
-                    if(res == MessageBoxResult.Yes) {
+                    if (res == MessageBoxResult.Yes) {
                         mainCanvas.Save();
                         AddHistory(mainCanvas.FileName);
                         return true;
                     } else return (res != MessageBoxResult.Cancel);
                 } else {
                     res = MessageBox.Show("ノートは更新されています．保存しますか？", "abJournal", MessageBoxButton.YesNoCancel);
-                    if(res == MessageBoxResult.Yes) {
+                    if (res == MessageBoxResult.Yes) {
                         var fd = new SaveFileDialog();
                         fd.Filter = "abjnt ファイル (*.abjnt)|*.abjnt|全てのファイル|*.*";
-                        if(fd.ShowDialog() == true) {
+                        if (fd.ShowDialog() == true) {
                             mainCanvas.Save(fd.FileName);
                             AddHistory(fd.FileName);
                             return true;
@@ -395,12 +406,12 @@ namespace abJournal {
         }
 
         private void CloseCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(BeforeClose()) Close();
+            if (BeforeClose()) Close();
         }
         public static readonly RoutedCommand SelectAll = new RoutedCommand("SelectAll", typeof(MainWindow));
         private void SelectAllCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             int page;
-            if(menuPosition != null) {
+            if (menuPosition != null) {
                 page = mainCanvas.GetPageFromScreenPoint(menuPosition.Value);
                 menuPosition = null;
             } else page = mainCanvas.CurrentPage;
@@ -408,7 +419,7 @@ namespace abJournal {
         }
         private void PasteCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             Point pt;
-            if(menuPosition != null)pt = menuPosition.Value;
+            if (menuPosition != null) pt = menuPosition.Value;
             else pt = new Point(System.Windows.Forms.Cursor.Position.X, System.Windows.Forms.Cursor.Position.Y);
             menuPosition = null;
             mainCanvas.Paste(mainCanvas.GetPageFromScreenPoint(pt), pt);
@@ -420,16 +431,16 @@ namespace abJournal {
             mainCanvas.Cut();
         }
         private void PrintCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(mainCanvas.Count == 0) {
-                MessageBox.Show("ページがありません．","abJournal");
+            if (mainCanvas.Count == 0) {
+                MessageBox.Show("ページがありません．", "abJournal");
                 return;
             }
             PrintDialog pd = new PrintDialog();
-            if(pd.ShowDialog() == true) {
+            if (pd.ShowDialog() == true) {
                 WindowTitle = "印刷準備中……";
                 FixedDocument doc = new FixedDocument();
                 var canvases = mainCanvas.GetPrintingCanvases(Properties.Settings.Default.PrintDrawingAlgorithm);
-                foreach(var c in canvases){
+                foreach (var c in canvases) {
                     FixedPage page = new FixedPage();
                     page.Width = c.Width;
                     page.Height = c.Height;
@@ -439,7 +450,7 @@ namespace abJournal {
                     doc.Pages.Add(content);
                 }
                 WindowTitle = "印刷中……";
-                pd.PrintDocument(doc.DocumentPaginator,mainCanvas.FileName == null ?
+                pd.PrintDocument(doc.DocumentPaginator, mainCanvas.FileName == null ?
                     "無題ノート" : System.IO.Path.GetFileNameWithoutExtension(mainCanvas.FileName));
                 WindowTitle = null;
             }
@@ -447,11 +458,8 @@ namespace abJournal {
         }
 
         private void Window_SizeChanged(object sender, SizeChangedEventArgs e) {
-            if(FitScaleToWidth && mainCanvas.Count != 0) {
-                double maxWidth = mainCanvas.Select(c => c.Width).Max();
-                if(mainCanvas.Landscape)mainCanvas.Scale = mainCanvas.ActualHeight / maxWidth;
-                else mainCanvas.Scale = mainCanvas.ActualWidth / maxWidth;
-            }
+            if (ScaleComboBoxIndex == 0) ScaleComboBoxIndex = 0;
+            if (ScaleComboBoxIndex == 1) ScaleComboBoxIndex = 1;
             mainCanvas.Scroll();
         }
         public static readonly RoutedCommand AddPage = new RoutedCommand("AddPage", typeof(MainWindow));
@@ -466,7 +474,7 @@ namespace abJournal {
         WindowState SaveWindowState;
         public static readonly RoutedCommand FullScreen = new RoutedCommand("FullScreen", typeof(MainWindow));
         private void FullScreenCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(WindowStyle == WindowStyle.None) {
+            if (WindowStyle == WindowStyle.None) {
                 WindowStyle = WindowStyle.SingleBorderWindow;
                 ResizeMode = ResizeMode.CanResize;
                 WindowState = SaveWindowState;
@@ -482,7 +490,7 @@ namespace abJournal {
         }
         public static readonly RoutedCommand DeletePage = new RoutedCommand("DeletePage", typeof(MainWindow));
         private void DeletePageCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            if(mainCanvas.Count > 0) {
+            if (mainCanvas.Count > 0) {
                 mainCanvas.DeleteCanvas(mainCanvas.CurrentPage);
             }
         }
@@ -490,19 +498,21 @@ namespace abJournal {
         public static readonly RoutedCommand SystemSetting = new RoutedCommand("SystemSetting", typeof(MainWindow));
         private void SystemSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             SystemSetting dialog = new SystemSetting();
-            if(dialog.ShowDialog() == true) {
+            if (dialog.ShowDialog() == true) {
                 mainCanvas.DrawingAlgorithm = Properties.Settings.Default.DrawingAlgorithm;
                 SetLowLevelKeyboardHook();
                 mainCanvas.IgnorePressure = Properties.Settings.Default.IgnorePressure;
                 mainCanvas.Landscape = Properties.Settings.Default.Landscape;
-                if(ScaleComboBoxIndex == 0) ScaleComboBoxIndex = 0;// 倍率計算し直し
+                // 倍率計算し直し
+                if (ScaleComboBoxIndex == 0) ScaleComboBoxIndex = 0;
+                if (ScaleComboBoxIndex == 1) ScaleComboBoxIndex = 1;
             }
         }
 
         public static readonly RoutedCommand PenSetting = new RoutedCommand("PenSetting", typeof(MainWindow));
         private void PenSettingCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
             PenSettingDialog dialog = new PenSettingDialog();
-            if(dialog.ShowDialog() == true) {
+            if (dialog.ShowDialog() == true) {
                 PenMode = PenMode;
                 OnPropertyChanged("PenColor");
                 OnPropertyChanged("PenThickness");
@@ -534,7 +544,7 @@ namespace abJournal {
             mainCanvas.CurrentPage = mainCanvas.Count - 1;
         }
         private void PreviousPageExecuted(object sender, ExecutedRoutedEventArgs e) {
-            mainCanvas.CurrentPage++;
+            mainCanvas.CurrentPage--;
         }
         private void NextPageExecuted(object sender, ExecutedRoutedEventArgs e) {
             mainCanvas.CurrentPage++;
@@ -569,11 +579,11 @@ namespace abJournal {
         }
         public static readonly RoutedCommand OpenHistory = new RoutedCommand("OpenHistory", typeof(MainWindow));
         private void OpenHistoryCommandExecuted(object sender, ExecutedRoutedEventArgs e) {
-            string f = (string) e.Parameter;
-            if(f != null) {
+            string f = (string)e.Parameter;
+            if (f != null) {
                 f = f.Substring(f.IndexOf("(") + 1);
                 f = f.Substring(0, f.Length - 1);
-                if(f != null) FileOpen(new List<string>() { f });
+                if (f != null) FileOpen(new List<string>() { f });
             }
         }
         public static readonly RoutedCommand ShowAboutDialog = new RoutedCommand("ShowAboutDialog", typeof(MainWindow));
@@ -583,38 +593,38 @@ namespace abJournal {
 
 
         private void mainCanvas_PreviewDragOver(object sender, DragEventArgs e) {
-            if(e.Data.GetDataPresent(DataFormats.FileDrop, true)) e.Effects = DragDropEffects.Copy;
+            if (e.Data.GetDataPresent(DataFormats.FileDrop, true)) e.Effects = DragDropEffects.Copy;
             else e.Effects = DragDropEffects.None;
             e.Handled = true;
         }
 
         private void mainCanvas_Drop(object sender, DragEventArgs e) {
-            var files = (string[]) e.Data.GetData(DataFormats.FileDrop);
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
             var loadfiles = new List<string>();
-            foreach(var f in files) {
+            foreach (var f in files) {
                 var ext = Path.GetExtension(f).ToLower();
-                if(ext == ".pdf" || ext == ".xps") mainCanvas.Import(f);
+                if (ext == ".pdf" || ext == ".xps") mainCanvas.Import(f);
                 else loadfiles.Add(f);
             }
             FileOpen(loadfiles);
         }
 
         private void FileOpen(List<string> files) {
-            if(files.Count > 0) {
-                if(mainCanvas.FileName == null && !mainCanvas.Updated) {
+            if (files.Count > 0) {
+                if (mainCanvas.FileName == null && !mainCanvas.Updated) {
                     WindowTitle = "ファイルを開いています……";
-                    while(files.Count > 0) {
-                        try { 
+                    while (files.Count > 0) {
+                        try {
                             mainCanvas.Open(files[0]);
                             AddHistory(files[0]);
                             files.RemoveAt(0);
                         }
-                        catch(InvalidOperationException e) {
+                        catch (InvalidOperationException e) {
                             MessageBox.Show(files[0] + " は正しいフォーマットではありません．" + e.Message);
                             files.RemoveAt(0);
                             continue;
                         }
-                        catch(System.IO.FileNotFoundException) {
+                        catch (System.IO.FileNotFoundException) {
                             MessageBox.Show(files[0] + "は存在しません．");
                             files.RemoveAt(0);
                             continue;
@@ -624,16 +634,16 @@ namespace abJournal {
                     WindowTitle = null;
                 }
             }
-            if(files.Count > 0) {
-                foreach(var f in files) AddHistory(f);
+            if (files.Count > 0) {
+                foreach (var f in files) AddHistory(f);
                 string me = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                using(var proc = new Process()) {
+                using (var proc = new Process()) {
                     proc.StartInfo.FileName = me;
-                    foreach(var f in files) {
+                    foreach (var f in files) {
                         proc.StartInfo.Arguments = "\"" + f + "\"";
                         WindowTitle = "f " + "を開いています．";
                         try { proc.Start(); }
-                        catch(Win32Exception) { MessageBox.Show(f + " が開けませんでした．"); }
+                        catch (Win32Exception) { MessageBox.Show(f + " が開けませんでした．"); }
                         proc.WaitForInputIdle(10000);
                         WindowTitle = null;
                     }
@@ -644,7 +654,7 @@ namespace abJournal {
         void AddHistory(string file) {
             Properties.Settings.Default.History.Remove(file);
             Properties.Settings.Default.History.Insert(0, file);
-            if(Properties.Settings.Default.History.Count > 10) {
+            if (Properties.Settings.Default.History.Count > 10) {
                 Properties.Settings.Default.History.RemoveAt(Properties.Settings.Default.History.Count - 1);
             }
             Properties.Settings.Default.Save();
@@ -667,10 +677,10 @@ namespace abJournal {
 
 
         private void Page_KeyDown(object sender, KeyEventArgs e) {
-            if(e.Key == Key.Enter) {
+            if (e.Key == Key.Enter) {
                 int newpage;
                 if (int.TryParse(Page.Text, out newpage)) {
-                    if(newpage >= 1 && newpage <= mainCanvas.Count) {
+                    if (newpage >= 1 && newpage <= mainCanvas.Count) {
                         mainCanvas.CurrentPage = newpage - 1;
                     }
                 }
