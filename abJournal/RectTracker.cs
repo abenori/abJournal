@@ -15,10 +15,10 @@ namespace abJournal {
     // マウスのボタン押す/移動/ボタン放すにあわせて
     // TrackerStart / TrackerSizeChanged / TrackerEnd が呼ばれるので，それで反応する．
     // 引数内のRectは今のRectTrackerのサイズ．
-    class RectTracker : Canvas{
+    class RectTracker : Canvas {
         // 選択位置を表す四角形（MainRectangle）と四隅四辺にある小さな四角形
         Rectangle MainRectangle = new Rectangle(), RectRU = new Rectangle(), RectU = new Rectangle(),
-            RectLU =  new Rectangle(), RectL = new Rectangle(), RectLD = new Rectangle(),
+            RectLU = new Rectangle(), RectL = new Rectangle(), RectLD = new Rectangle(),
             RectD = new Rectangle(), RectRD = new Rectangle(), RectR = new Rectangle();
 
         public enum TrackMode {
@@ -125,14 +125,14 @@ namespace abJournal {
         }
 
         TrackMode GetTrackMode(object obj) {
-            if(obj.Equals(RectU)) return TrackMode.ResizeTop;
-            else if(obj.Equals(RectLU)) return TrackMode.ResizeTopLeft;
-            else if(obj.Equals(RectL)) return TrackMode.ResizeLeft;
-            else if(obj.Equals(RectLD)) return TrackMode.ResizeBottomLeft;
-            else if(obj.Equals(RectD)) return TrackMode.ResizeBottom;
-            else if(obj.Equals(RectRD)) return TrackMode.ResizeBottmRight;
-            else if(obj.Equals(RectR)) return TrackMode.ResizeRight;
-            else if(obj.Equals(RectRU)) return TrackMode.ResizeTopRight;
+            if (obj.Equals(RectU)) return TrackMode.ResizeTop;
+            else if (obj.Equals(RectLU)) return TrackMode.ResizeTopLeft;
+            else if (obj.Equals(RectL)) return TrackMode.ResizeLeft;
+            else if (obj.Equals(RectLD)) return TrackMode.ResizeBottomLeft;
+            else if (obj.Equals(RectD)) return TrackMode.ResizeBottom;
+            else if (obj.Equals(RectRD)) return TrackMode.ResizeBottmRight;
+            else if (obj.Equals(RectR)) return TrackMode.ResizeRight;
+            else if (obj.Equals(RectRU)) return TrackMode.ResizeTopRight;
             else return TrackMode.Move;
         }
         /*
@@ -153,10 +153,10 @@ namespace abJournal {
         */
 
         public void Move(Point pt) {
-            if(Mode != TrackMode.None) {
+            if (Mode != TrackMode.None) {
                 double x = Canvas.GetLeft(this);
                 double y = Canvas.GetTop(this);
-                if(x != double.NaN && y != double.NaN) {
+                if (x != double.NaN && y != double.NaN) {
                     Vector vec = new Vector(pt.X - x, pt.Y - y);
                     StartPoint += vec;
                     StartRect = new Rect(StartRect.TopLeft + vec, StartRect.Size);
@@ -167,12 +167,12 @@ namespace abJournal {
             Canvas.SetTop(this, pt.Y);
             return;
         }
-        
+
         public void Move(Rect rect) {
-            if(Mode != TrackMode.None) {
+            if (Mode != TrackMode.None) {
                 double x = Canvas.GetLeft(this);
                 double y = Canvas.GetTop(this);
-                if(x != double.NaN && y != double.NaN) {
+                if (x != double.NaN && y != double.NaN) {
                     Vector vec = new Vector(rect.X - x, rect.Y - y);
                     StartPoint += vec;
                     StartRect = new Rect(StartRect.TopLeft + vec, StartRect.Size);
@@ -191,12 +191,12 @@ namespace abJournal {
         Rect PrevRect;
         double HeightwaruWidth;
         void SubRectTracker_MouseUp(object sender, MouseButtonEventArgs e) {
-            if(Mode != TrackMode.None) {
+            if (Mode != TrackMode.None) {
                 //GetRectangle(Mode).ReleaseMouseCapture();
-                ((UIElement) sender).ReleaseMouseCapture();
+                ((UIElement)sender).ReleaseMouseCapture();
                 e.Handled = true;
                 double x = Canvas.GetLeft(this), y = Canvas.GetTop(this);
-                OnTrackerEnd(new TrackerEventArgs(new Rect(x,y,Width,Height)));
+                OnTrackerEnd(new TrackerEventArgs(new Rect(x, y, Width, Height)));
             }
             MouseUp(sender, e);
             Mode = TrackMode.None;
@@ -205,11 +205,11 @@ namespace abJournal {
         void RectTracker_MouseLeftButtonDown(object sender, MouseButtonEventArgs e, UIElement rect) {
             RectTracker_MouseLeftButtonDown(sender, e);
         }
-        void RectTracker_MouseLeftButtonDown(object sender, MouseButtonEventArgs e){
-            ((UIElement) sender).CaptureMouse();
+        void RectTracker_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) {
+            ((UIElement)sender).CaptureMouse();
             e.Handled = true;
             //StartPoint = e.GetPosition(this);
-            StartPoint = e.GetPosition((IInputElement) VisualParent);
+            StartPoint = e.GetPosition((IInputElement)VisualParent);
             StartRect = new Rect(Canvas.GetLeft(this), Canvas.GetTop(this), Width, Height);
             HeightwaruWidth = Height / Width;
             Mode = GetTrackMode(sender);
@@ -219,24 +219,24 @@ namespace abJournal {
         }
 
         void SubRectTracker_MouseMove(object sender, MouseEventArgs e) {
-            if(Mode != TrackMode.None) {
+            if (Mode != TrackMode.None) {
                 e.Handled = true;
                 //Point p = e.GetPosition(this);
-                Point p = e.GetPosition((IInputElement) VisualParent);
+                Point p = e.GetPosition((IInputElement)VisualParent);
                 //Debug.WriteLine("MouseMove: p = " + p.ToString() + ", StartPoint = " + StartPoint.ToString());
 
                 double x = StartRect.X, y = StartRect.Y;
-                if(Mode == TrackMode.Move){
+                if (Mode == TrackMode.Move) {
                     // 全体の移動
                     double sx = p.X - StartPoint.X;
                     double sy = p.Y - StartPoint.Y;
                     x = StartRect.X + sx;
                     y = StartRect.Y + sy;
                     // MaxSizeに入るように補正
-                    if(x < MaxSize.Left) x = MaxSize.Left;
-                    else if(x + Width > MaxSize.Right) x = MaxSize.Right - Width;
-                    if(y < MaxSize.Top) y = MaxSize.Top;
-                    else if(y + Height > MaxSize.Bottom) y = MaxSize.Bottom - Height;
+                    if (x < MaxSize.Left) x = MaxSize.Left;
+                    else if (x + Width > MaxSize.Right) x = MaxSize.Right - Width;
+                    if (y < MaxSize.Top) y = MaxSize.Top;
+                    else if (y + Height > MaxSize.Bottom) y = MaxSize.Bottom - Height;
                     Canvas.SetLeft(this, x);
                     Canvas.SetTop(this, y);
 
@@ -244,75 +244,75 @@ namespace abJournal {
                 } else {
                     // heightの計算
                     double height;
-                    if(Mode == TrackMode.ResizeTop || Mode == TrackMode.ResizeTopLeft || Mode == TrackMode.ResizeTopRight) {
+                    if (Mode == TrackMode.ResizeTop || Mode == TrackMode.ResizeTopLeft || Mode == TrackMode.ResizeTopRight) {
                         height = StartRect.Height + (StartPoint.Y - p.Y);
                     } else height = StartRect.Height + (p.Y - StartPoint.Y);
-                    if(height < MinHeight) height = MinHeight;
-                    else if(height > MaxHeight) height = MaxHeight;
+                    if (height < MinHeight) height = MinHeight;
+                    else if (height > MaxHeight) height = MaxHeight;
 
                     // widthの計算
                     double width;
-                    if(Mode == TrackMode.ResizeLeft || Mode == TrackMode.ResizeTopLeft || Mode == TrackMode.ResizeBottomLeft) { 
+                    if (Mode == TrackMode.ResizeLeft || Mode == TrackMode.ResizeTopLeft || Mode == TrackMode.ResizeBottomLeft) {
                         width = StartRect.Width + (StartPoint.X - p.X);
                     } else width = StartRect.Width + (p.X - StartPoint.X);
-                    if(width < MinWidth) width = MinWidth;
-                    else if(width > MaxWidth) width = MaxWidth;
+                    if (width < MinWidth) width = MinWidth;
+                    else if (width > MaxWidth) width = MaxWidth;
 
                     // 隅っこの場合は縦横の比率を一定にするようにする．
                     // 一定と仮定して短い方を補正
-                    if(Mode == TrackMode.ResizeTopRight || Mode == TrackMode.ResizeBottmRight ||
+                    if (Mode == TrackMode.ResizeTopRight || Mode == TrackMode.ResizeBottmRight ||
                     Mode == TrackMode.ResizeTopLeft || Mode == TrackMode.ResizeBottomLeft) {
-                        if(height < width * HeightwaruWidth) {
+                        if (height < width * HeightwaruWidth) {
                             height = width * HeightwaruWidth;
                         } else {
                             width = height / HeightwaruWidth;
                         }
                         // そうでない場合は幅または高さは一定となる
-                    } else if(Mode == TrackMode.ResizeTop || Mode == TrackMode.ResizeBottom){
+                    } else if (Mode == TrackMode.ResizeTop || Mode == TrackMode.ResizeBottom) {
                         width = StartRect.Width;
-                    }else if(Mode == TrackMode.ResizeRight || Mode == TrackMode.ResizeLeft){
+                    } else if (Mode == TrackMode.ResizeRight || Mode == TrackMode.ResizeLeft) {
                         height = StartRect.Height;
                     }
 
-                    if(Mode == TrackMode.ResizeTopRight) {
+                    if (Mode == TrackMode.ResizeTopRight) {
                         y = StartRect.Y + StartRect.Height - height;
-                    } else if(Mode == TrackMode.ResizeBottomLeft){
+                    } else if (Mode == TrackMode.ResizeBottomLeft) {
                         x = StartRect.X + StartRect.Width - width;
-                    } else if(Mode == TrackMode.ResizeTopLeft) {
+                    } else if (Mode == TrackMode.ResizeTopLeft) {
                         y = StartRect.Y + StartRect.Height - height;
                         x = StartRect.X + StartRect.Width - width;
-                    } else if(Mode == TrackMode.ResizeTop) {
+                    } else if (Mode == TrackMode.ResizeTop) {
                         y = StartRect.Y + StartRect.Height - height;
-                    } else if(Mode == TrackMode.ResizeLeft) {
+                    } else if (Mode == TrackMode.ResizeLeft) {
                         x = StartRect.X + StartRect.Width - width;
                     }
                     // MaxSizeに入るように補正
-                    if(x < MaxSize.Left) {
+                    if (x < MaxSize.Left) {
                         width += x - MaxSize.Left;
                         x = MaxSize.Left;
-                    } else if(x + width > MaxSize.Right) width = MaxSize.Right - x;
-                    if(y < MaxSize.Top) {
+                    } else if (x + width > MaxSize.Right) width = MaxSize.Right - x;
+                    if (y < MaxSize.Top) {
                         height += y - MaxSize.Top;
                         y = MaxSize.Top;
-                    } else if(y + height > MaxSize.Bottom) height = MaxSize.Bottom - y;
+                    } else if (y + height > MaxSize.Bottom) height = MaxSize.Bottom - y;
 
                     // 更に隅から始まった場合は縦横の比率を調整する．（今度は短い方に合わせる．）
-                    if(Mode == TrackMode.ResizeBottmRight) {
-                        if(height > width * HeightwaruWidth) {
+                    if (Mode == TrackMode.ResizeBottmRight) {
+                        if (height > width * HeightwaruWidth) {
                             height = width * HeightwaruWidth;
                         } else {
                             width = height / HeightwaruWidth;
                         }
-                    } else if(Mode == TrackMode.ResizeTopRight) {
-                        if(height > width * HeightwaruWidth) {
+                    } else if (Mode == TrackMode.ResizeTopRight) {
+                        if (height > width * HeightwaruWidth) {
                             double d = width * HeightwaruWidth;
                             y += -d + height;
                             height = d;
                         } else {
                             width = height / HeightwaruWidth;
                         }
-                    } else if(Mode == TrackMode.ResizeTopLeft) {
-                        if(height > width * HeightwaruWidth) {
+                    } else if (Mode == TrackMode.ResizeTopLeft) {
+                        if (height > width * HeightwaruWidth) {
                             double d = width * HeightwaruWidth;
                             y += -d + height;
                             height = d;
@@ -321,8 +321,8 @@ namespace abJournal {
                             x += -d + width;
                             width = d;
                         }
-                    } else if(Mode == TrackMode.ResizeBottomLeft) {
-                        if(height > width * HeightwaruWidth) {
+                    } else if (Mode == TrackMode.ResizeBottomLeft) {
+                        if (height > width * HeightwaruWidth) {
                             height = width * HeightwaruWidth;
                         } else {
                             double d = height / HeightwaruWidth;
@@ -349,11 +349,11 @@ namespace abJournal {
                         StartPoint.X += -Width + width;
                     }*/
 
-                    if(x != StartRect.X) Canvas.SetLeft(this, x);
-                    if(y != StartRect.Y) Canvas.SetTop(this, y);
+                    if (x != StartRect.X) Canvas.SetLeft(this, x);
+                    if (y != StartRect.Y) Canvas.SetTop(this, y);
 
-                    if(Height != height) Height = height;
-                    if(Width != width) Width = width;
+                    if (Height != height) Height = height;
+                    if (Width != width) Width = width;
                 }
                 PrevRect = new Rect(x, y, Width, Height);
                 OnTrackerSizeChanged(new TrackerEventArgs(PrevRect));
@@ -400,8 +400,8 @@ namespace abJournal {
             Canvas.SetTop(RectRD, base.Height - SmallRectSize / 2);
             Canvas.SetTop(RectR, base.Height / 2 - SmallRectSize / 2);
         }
-        
-        void SetSmallRectSizeFromWidth(){
+
+        void SetSmallRectSizeFromWidth() {
             MainRectangle.Width = base.Width + MainRectangle.StrokeThickness;
             Canvas.SetLeft(RectD, (base.Width / 2) - SmallRectSize / 2);
             Canvas.SetLeft(RectRD, base.Width - SmallRectSize / 2);
@@ -412,9 +412,9 @@ namespace abJournal {
 
         public new double Height {
             get { return base.Height; }
-            
+
             set {
-                base.Height = Math.Max(value,SmallRectSize*2 + 4);
+                base.Height = Math.Max(value, SmallRectSize * 2 + 4);
                 SetSmallRectSizeFromHeight();
             }
         }
@@ -427,8 +427,8 @@ namespace abJournal {
         }
 
         public bool IsInTracker(Point point) {
-            double x = Canvas.GetLeft(this) - 3*SmallRectSize;
-            double y = Canvas.GetTop(this) - 3*SmallRectSize;
+            double x = Canvas.GetLeft(this) - 3 * SmallRectSize;
+            double y = Canvas.GetTop(this) - 3 * SmallRectSize;
             return (
                 point.X > x &&
                 point.X < x + Width + 6 * SmallRectSize &&
@@ -446,9 +446,9 @@ namespace abJournal {
         protected virtual void OnTrackerEnd(TrackerEventArgs e) { TrackerEnd(this, e); }
 
         public delegate void TrackerEventHandler(object sender, TrackerEventArgs rect);
-        public event TrackerEventHandler TrackerStart = ((sender,r) => {});
-        public event TrackerEventHandler TrackerEnd = ((sender,r) => {});
-        public event TrackerEventHandler TrackerSizeChanged = ((sender,r) => { });
+        public event TrackerEventHandler TrackerStart = ((sender, r) => { });
+        public event TrackerEventHandler TrackerEnd = ((sender, r) => { });
+        public event TrackerEventHandler TrackerSizeChanged = ((sender, r) => { });
 
         public new event MouseButtonEventHandler MouseUp = ((s, e) => { });
         public new event MouseButtonEventHandler MouseDown = ((s, e) => { });

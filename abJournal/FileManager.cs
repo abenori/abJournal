@@ -21,7 +21,7 @@ namespace abJournal {
         // アプリケーションの終了時にファイルを削除する．
         class TempFileFinalizer {
             ~TempFileFinalizer() {
-                foreach(var d in TempFile.TempFileNames) {
+                foreach (var d in TempFile.TempFileNames) {
                     File.Delete(d);
                 }
             }
@@ -45,7 +45,7 @@ namespace abJournal {
         public string OriginalFileName { get { return data.OriginalFileName; } }// 元々のファイル名．拡張子などはこちらを参照
         public string Identifier { get { return data.Identifier; } }// 識別子（保存読み込みをしても不変）
 
-        AttachedFile(FileData d){
+        AttachedFile(FileData d) {
             data = new FileData();
             data.FileName = d.FileName;
             data.OriginalFileName = d.OriginalFileName;
@@ -80,8 +80,8 @@ namespace abJournal {
             ++attachedFiles[data];
         }
         public static AttachedFile GetFileFromIdentifier(string id) {
-            foreach(var d in attachedFiles) {
-                if(d.Key.Identifier == id) {
+            foreach (var d in attachedFiles) {
+                if (d.Key.Identifier == id) {
                     ++attachedFiles[d.Key];
                     return new AttachedFile(d.Key);
                 }
@@ -89,7 +89,7 @@ namespace abJournal {
             return null;
         }
         public void Dispose() {
-            if(data.FileName == null) throw new ObjectDisposedException("AttachedFile");
+            if (data.FileName == null) throw new ObjectDisposedException("AttachedFile");
             --attachedFiles[data];
             data.FileName = null;
             data.OriginalFileName = null;
@@ -105,8 +105,8 @@ namespace abJournal {
         }
         public static List<SavingAttachedFile> Save(ZipArchive zip) {
             var rv = new List<SavingAttachedFile>();
-            foreach(var f in attachedFiles) {
-                if(f.Value > 0) {
+            foreach (var f in attachedFiles) {
+                if (f.Value > 0) {
                     zip.CreateEntryFromFile(f.Key.FileName, "attached\\" + f.Key.Identifier);
                     rv.Add(new SavingAttachedFile() { OriginalFileName = f.Key.OriginalFileName, Identifier = f.Key.Identifier });
                 }
@@ -114,7 +114,7 @@ namespace abJournal {
             return rv;
         }
         public static void Open(ZipArchive zip, List<SavingAttachedFile> files) {
-            foreach(var f in files) {
+            foreach (var f in files) {
                 var entry = zip.GetEntry("attached\\" + f.Identifier);
                 var tmp = Path.GetTempFileName();
                 File.Delete(tmp);
@@ -126,10 +126,10 @@ namespace abJournal {
         }
 
         static string GetNewIdentifier() {
-            if(attachedFiles.Count == 0) return "0";
+            if (attachedFiles.Count == 0) return "0";
             return (attachedFiles.Select(d => {
                 int r;
-                if(Int32.TryParse(d.Key.Identifier, out r)) return r;
+                if (Int32.TryParse(d.Key.Identifier, out r)) return r;
                 else return 0;
             }).Max() + 1).ToString();
         }
@@ -139,11 +139,11 @@ namespace abJournal {
         // アプリケーションの終了時にファイルを削除する．
         class AttachedFileFinalizer {
             ~AttachedFileFinalizer() {
-                foreach(var d in AttachedFile.attachedFiles) {
+                foreach (var d in AttachedFile.attachedFiles) {
                     try {
                         File.Delete(d.Key.FileName);
                     }
-                    catch(UnauthorizedAccessException e) {
+                    catch (UnauthorizedAccessException e) {
                         System.Diagnostics.Debug.WriteLine(e.Message);
                     }
                 }

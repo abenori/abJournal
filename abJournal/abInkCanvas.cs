@@ -32,7 +32,7 @@ namespace abJournal {
         public InkManipulationMode Mode {
             get { return mode; }
             set {
-                if(PenID == 0) {
+                if (PenID == 0) {
                     mode = value;
                     SetCursor();
                     OnPropertyChanged("Mode");
@@ -108,15 +108,15 @@ namespace abJournal {
         static Cursor MakeInkingCursor(double thickness, Color color) {
             var key = new Tuple<Color, double>(color, thickness);
             try { return InkingCursors[key]; }
-            catch(KeyNotFoundException) {
+            catch (KeyNotFoundException) {
                 thickness *= 2;
                 const int cursorsize = 254;
-                using(var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
-                using(var g = System.Drawing.Graphics.FromImage(img)) {
+                using (var img = new System.Drawing.Bitmap(cursorsize, cursorsize))
+                using (var g = System.Drawing.Graphics.FromImage(img)) {
                     g.FillRectangle(System.Drawing.Brushes.White, new System.Drawing.Rectangle(0, 0, cursorsize, cursorsize));
                     g.FillEllipse(
                         new System.Drawing.SolidBrush(System.Drawing.Color.FromArgb(color.A, color.R, color.G, color.B)),
-                        new System.Drawing.Rectangle((int) (cursorsize / 2 - thickness / 2), (int) (cursorsize / 2 - thickness / 2), (int) thickness, (int) thickness));
+                        new System.Drawing.Rectangle((int)(cursorsize / 2 - thickness / 2), (int)(cursorsize / 2 - thickness / 2), (int)thickness, (int)thickness));
                     var c = Img2Cursor.MakeCursor(img, new Point(cursorsize / 2, cursorsize / 2), new Point(0, 0));
                     InkingCursors[key] = c;
                     return c;
@@ -127,10 +127,10 @@ namespace abJournal {
         public static Cursor ErasingCursor = null;
 
         void SetCursor() {
-            switch(Mode) {
+            switch (Mode) {
             case InkManipulationMode.Inking:
                 double scale = 1;
-                if(Parent is UIElement p) {
+                if (Parent is UIElement p) {
                     // 縦横の倍率は同じと仮定
                     scale = p.RenderTransform.TransformBounds(new Rect(0, 0, 1.0, 1.0)).Width;
                 }
@@ -144,7 +144,7 @@ namespace abJournal {
         }
         // Curosr = とすればいいんだけど，気分的にSetCursor経由でカーソルの設定はすることにしたい．
         void SetCursor(Cursor c) {
-            if(c != Cursor) Cursor = c;
+            if (c != Cursor) Cursor = c;
         }
         #endregion
 
@@ -170,8 +170,8 @@ namespace abJournal {
             InkData.UndoChainChanged += InkData_UndoChainChanged;
 
             TouchDown += ((s, e) => {
-//                var pt = e.GetTouchPoint(this);
-//                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+                //                var pt = e.GetTouchPoint(this);
+                //                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
                 e.Handled = true;
             });
         }
@@ -184,25 +184,25 @@ namespace abJournal {
         }
 
         void InkData_StrokeSelectedChanged(object sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes) {
+            foreach (var s in e.Strokes) {
                 s.UpdateVisual();
             }
         }
 
         void InkData_StrokeChanged(object sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes) {
+            foreach (var s in e.Strokes) {
                 s.UpdateVisual();
             }
         }
 
         void InkData_StrokeDeleted(object sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes) {
+            foreach (var s in e.Strokes) {
                 StrokeChildren.Remove(s.Visual);
             }
         }
 
         void InkData_StrokeAdded(object sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes) {
+            foreach (var s in e.Strokes) {
                 StrokeChildren.Add(s.Visual);
             }
         }
@@ -218,7 +218,7 @@ namespace abJournal {
 
         void DrawingStart(StylusPoint pt) {
             InkData.ProcessPointerDown(Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, pt);
-            if(Mode == InkManipulationMode.Selecting) {
+            if (Mode == InkManipulationMode.Selecting) {
                 var dattr = new DrawingAttributes();
                 dattr.Color = Brushes.Orange.Color;
                 if (Parent is UIElement p) {
@@ -232,7 +232,7 @@ namespace abJournal {
                 RunningVisual = new PenRunningVisual(this, Mode, dattr, dattrp, InkData.DrawingAlgorithm);
                 StrokeChildren.Add(RunningVisual.Visual);
                 RunningVisual.StartPoint(pt);
-            } else if(Mode == InkManipulationMode.Inking) {
+            } else if (Mode == InkManipulationMode.Inking) {
                 RunningVisual = new PenRunningVisual(this, Mode, StrokeDrawingAttributes, StrokeDrawingAttributesPlus, InkData.DrawingAlgorithm);
                 StrokeChildren.Add(RunningVisual.Visual);
                 RunningVisual.StartPoint(pt);
@@ -240,21 +240,21 @@ namespace abJournal {
         }
 
         void Drawing(StylusPoint pt) {
-            if(Mode == InkManipulationMode.Selecting) {
+            if (Mode == InkManipulationMode.Selecting) {
                 var prev = RunningVisual.PrevPoint;
-	            // さぼることでHitTestを速くさせる．
-                if((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
+                // さぼることでHitTestを速くさせる．
+                if ((prev.X - pt.X) * (prev.X - pt.X) + (prev.Y - pt.Y) * (prev.Y - pt.Y) < 64) return;
             }
             InkData.ProcessPointerUpdate(pt);
-            if(Mode != InkManipulationMode.Erasing) {
+            if (Mode != InkManipulationMode.Erasing) {
                 RunningVisual.AddPoint(pt);
             }
         }
 
         void DrawingEnd(StylusPoint pt) {
-            if(Mode != InkManipulationMode.Erasing) {
-                for(int i = StrokeChildren.Count - 1 ; i >= 0 ; --i) {
-                    if(StrokeChildren[i] == RunningVisual.Visual) {
+            if (Mode != InkManipulationMode.Erasing) {
+                for (int i = StrokeChildren.Count - 1; i >= 0; --i) {
+                    if (StrokeChildren[i] == RunningVisual.Visual) {
                         StrokeChildren.RemoveAt(i);
                         break;
                     }
@@ -264,8 +264,8 @@ namespace abJournal {
             InkData.ProcessPointerUp();// Mode = Selectingの場合はここで選択位置用四角形が造られる
         }
 
-		// ペンを走らせている時の描画を担当するクラス．
-        class PenRunningVisual { 
+        // ペンを走らせている時の描画を担当するクラス．
+        class PenRunningVisual {
             public StylusPoint PrevPoint;
             public Visual Visual = null;
             InkManipulationMode Mode;
@@ -364,10 +364,10 @@ namespace abJournal {
         protected override void OnMouseLeftButtonDown(MouseButtonEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnMouseLeftButtonDown");
             base.OnMouseLeftButtonDown(e);
-            if(!e.Handled) MouseLeftButtonDown(this,e);
-            if(e.Handled) return;
-            if(PenID != 0) return;
-            if(TouchType != 0) return;
+            if (!e.Handled) MouseLeftButtonDown(this, e);
+            if (e.Handled) return;
+            if (PenID != 0) return;
+            if (TouchType != 0) return;
             if (Mode == InkManipulationMode.Selecting || Mode == InkManipulationMode.Erasing) {
                 Mouse.Capture(this);
             }
@@ -379,9 +379,9 @@ namespace abJournal {
         }
         public new event MouseEventHandler MouseMove = ((s, e) => { });
         protected override void OnMouseMove(MouseEventArgs e) {
-			base.OnMouseMove(e);
-            if(!e.Handled) MouseMove(this, e);
-            if(e.Handled) return;
+            base.OnMouseMove(e);
+            if (!e.Handled) MouseMove(this, e);
+            if (e.Handled) return;
             if (PenID != 0) return;
             if (TouchType != MOUSE) return;
             if (TouchType == MOUSE && e.LeftButton == MouseButtonState.Pressed) {
@@ -389,7 +389,7 @@ namespace abJournal {
                 Drawing(new StylusPoint(pt.X, pt.Y));
                 e.Handled = true;
             } else {
-                if(e.StylusDevice == null) SetCursor(null);
+                if (e.StylusDevice == null) SetCursor(null);
             }
         }
         public new event MouseButtonEventHandler MouseLeftButtonUp = ((s, e) => { });
@@ -409,10 +409,10 @@ namespace abJournal {
         public new event MouseEventHandler MouseLeave = ((s, e) => { });
         protected override void OnMouseLeave(MouseEventArgs e) {
             base.OnMouseLeave(e);
-            if(!e.Handled) MouseLeave(this, e);
-            if(e.Handled) return;
-            if(e.LeftButton == MouseButtonState.Pressed) {
-                if(TouchType != MOUSE) return;
+            if (!e.Handled) MouseLeave(this, e);
+            if (e.Handled) return;
+            if (e.LeftButton == MouseButtonState.Pressed) {
+                if (TouchType != MOUSE) return;
                 var pt = e.GetPosition(this);
                 DrawingEnd(new StylusPoint(pt.X, pt.Y));
                 e.Handled = true;
@@ -423,20 +423,20 @@ namespace abJournal {
         protected override void OnTouchDown(TouchEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnTouchDown");
             base.OnTouchDown(e);
-            if(!e.Handled) TouchDown(this, e);
-            if(e.Handled) { e.Handled = false; return; }
-            if(PenID != 0) return;
-            if(TouchType != 0) return;
+            if (!e.Handled) TouchDown(this, e);
+            if (e.Handled) { e.Handled = false; return; }
+            if (PenID != 0) return;
+            if (TouchType != 0) return;
             SetCursor();
         }
         public new event EventHandler<TouchEventArgs> TouchMove = ((s, e) => { });
         protected override void OnTouchMove(TouchEventArgs e) {
             base.OnTouchMove(e);
-            if(!e.Handled) TouchMove(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) TouchMove(this, e);
+            if (e.Handled) return;
         }
         void OnTouchUpLeave(TouchEventArgs e) {
-            if(TouchType == TOUCH && PenID == e.TouchDevice.Id) {
+            if (TouchType == TOUCH && PenID == e.TouchDevice.Id) {
                 var pt = e.GetTouchPoint(this);
                 DrawingEnd(new StylusPoint(pt.Position.X, pt.Position.Y));
                 PenID = 0;
@@ -448,35 +448,35 @@ namespace abJournal {
         protected override void OnTouchUp(TouchEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnTouchUp");
             base.OnTouchUp(e);
-            if(!e.Handled) TouchUp(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) TouchUp(this, e);
+            if (e.Handled) return;
         }
         public new event EventHandler<TouchEventArgs> TouchLeave = ((s, e) => { });
         protected override void OnTouchLeave(TouchEventArgs e) {
             base.OnTouchLeave(e);
-            if(!e.Handled) TouchLeave(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) TouchLeave(this, e);
+            if (e.Handled) return;
             OnTouchUpLeave(e);
         }
         public new event StylusEventHandler StylusInAirMove = ((s, e) => { });
         protected override void OnStylusInAirMove(StylusEventArgs e) {
             base.OnStylusInAirMove(e);
-            if(!e.Handled) StylusInAirMove(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) StylusInAirMove(this, e);
+            if (e.Handled) return;
             SetCursor();
         }
         public new event StylusEventHandler StylusOutOfRange = ((s, e) => { });
         protected override void OnStylusOutOfRange(StylusEventArgs e) {
             base.OnStylusOutOfRange(e);
-            if(!e.Handled) StylusOutOfRange(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) StylusOutOfRange(this, e);
+            if (e.Handled) return;
             SetCursor(null);
         }
         public new event StylusEventHandler StylusInRange = ((s, e) => { });
         protected override void OnStylusInRange(StylusEventArgs e) {
             base.OnStylusInRange(e);
-            if(!e.Handled) StylusInRange(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) StylusInRange(this, e);
+            if (e.Handled) return;
             SetCursor();
         }
         public new event StylusDownEventHandler StylusDown = ((s, e) => { });
@@ -526,9 +526,9 @@ namespace abJournal {
         public new event StylusEventHandler StylusMove = ((s, e) => { });
         protected override void OnStylusMove(System.Windows.Input.StylusEventArgs e) {
             base.OnStylusMove(e);
-            if(!e.Handled) StylusMove(this, e);
-            if(e.Handled) return;
-            if(e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
+            if (!e.Handled) StylusMove(this, e);
+            if (e.Handled) return;
+            if (e.StylusDevice.TabletDevice.Type != TabletDeviceType.Stylus) {
                 /*
                 System.Diagnostics.Debug.WriteLine("TouchMove");
                 System.Diagnostics.Debug.WriteLine(e.GetStylusPoints(this)[0].ToPoint());
@@ -536,8 +536,8 @@ namespace abJournal {
                  */
                 return;
             }
-            if(TouchType != STYLUS) return;
-            if(PenID != e.StylusDevice.Id) return;
+            if (TouchType != STYLUS) return;
+            if (PenID != e.StylusDevice.Id) return;
             var pt = e.GetStylusPoints(this)[0];
             Drawing(pt);
         }
@@ -558,7 +558,7 @@ namespace abJournal {
             base.OnStylusUp(e);
             if (!e.Handled) StylusUp(this, e);
             if (e.Handled) return;
-            if (Properties.Settings.Default.WaitAfterErase > 0) { 
+            if (Properties.Settings.Default.WaitAfterErase > 0) {
                 if (Mode == InkManipulationMode.Erasing) {
                     System.Diagnostics.Debug.WriteLine("stopwatch on");
                     stopwatch.Reset();
@@ -570,15 +570,15 @@ namespace abJournal {
         public new event StylusEventHandler StylusLeave = ((s, e) => { });
         protected override void OnStylusLeave(System.Windows.Input.StylusEventArgs e) {
             base.OnStylusLeave(e);
-            if(!e.Handled) StylusLeave(this, e);
-            if(e.Handled) return;
+            if (!e.Handled) StylusLeave(this, e);
+            if (e.Handled) return;
             OnStylusUpLeave(e);
         }
         #endregion
 
         public void ReDraw() {
             StrokeChildren.Clear();
-            foreach(var s in InkData.Strokes) {
+            foreach (var s in InkData.Strokes) {
                 s.ReDraw();
                 StrokeChildren.Add(s.Visual);
 
@@ -612,7 +612,7 @@ namespace abJournal {
         public bool Redo() {
             return InkData.Redo();
         }
-        
+
         public void ClearSelected() {
             InkData.ClearSelected();
         }
@@ -632,14 +632,14 @@ namespace abJournal {
             }
         }
         protected override Visual GetVisualChild(int index) {
-            if(index < Children.Count) return Children[index];
+            if (index < Children.Count) return Children[index];
             else return StrokeChildren[index - Children.Count];
         }
         protected override HitTestResult HitTestCore(PointHitTestParameters hitTestParameters) {
             return new PointHitTestResult(this, hitTestParameters.HitPoint);
         }
         protected override void OnRender(DrawingContext drawingContext) {
-            if(Background != null) {
+            if (Background != null) {
                 drawingContext.DrawRectangle(Background, null, new Rect(0, 0, RenderSize.Width, RenderSize.Height));
             }
             base.OnRender(drawingContext);
@@ -669,7 +669,7 @@ namespace abJournal {
         #endregion
     }
 
-    public interface IabInkCanvas : INotifyPropertyChanged{
+    public interface IabInkCanvas : INotifyPropertyChanged {
         double Height { get; set; }
         double Width { get; set; }
         abInkData InkData { get; set; }

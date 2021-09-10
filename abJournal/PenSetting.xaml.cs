@@ -12,7 +12,7 @@ namespace abJournal {
     /// <summary>
     /// PenSettingDialog.xaml の相互作用ロジック
     /// </summary>
-    public partial class PenSettingDialog : Window,INotifyPropertyChanged {
+    public partial class PenSettingDialog : Window, INotifyPropertyChanged {
         public static double[] thicks = new double[] { 1, 1.5, 2, 3, 4, 6, 8, 10 };
 
         // バインディング用
@@ -46,14 +46,14 @@ namespace abJournal {
         }
 
         private void AddThicksToComboBox(System.Windows.Controls.ComboBox combo) {
-            for(int i = 0 ; i < thicks.Count() ; ++i) combo.Items.Add(thicks[i]);
+            for (int i = 0; i < thicks.Count(); ++i) combo.Items.Add(thicks[i]);
         }
 
         private void ColorSetting(int i) {
             ColorDialog diag = new ColorDialog();
             Color pen = Properties.Settings.Default.PenColor[i];
             diag.Color = System.Drawing.Color.FromArgb(pen.A, pen.R, pen.G, pen.B);
-            if(diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
+            if (diag.ShowDialog() == System.Windows.Forms.DialogResult.OK) {
                 Properties.Settings.Default.PenColor[i] = Color.FromArgb(diag.Color.A, diag.Color.R, diag.Color.G, diag.Color.B);
                 OnPropertyChanged("PenColor");
             }
@@ -66,7 +66,7 @@ namespace abJournal {
 
         private void Cancel_Click(object sender, RoutedEventArgs e) {
             Properties.Settings.Default.Reload();
-            DialogResult = false;            
+            DialogResult = false;
         }
 
         private void Pen0Color_Click(object sender, RoutedEventArgs e) {
@@ -96,7 +96,7 @@ namespace abJournal {
 
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
+            if (PropertyChanged != null) {
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
             }
         }
@@ -104,10 +104,10 @@ namespace abJournal {
 
     public class ThicknessComboBoxSelConvereter : IValueConverter {
         public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            double t = (double) value;
+            double t = (double)value;
             int index = PenSettingDialog.thicks.Count() - 1;
-            for(int j = 0 ; j < PenSettingDialog.thicks.Count() - 1 ; ++j) {
-                if(t < (PenSettingDialog.thicks[j] + PenSettingDialog.thicks[j + 1]) / 2) {
+            for (int j = 0; j < PenSettingDialog.thicks.Count() - 1; ++j) {
+                if (t < (PenSettingDialog.thicks[j] + PenSettingDialog.thicks[j + 1]) / 2) {
                     index = j;
                     break;
                 }
@@ -115,7 +115,7 @@ namespace abJournal {
             return index;
         }
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture) {
-            return PenSettingDialog.thicks[(int) value];
+            return PenSettingDialog.thicks[(int)value];
         }
     }
 }
