@@ -21,10 +21,10 @@
       <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="SaveTextToPDF" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">True</Value>
+      <Value Profile="(Default)">False</Value>
     </Setting>
     <Setting Name="SaveWithPDF" Type="System.Boolean" Scope="User">
-      <Value Profile="(Default)">False</Value>
+      <Value Profile="(Default)">True</Value>
     </Setting>
     <Setting Name="Landscape" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
