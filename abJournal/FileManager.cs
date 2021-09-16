@@ -10,11 +10,18 @@ namespace abJournal {
     public class TempFile {
         public string FileName { get; private set; }
         public TempFile() {
-            FileName = Path.GetTempFileName();
+            FileName = GetTempFileName();
             TempFileNames.Add(FileName);
         }
         public TempFile(TempFile f) {
             FileName = f.FileName;
+        }
+        public static string GetTempFileName(string ext = ".tmp") {
+            for (int i = 0; i < 1000; ++i) {
+                var random = Path.ChangeExtension(Path.GetRandomFileName(), ext);
+                if (!File.Exists(Path.Combine(Path.GetTempPath(), random))) return random;
+            }
+            throw new Exception("Failed to make tmp file.");
         }
 
         static List<string> TempFileNames = new List<string>();
@@ -53,7 +60,7 @@ namespace abJournal {
         }
 
         public AttachedFile() {
-            var tmp = Path.GetTempFileName();
+            var tmp = TempFile.GetTempFileName();
             data = new FileData();
             data.FileName = tmp;
             data.OriginalFileName = "";
@@ -62,7 +69,7 @@ namespace abJournal {
         }
 
         public AttachedFile(string path) {
-            var tmp = Path.GetTempFileName();
+            var tmp = TempFile.GetTempFileName();
             File.Copy(path, tmp, true);
             // 読み取り専用の場合解除しておく（後でFile.Deleteに失敗するため）．
             (new FileInfo(tmp)).Attributes = FileAttributes.Normal;
@@ -116,7 +123,7 @@ namespace abJournal {
         public static void Open(ZipArchive zip, List<SavingAttachedFile> files) {
             foreach (var f in files) {
                 var entry = zip.GetEntry("attached\\" + f.Identifier);
-                var tmp = Path.GetTempFileName();
+                var tmp = TempFile.GetTempFileName();
                 File.Delete(tmp);
                 entry.ExtractToFile(tmp);
                 var data = new FileData();

@@ -242,8 +242,8 @@ namespace abJournal {
         protected override void OnManipulationStarting(ManipulationStartingEventArgs e) {
             var rect = innerCanvas.RenderTransform.TransformBounds(new Rect(0, 0, innerCanvas.Width, innerCanvas.Height));
             e.Mode = ManipulationModes.Translate;
-            if (rect.Width < ActualWidth + 2 && !landscape) e.Mode = ManipulationModes.TranslateY;
-            if (rect.Height < ActualHeight + 2 && landscape) e.Mode = ManipulationModes.TranslateX;
+            if (!landscape && rect.Width < ActualWidth + 2) e.Mode = ManipulationModes.TranslateY;
+            if (landscape && rect.Height < ActualHeight + 2) e.Mode = ManipulationModes.TranslateX;
             e.IsSingleTouchEnabled = true;
             //e.Handled = true;
             base.OnManipulationStarting(e);
