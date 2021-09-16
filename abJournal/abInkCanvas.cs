@@ -42,6 +42,7 @@ namespace abJournal {
             SetCursor();
             ClipToBounds = false;
             DefaultDrawingAttributes.AttributeChanged += DefaultDrawingAttributes_AttributeChanged;
+            //Strokes.StrokesChanged += Strokes_StrokesChanged;
             EditingModeChanged += ABInkCanvas_EditingModeChanged;
         }
 
@@ -79,6 +80,7 @@ namespace abJournal {
             if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
             base.OnPreviewStylusUp(e);
         }
+
         protected override void OnPreviewStylusDown(StylusDownEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnPreviewStylusDown: " + e.StylusDevice.TabletDevice.Type);
             if (GetSelectedStrokes().Count > 0) {
@@ -113,6 +115,18 @@ namespace abJournal {
                 var e = new PropertyChangedEventArgs(name);
                 PropertyChanged(this, e);
             }
+        }
+
+        private void Strokes_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e) {
+            var group = new UndoGroup();
+            foreach (var s in e.Added) {
+                group.Add(new AddStrokeCommand(new abStroke(s.StylusPoints, s.DrawingAttributes, DefaultDrawingAttributesPlus)));
+            }
+            foreach(var s in e.Removed) {
+                group.Add(new DeleteStrokeCommand(new abStroke(s.StylusPoints, s.DrawingAttributes, DefaultDrawingAttributesPlus)));
+            }
+            group.Normalize();
+            AddUndo(group);
         }
 
         protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
