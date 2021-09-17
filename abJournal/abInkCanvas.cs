@@ -583,6 +583,7 @@ namespace abJournal {
         StrokeCollection beforeStroke, afterStroke;
         public SelectCommand(StrokeCollection before, StrokeCollection after) {
             beforeStroke = before; afterStroke = after;
+
         }
         public void Undo(ABInkCanvas c) {
             c.StopAddToUndo();

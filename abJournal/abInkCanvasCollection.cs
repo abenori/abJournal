@@ -20,7 +20,7 @@ namespace abJournal {
     public class abInkCanvasCollection<abInkCanvasClass> : Canvas, IEnumerable<abInkCanvasClass>, INotifyPropertyChanged where abInkCanvasClass : ABInkCanvas{
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
+            if (PropertyChanged != null) {
                 PropertyChanged(this, new PropertyChangedEventArgs(name));
             }
         }
@@ -35,7 +35,7 @@ namespace abJournal {
         public InkCanvasEditingMode Mode {
             get { return mode; }
             set {
-                if(mode != value) {
+                if (mode != value) {
                     mode = value;
                     foreach(var i in CanvasCollection) i.EditingMode = Mode;
                     OnPropertyChanged("Mode");
@@ -57,7 +57,7 @@ namespace abJournal {
         public double PenThickness {
             get { return penThickness; }
             set {
-                if(penThickness != value) {
+                if (penThickness != value) {
                     penThickness = value;
                     foreach (var c in CanvasCollection) {
                         c.DefaultDrawingAttributes.Width = c.DefaultDrawingAttributes.Height = penThickness;
@@ -91,11 +91,13 @@ namespace abJournal {
         public double Scale {
             get { return scale; }
             set {
-                Matrix m = ((MatrixTransform) innerCanvas.RenderTransform).Matrix;
-                m.Scale(value / scale, value / scale);
-                ((MatrixTransform) innerCanvas.RenderTransform).Matrix = m;
-                scale = value;
-                Scroll();
+                if (scale != value) {
+                    Matrix m = ((MatrixTransform)innerCanvas.RenderTransform).Matrix;
+                    m.Scale(value / scale, value / scale);
+                    ((MatrixTransform)innerCanvas.RenderTransform).Matrix = m;
+                    scale = value;
+                    Scroll();
+                }
                 OnPropertyChanged("Scale");
             }
         }
@@ -115,7 +117,7 @@ namespace abJournal {
         public bool Landscape {
             get { return landscape; }
             set {
-                if(landscape != value) {
+                if (landscape != value) {
                     landscape = value;
                     var tr = innerCanvas.RenderTransform as MatrixTransform;
                     var m = tr.Matrix;
@@ -171,13 +173,13 @@ namespace abJournal {
         }
 
         void VerticalArrangeCanvas() {
-            if(CanvasCollection.Count == 0) return;
+            if (CanvasCollection.Count == 0) return;
             double height = 0;
             double width = 0;
-            for(int i = 0 ; i < CanvasCollection.Count ; ++i) {
+            for (int i = 0; i < CanvasCollection.Count; ++i) {
                 Canvas.SetTop(CanvasCollection[i], height);
                 height += LengthBetweenCanvas + CanvasCollection[i].Height;
-                width = Math.Max(width,CanvasCollection[i].Width);
+                width = Math.Max(width, CanvasCollection[i].Width);
             }
             height -= LengthBetweenCanvas;
             innerCanvas.Height = height;
@@ -202,7 +204,7 @@ namespace abJournal {
             var adjust = GetAdjustedVector(e.DeltaManipulation.Translation);
             ScrollWithoutAdjust(e.DeltaManipulation.Translation - adjust);
             //ScrollWithoutAdust(e.DeltaManipulation.Translation);
-            if(e.IsInertial) {
+            if (e.IsInertial) {
                 e.ReportBoundaryFeedback(new ManipulationDelta(adjust, 0, new Vector(), new Vector()));
             }
             //e.Handled = true;
@@ -224,8 +226,8 @@ namespace abJournal {
         protected override void OnManipulationStarting(ManipulationStartingEventArgs e) {
             var rect = innerCanvas.RenderTransform.TransformBounds(new Rect(0, 0, innerCanvas.Width, innerCanvas.Height));
             e.Mode = ManipulationModes.Translate;
-            if(rect.Width < ActualWidth + 2 && !landscape) e.Mode = ManipulationModes.TranslateY;
-            if(rect.Height < ActualHeight + 2 && landscape) e.Mode = ManipulationModes.TranslateX;
+            if (!landscape && rect.Width < ActualWidth + 2) e.Mode = ManipulationModes.TranslateY;
+            if (landscape && rect.Height < ActualHeight + 2) e.Mode = ManipulationModes.TranslateX;
             e.IsSingleTouchEnabled = true;
             //e.Handled = true;
             base.OnManipulationStarting(e);
@@ -233,54 +235,54 @@ namespace abJournal {
         Vector GetAdjustedVector(Vector scroll = new Vector()) {
             return GetAdjustedVector(scroll, RenderSize);
         }
-        Vector GetAdjustedVector(Vector scroll,Size windowSize) {
+        Vector GetAdjustedVector(Vector scroll, Size windowSize) {
             Vector rv = new Vector();
-            if(CanvasCollection.Count == 0) return rv;
+            if (CanvasCollection.Count == 0) return rv;
             var canvas = CanvasCollection[0];
             Rect bounds;
             try {
                 //bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(VisualTreeHelper.GetDrawing(innerCanvas).Bounds));
-                bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(new Rect(-innerCanvas.Width/2,0,innerCanvas.Width,innerCanvas.Height)));
+                bounds = (new TranslateTransform(scroll.X, scroll.Y)).TransformBounds(innerCanvas.RenderTransform.TransformBounds(new Rect(-innerCanvas.Width / 2, 0, innerCanvas.Width, innerCanvas.Height)));
             }
-            catch(NullReferenceException) { return rv; }
-            if(landscape) {
+            catch (NullReferenceException) { return rv; }
+            if (landscape) {
                 bounds = new Rect(bounds.Y, bounds.X, bounds.Height, bounds.Width);
                 windowSize = new Size(windowSize.Height, windowSize.Width);
                 scroll = new Vector(scroll.Y, scroll.X);
             }
 
-            if(bounds.Width != 0) {
-                if(bounds.Width < windowSize.Width + 2) {
+            if (bounds.Width != 0) {
+                if (bounds.Width < windowSize.Width + 2) {
                     rv.X = bounds.Left - (windowSize.Width - bounds.Width) / 2;
                 } else {
                     /*
                     if(bounds.Left > ActualWidth - sukima) rv.X = bounds.Left - (ActualWidth - sukima);
                     else if(bounds.Right < sukima) rv.X = bounds.Right - sukima;
-                     */ 
-                    if(bounds.Left > 0) rv.X = bounds.Left;
-                    else if(bounds.Right < windowSize.Width) rv.X = bounds.Right - windowSize.Width;
+                     */
+                    if (bounds.Left > 0) rv.X = bounds.Left;
+                    else if (bounds.Right < windowSize.Width) rv.X = bounds.Right - windowSize.Width;
                 }
             }
 
-            if(bounds.Height != 0) {
-                if(bounds.Top > windowSize.Height - sukima) rv.Y = bounds.Top - (windowSize.Height - sukima);
+            if (bounds.Height != 0) {
+                if (bounds.Top > windowSize.Height - sukima) rv.Y = bounds.Top - (windowSize.Height - sukima);
                 //if(bounds.Top > 0) rv.Y = bounds.Top;
-                else if(bounds.Bottom < sukima) rv.Y = bounds.Bottom - sukima;
+                else if (bounds.Bottom < sukima) rv.Y = bounds.Bottom - sukima;
             }
 
             //System.Diagnostics.Debug.WriteLine("scroll: " + scroll + ", bounds: " + bounds + ", rv; " + rv);
 
-            if(landscape) rv = new Vector(rv.Y, rv.X);
+            if (landscape) rv = new Vector(rv.Y, rv.X);
 
             return rv;
         }
         protected override void OnMouseWheel(MouseWheelEventArgs e) {
-            if(landscape) Scroll(new Vector(-e.Delta / 3, 0));
+            if (landscape) Scroll(new Vector(-e.Delta / 3, 0));
             else Scroll(new Vector(0, e.Delta / 3));
         }
 
         void InkCanvasCollection_SizeChanged(object sender, SizeChangedEventArgs e) {
-            Scroll(new Vector((e.NewSize.Width - e.PreviousSize.Width)/2,0));
+            Scroll(new Vector((e.NewSize.Width - e.PreviousSize.Width) / 2, 0));
         }
         #endregion
 
@@ -295,6 +297,7 @@ namespace abJournal {
             canvas.DefaultDrawingAttributes.IsHighlighter = PenIsHilighter;
             canvas.PropertyChanged += canvas_PropertyChanged;
             CanvasCollection.Insert(index, canvas);
+            innerCanvas.Children.Add(canvas);
             canvas.UndoChainChanged += InkCanvasCollection_UndoChainChanged;
             canvas.DefaultDrawingAttributes.Width = canvas.DefaultDrawingAttributes.Height =  PenThickness;
             canvas.DefaultDrawingAttributes.Color = PenColor;
@@ -303,7 +306,6 @@ namespace abJournal {
             canvas.EditingMode = Mode;
             canvas.ReDraw();
             AddUndoChain(new AddCanvasCommand(canvas, index));
-            innerCanvas.Children.Add(canvas);
             innerCanvas.Height += LengthBetweenCanvas + canvas.Height;
             canvas.AddedToView();
             VerticalArrangeCanvas();
@@ -311,7 +313,7 @@ namespace abJournal {
             innerCanvas.Width = Math.Max(canvas.Width, innerCanvas.Width);
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
-            if(CurrentPage == -1) CurrentPage = 0;
+            if (CurrentPage == -1) CurrentPage = 0;
         }
 
         private void Canvas_SelectionChanging(object sender, InkCanvasSelectionChangingEventArgs e) {
@@ -331,9 +333,9 @@ namespace abJournal {
         }
 
         void canvas_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-            switch(e.PropertyName) {
+            switch (e.PropertyName) {
             case "Width":
-                if(!landscape) {
+                if (!landscape) {
                     var c = (abInkCanvasClass)sender;
                     Canvas.SetLeft(c, -c.Width / 2);
                     innerCanvas.Width = CanvasCollection.Select(d => d.Width).Max();
@@ -352,7 +354,7 @@ namespace abJournal {
         }
 
         public void DeleteCanvas(int index) {
-            if(index < 0 || index >= CanvasCollection.Count) return;
+            if (index < 0 || index >= CanvasCollection.Count) return;
             abInkCanvasClass ic = CanvasCollection[index];
             ic.PropertyChanged -= canvas_PropertyChanged;
             CanvasCollection.RemoveAt(index);
@@ -361,7 +363,7 @@ namespace abJournal {
             AddUndoChain(new DeleteCanvasCommand(ic, index));
             VerticalArrangeCanvas();
             CalculateCurrentPage(true);
-            if(Count == 0) innerCanvas.Width = 0;
+            if (Count == 0) innerCanvas.Width = 0;
             else innerCanvas.Width = CanvasCollection.Select(c => c.Width).Max();
             OnPropertyChanged("Updated");
             OnPropertyChanged("Count");
@@ -370,35 +372,35 @@ namespace abJournal {
 
         #region 移動
         public void MovePage(int page) {
-            if(page < 0 || page >= Count) return;
+            if (page < 0 || page >= Count) return;
             var c = CanvasCollection[page];
-            var transform = innerCanvas.RenderTransform;
-            var targetRect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
-            Scroll(new Vector(0, -targetRect.Top));
+            var targetRect = innerCanvas.RenderTransform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
+            if (landscape) Scroll(new Vector(-targetRect.Left, 0));
+            else Scroll(new Vector(0, -targetRect.Top));
         }
         #endregion
 
         #region 選択関係
         /*
         void innerCanvas_TouchDown(object sender, TouchEventArgs e) {
-            if(SelectedRectTracker.Visibility == Visibility.Visible) {
+            if (SelectedRectTracker.Visibility == Visibility.Visible) {
                 var pt = e.GetTouchPoint(innerCanvas).Position;
                 CheckPointInSelection(pt.X, pt.Y);
             }
         }
 
         void innerCanvas_MouseDown(object sender, MouseButtonEventArgs e) {
-            if(SelectedRectTracker.Visibility == Visibility.Visible) {
+            if (SelectedRectTracker.Visibility == Visibility.Visible) {
                 var pt = e.GetPosition(innerCanvas);
                 CheckPointInSelection(pt.X, pt.Y);
             }
         }
-        void CheckPointInSelection(double x,double y) {
+        void CheckPointInSelection(double x, double y) {
             double sx = Canvas.GetLeft(SelectedRectTracker);
             double sy = Canvas.GetTop(SelectedRectTracker);
-            if(x < sx || x > sx + SelectedRectTracker.Width || y < sy || y > sy + SelectedRectTracker.Height) {
+            if (x < sx || x > sx + SelectedRectTracker.Width || y < sy || y > sy + SelectedRectTracker.Height) {
                 // RectTrackerから外れたら選択を解除する．
-                if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
+                if (CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
             }
         }
 
@@ -409,33 +411,33 @@ namespace abJournal {
             bound = can.RenderTransform.TransformBounds(bound);
             var Strokes = can.Strokes;
             Rect rect = new Rect();
-            foreach(var s in Strokes) {
-                if(s.Selected) {
-                    if(count == 0) rect = s.GetBounds();
+            foreach (var s in Strokes) {
+                if (s.Selected) {
+                    if (count == 0) rect = s.GetBounds();
                     else rect.Union(s.GetBounds());
                     ++count;
                 }
             }
-            if(count == 0) {
-                if(SelectedRectTracker.Visibility == Visibility.Visible) {
+            if (count == 0) {
+                if (SelectedRectTracker.Visibility == Visibility.Visible) {
                     SelectedRectTracker.Visibility = Visibility.Hidden;
-                    foreach(var c in CanvasCollection) c.IsEnabled = true;
+                    foreach (var c in CanvasCollection) c.IsEnabled = true;
                 }
             } else {
-                if(CanvasContainingSelection != null && can != CanvasContainingSelection) {
+                if (CanvasContainingSelection != null && can != CanvasContainingSelection) {
                     CanvasContainingSelection.ClearSelected();
                 }
                 CanvasContainingSelection = can;
-                if(SelectedRectTracker.Mode == RectTracker.TrackMode.None) {
+                if (SelectedRectTracker.Mode == RectTracker.TrackMode.None) {
                     SelectedRectTracker.Move(new Rect(bound.Left + rect.X, bound.Top + rect.Y, rect.Width, rect.Height));
-                } else if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
+                } else if (SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
                     SelectedRectTracker.Move(new Point(bound.Left + rect.X, bound.Top + rect.Y));
                 }
                 SelectedRectTracker.MaxSize = bound;
-                if(SelectedRectTracker.Visibility == Visibility.Hidden) {
+                if (SelectedRectTracker.Visibility == Visibility.Hidden) {
                     SelectedRectTracker.Visibility = Visibility.Visible;
                     // 選択位置変更時はペンによる描画を抑制する．
-                    foreach(var c in CanvasCollection) c.IsEnabled = false;
+                    foreach (var c in CanvasCollection) c.IsEnabled = false;
                 }
             }
         }
@@ -462,32 +464,32 @@ namespace abJournal {
         }
 
         void InkData_StrokeDeleted(abInkCanvasClass sender, abInkData.StrokeChangedEventArgs e) {
-            if(CanvasContainingSelection != null && CanvasContainingSelection.Equals(sender)) {
-                foreach(var s in e.Strokes) {
-                    if(s.Selected){
-						SetSelectedRectTracker(sender);
-						return;
-					}
+            if (CanvasContainingSelection != null && CanvasContainingSelection.Equals(sender)) {
+                foreach (var s in e.Strokes) {
+                    if (s.Selected) {
+                        SetSelectedRectTracker(sender);
+                        return;
+                    }
                 }
             }
         }
 
         void InkData_StrokeChanged(abInkCanvasClass sender, abInkData.StrokeChangedEventArgs e) {
             //System.Diagnostics.Debug.WriteLine("StrokeChanged");
-            foreach(var s in e.Strokes) {
-                if(s.Selected){
-					SetSelectedRectTracker(sender);
-					return;
-				}
+            foreach (var s in e.Strokes) {
+                if (s.Selected) {
+                    SetSelectedRectTracker(sender);
+                    return;
+                }
             }
         }
 
         void InkData_StrokeAdded(abInkCanvasClass sender, abInkData.StrokeChangedEventArgs e) {
-            foreach(var s in e.Strokes) {
-                if(s.Selected){
-					SetSelectedRectTracker(sender);
-					return;
-				}
+            foreach (var s in e.Strokes) {
+                if (s.Selected) {
+                    SetSelectedRectTracker(sender);
+                    return;
+                }
             }
         }
 
@@ -496,19 +498,19 @@ namespace abJournal {
         }
 
         void SelectedRectTracker_MouseMove(object sender, MouseEventArgs e) {
-            if(SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
+            if (SelectedRectTracker.Mode == RectTracker.TrackMode.Move) {
                 var pt = e.GetPosition(innerCanvas);
                 //pt.Yの入っているキャンバスを特定
                 int index = -1;
-                for(int i = 0 ; i < CanvasCollection.Count ; ++i) {
+                for (int i = 0; i < CanvasCollection.Count; ++i) {
                     double top = Canvas.GetTop(CanvasCollection[i]);
                     double bottom = top + CanvasCollection[i].Height;
-                    if(pt.Y >= top && pt.Y <= bottom) {
+                    if (pt.Y >= top && pt.Y <= bottom) {
                         index = i;
                         break;
                     }
                 }
-                if(index != -1 && !CanvasCollection[index].Equals(CanvasContainingSelection)) {
+                if (index != -1 && !CanvasCollection[index].Equals(CanvasContainingSelection)) {
                     // 別のページに移動したので，選択を移動する．
                     CanvasContainingSelection.InkData.EndUndoGroup();
                     double shifty = Canvas.GetTop(CanvasContainingSelection) - Canvas.GetTop(CanvasCollection[index]);
@@ -535,16 +537,16 @@ namespace abJournal {
             public UndoGroup() { }
             public void Add(UndoCommand c) { Commands.Add(c); }
             public void Undo(abInkCanvasCollection<abInkCanvasClass> data) {
-                for(int i = Commands.Count - 1 ; i >= 0 ; --i) Commands[i].Undo(data);
+                for (int i = Commands.Count - 1; i >= 0; --i) Commands[i].Undo(data);
             }
             public void Redo(abInkCanvasCollection<abInkCanvasClass> data) {
-                for(int i = 0 ; i < Commands.Count ; ++i) Commands[i].Redo(data);
+                for (int i = 0; i < Commands.Count; ++i) Commands[i].Redo(data);
             }
             // Commandも全部表示するようにしておく．Debug用．
             public override string ToString() {
                 string rv = base.ToString() + "[";
-                for(int i = 0 ; i < Commands.Count ; ++i) {
-                    if(i == 0) rv += Commands[i].ToString();
+                for (int i = 0; i < Commands.Count; ++i) {
+                    if (i == 0) rv += Commands[i].ToString();
                     else rv += " ; " + Commands[i].ToString();
                 }
                 return rv + "]";
@@ -616,7 +618,7 @@ namespace abJournal {
             UndoStack.Add(c);
             ++EditCount;
             OnUndoChainChanged(new UndoChainChangedEventArgs());
-            if(UndoStack.Count > MaxUndoSize) UndoStack.RemoveAt(0);
+            if (UndoStack.Count > MaxUndoSize) UndoStack.RemoveAt(0);
         }
         public void ClearUndoChain() {
             RedoStack.Clear();
@@ -624,7 +626,7 @@ namespace abJournal {
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
         public void Undo() {
-            if(UndoStack.Count == 0) return;
+            if (UndoStack.Count == 0) return;
             --EditCount;
             UndoStack.Last().Undo(this);
             RedoStack.Add(UndoStack.Last());
@@ -632,7 +634,7 @@ namespace abJournal {
             OnUndoChainChanged(new UndoChainChangedEventArgs());
         }
         public void Redo() {
-            if(RedoStack.Count == 0) return;
+            if (RedoStack.Count == 0) return;
             ++EditCount;
             RedoStack.Last().Redo(this);
             UndoStack.Add(RedoStack.Last());
@@ -670,19 +672,19 @@ namespace abJournal {
             Paste(CurrentPage);
         }
         // スクリーン位置座標を渡す．
-        public void Paste(int page,Point pt) {
+        public void Paste(int page, Point pt) {
             var c = CanvasCollection[page];
             c.Paste(c.PointFromScreen(pt));
         }
 
         public void Copy() {
-            if(CanvasContainingSelection != null) CanvasContainingSelection.Copy();
+            if (CanvasContainingSelection != null) CanvasContainingSelection.Copy();
         }
         public void Cut() {
-            if(CanvasContainingSelection != null) CanvasContainingSelection.Cut();
+            if (CanvasContainingSelection != null) CanvasContainingSelection.Cut();
         }
         public void ClearSelected() {
-            if(CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
+            if (CanvasContainingSelection != null) CanvasContainingSelection.ClearSelected();
         }
         /*
         public bool IsSelected {
@@ -712,16 +714,16 @@ namespace abJournal {
             OnPropertyChanged("Updated");
         }
         public void Clear() {
-            foreach(var c in CanvasCollection) {
+            foreach (var c in CanvasCollection) {
                 innerCanvas.Children.Remove(c);
             }
             CanvasCollection.Clear();
         }
 
         int GetPageFromClientPoint(Point pt) {
-            if(Count == 0) return 0;
-            for(int i = 1 ; i < Count ; ++i) {
-                if(pt.Y < Canvas.GetTop(CanvasCollection[i])) return i - 1;
+            if (Count == 0) return 0;
+            for (int i = 1; i < Count; ++i) {
+                if (pt.Y < Canvas.GetTop(CanvasCollection[i])) return i - 1;
             }
             return Count - 1;
         }
@@ -732,104 +734,110 @@ namespace abJournal {
         int currentPage = -1;
         public int CurrentPage {
             get { return currentPage; }
-            set { currentPage = value; OnPropertyChanged("CurrentPage"); }
+            set {
+                if (currentPage != value) {
+                    currentPage = value;
+                    MovePage(value);
+                    OnPropertyChanged("CurrentPage");
+                }
+            }
         }
 
         void CalculateCurrentPage(bool callSetPort) {
-            if(Count == 0) {
+            if (Count == 0) {
                 currentPage = 0;
                 return;
             }
-            if(currentPage < 0) currentPage = 0;
-            else if(currentPage >= Count) currentPage = Count - 1;
+            if (currentPage < 0) currentPage = 0;
+            else if (currentPage >= Count) currentPage = Count - 1;
 
             Transform transform;
             if (landscape && (innerCanvas.RenderTransform.Clone() is MatrixTransform tf)) {
                 var m = tf.Matrix;
                 m.Rotate(90);
-                tf.Matrix.Rotate(90);
+                tf.Matrix = m;
                 transform = tf;
             } else transform = innerCanvas.RenderTransform;
+            var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]), Canvas.GetTop(CanvasCollection[currentPage]), CanvasCollection[currentPage].Width, CanvasCollection[currentPage].Height));
 
-            var currentRect = transform.TransformBounds(new Rect(Canvas.GetLeft(CanvasCollection[currentPage]),Canvas.GetTop(CanvasCollection[currentPage]),CanvasCollection[currentPage].Width,CanvasCollection[currentPage].Height));
             int start, direction;
-            if(currentRect.Top < 0) {
+            if (currentRect.Top < 0) {
                 start = currentPage;
                 direction = 1;
-            } else if(currentRect.Bottom > ActualHeight) {
+            } else if (currentRect.Bottom > ActualHeight) {
                 start = currentPage;
                 direction = -1;
             } else {
                 direction = 1;
-                if(currentPage != 0) {
+                if (currentPage != 0) {
                     start = currentPage - 1;
                 } else start = 0;
             }
             int rv = start;
             double maxh = 0;
-            if(callSetPort) {
-                for(int i = start - direction ; i >= 0 && i < Count ; i -= direction) {
+            if (callSetPort) {
+                for (int i = start - direction; i >= 0 && i < Count; i -= direction) {
                     CanvasCollection[i].SetViewport(new Rect());
                 }
             }
-            if(direction == 1) {
+            if (direction == 1) {
                 int i;
-                for(i = start ; i < Count ; ++i) {
+                for (i = start; i < Count; ++i) {
                     var c = CanvasCollection[i];
                     var rect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
                     double top = Canvas.GetTop(c);
                     double h;
-                    if(rect.Bottom < 0) {// まだ画面外
+                    if (rect.Bottom < 0) {// まだ画面外
                         h = 0;
-                        if(callSetPort) c.SetViewport(new Rect());
-                    } else if(rect.Top > ActualHeight) {// もう画面外
-                        if(callSetPort) c.SetViewport(new Rect());
+                        if (callSetPort) c.SetViewport(new Rect());
+                    } else if (rect.Top > ActualHeight) {// もう画面外
+                        if (callSetPort) c.SetViewport(new Rect());
                         break;
                     } else {
                         var viewRect = new Rect(new Point(Math.Max(0, rect.Left), Math.Max(0, rect.Top)), new Point(Math.Min(ActualWidth, rect.Right), Math.Min(ActualHeight, rect.Bottom)));
                         h = viewRect.Height;
-                        if(callSetPort) {
+                        if (callSetPort) {
                             var topleft = transform.Inverse.Transform(rect.TopLeft);
                             var viewport = transform.Inverse.TransformBounds(viewRect);
                             c.SetViewport(new Rect(viewport.Left - topleft.X, viewport.Top - topleft.Y, viewport.Width, viewport.Height));
                         }
                     }
-                    if(maxh < h) {
+                    if (maxh < h) {
                         maxh = h;
                         rv = i;
                     }
                 }
-                if(callSetPort){
-                    for( ; i < Count ; ++i) CanvasCollection[i].SetViewport(new Rect());
+                if (callSetPort) {
+                    for (; i < Count; ++i) CanvasCollection[i].SetViewport(new Rect());
                 }
             } else {
                 int i;
-                for(i = start ; i >= 0 ; --i) {
+                for (i = start; i >= 0; --i) {
                     var c = CanvasCollection[i];
                     var rect = transform.TransformBounds(new Rect(Canvas.GetLeft(c), Canvas.GetTop(c), c.Width, c.Height));
                     double h;
-                    if(rect.Top > ActualHeight) {// まだ画面外
+                    if (rect.Top > ActualHeight) {// まだ画面外
                         h = 0;
-                        if(callSetPort) c.SetViewport(new Rect());
-                    } else if(rect.Bottom < 0) {// もう画面外
-                        if(callSetPort) c.SetViewport(new Rect());
+                        if (callSetPort) c.SetViewport(new Rect());
+                    } else if (rect.Bottom < 0) {// もう画面外
+                        if (callSetPort) c.SetViewport(new Rect());
                         break;
                     } else {
                         var viewRect = new Rect(new Point(Math.Max(0, rect.Left), Math.Max(0, rect.Top)), new Point(Math.Min(ActualWidth, rect.Right), Math.Min(ActualHeight, rect.Bottom)));
                         h = viewRect.Height;
-                        if(callSetPort) {
+                        if (callSetPort) {
                             var topleft = transform.Inverse.Transform(rect.TopLeft);
                             var viewport = transform.Inverse.TransformBounds(viewRect);
                             c.SetViewport(new Rect(viewport.Left - topleft.X, viewport.Top - topleft.Y, viewport.Width, viewport.Height));
                         }
                     }
-                    if(maxh < h) {
+                    if (maxh < h) {
                         maxh = h;
                         rv = i;
                     }
                 }
-                if(callSetPort) {
-                    for( ; i >=0 ; --i) CanvasCollection[i].SetViewport(new Rect());
+                if (callSetPort) {
+                    for (; i >= 0; --i) CanvasCollection[i].SetViewport(new Rect());
                 }
             }
             currentPage = rv;

@@ -23,14 +23,14 @@ namespace abJournal {
         }
         public DrawingAttributesPlus Clone() {
             DrawingAttributesPlus rv = new DrawingAttributesPlus();
-            for(int i = 0; i < DashArray.Count; ++i) {
+            for (int i = 0; i < DashArray.Count; ++i) {
                 rv.dashArray.Add(dashArray[i]);
             }
             return rv;
         }
         public event System.ComponentModel.PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string name) {
-            if(PropertyChanged != null) {
+            if (PropertyChanged != null) {
                 PropertyChanged(this, new System.ComponentModel.PropertyChangedEventArgs(name));
             }
         }
@@ -52,9 +52,9 @@ namespace abJournal {
         public StrokeDataCollection(int capacity) : base(capacity) { }
         public StrokeDataCollection(IEnumerable<StrokeData> collection) : base(collection) { }
         public Rect GetBounds() {
-            if(Count == 0) return new Rect();
+            if (Count == 0) return new Rect();
             var rv = this[0].GetBounds();
-            for(int i = 1; i < Count; ++i) {
+            for (int i = 1; i < Count; ++i) {
                 rv.Union(this[i].GetBounds());
             }
             return rv;
@@ -128,15 +128,15 @@ namespace abJournal {
             [ProtoMember(1)]
             public Style style { get; set; }
             public FontStyleData(FontStyle fs) {
-                if(fs == FontStyles.Italic) style = Style.Italic;
-                else if(fs == FontStyles.Oblique) style = Style.Oblique;
+                if (fs == FontStyles.Italic) style = Style.Italic;
+                else if (fs == FontStyles.Oblique) style = Style.Oblique;
                 else style = Style.Normal;
             }
             public FontStyle ToFontStyle() {
-                switch(style) {
-                    case Style.Italic: return FontStyles.Italic;
-                    case Style.Oblique: return FontStyles.Oblique;
-                    default: return FontStyles.Normal;
+                switch (style) {
+                case Style.Italic: return FontStyles.Italic;
+                case Style.Oblique: return FontStyles.Oblique;
+                default: return FontStyles.Normal;
                 }
             }
         }
@@ -146,41 +146,41 @@ namespace abJournal {
         public class FontWeightData {
             public enum Weight { Thin = 1, ExtraLight = 2, UltraLight = 3, Light = 4, Normal = 5, Regular = 6, Medium = 7, DemiBold = 8, SemiBold = 9, Bold = 10, ExtraBold = 11, UltraBold = 12, Black = 13, Heavy = 14, ExtraBlack = 15, UltraBlack = 16 };
             public FontWeightData(FontWeight fw) {
-                if(fw == FontWeights.Thin) weight = Weight.Thin;
-                else if(fw == FontWeights.ExtraLight) weight = Weight.ExtraLight;
-                else if(fw == FontWeights.UltraLight) weight = Weight.UltraLight;
-                else if(fw == FontWeights.Light) weight = Weight.Light;
-                else if(fw == FontWeights.Regular) weight = Weight.Regular;
-                else if(fw == FontWeights.Medium) weight = Weight.Medium;
-                else if(fw == FontWeights.DemiBold) weight = Weight.DemiBold;
-                else if(fw == FontWeights.SemiBold) weight = Weight.SemiBold;
-                else if(fw == FontWeights.Bold) weight = Weight.Bold;
-                else if(fw == FontWeights.ExtraBold) weight = Weight.ExtraBold;
-                else if(fw == FontWeights.UltraBold) weight = Weight.UltraBold;
-                else if(fw == FontWeights.Black) weight = Weight.Black;
-                else if(fw == FontWeights.Heavy) weight = Weight.Heavy;
-                else if(fw == FontWeights.ExtraBlack) weight = Weight.ExtraBlack;
-                else if(fw == FontWeights.UltraBlack) weight = Weight.UltraBlack;
+                if (fw == FontWeights.Thin) weight = Weight.Thin;
+                else if (fw == FontWeights.ExtraLight) weight = Weight.ExtraLight;
+                else if (fw == FontWeights.UltraLight) weight = Weight.UltraLight;
+                else if (fw == FontWeights.Light) weight = Weight.Light;
+                else if (fw == FontWeights.Regular) weight = Weight.Regular;
+                else if (fw == FontWeights.Medium) weight = Weight.Medium;
+                else if (fw == FontWeights.DemiBold) weight = Weight.DemiBold;
+                else if (fw == FontWeights.SemiBold) weight = Weight.SemiBold;
+                else if (fw == FontWeights.Bold) weight = Weight.Bold;
+                else if (fw == FontWeights.ExtraBold) weight = Weight.ExtraBold;
+                else if (fw == FontWeights.UltraBold) weight = Weight.UltraBold;
+                else if (fw == FontWeights.Black) weight = Weight.Black;
+                else if (fw == FontWeights.Heavy) weight = Weight.Heavy;
+                else if (fw == FontWeights.ExtraBlack) weight = Weight.ExtraBlack;
+                else if (fw == FontWeights.UltraBlack) weight = Weight.UltraBlack;
                 else weight = Weight.Normal;
             }
             public FontWeight ToFontWeight() {
-                switch(weight) {
-                    case Weight.Thin: return FontWeights.Thin;
-                    case Weight.ExtraLight: return FontWeights.ExtraLight;
-                    case Weight.UltraLight: return FontWeights.UltraLight;
-                    case Weight.Light: return FontWeights.Light;
-                    case Weight.Regular: return FontWeights.Regular;
-                    case Weight.Medium: return FontWeights.Medium;
-                    case Weight.DemiBold: return FontWeights.DemiBold;
-                    case Weight.SemiBold: return FontWeights.SemiBold;
-                    case Weight.Bold: return FontWeights.Bold;
-                    case Weight.ExtraBold: return FontWeights.ExtraBold;
-                    case Weight.UltraBold: return FontWeights.UltraBold;
-                    case Weight.Black: return FontWeights.Black;
-                    case Weight.Heavy: return FontWeights.Heavy;
-                    case Weight.ExtraBlack: return FontWeights.ExtraBlack;
-                    case Weight.UltraBlack: return FontWeights.UltraBlack;
-                    default: return FontWeights.Normal;
+                switch (weight) {
+                case Weight.Thin: return FontWeights.Thin;
+                case Weight.ExtraLight: return FontWeights.ExtraLight;
+                case Weight.UltraLight: return FontWeights.UltraLight;
+                case Weight.Light: return FontWeights.Light;
+                case Weight.Regular: return FontWeights.Regular;
+                case Weight.Medium: return FontWeights.Medium;
+                case Weight.DemiBold: return FontWeights.DemiBold;
+                case Weight.SemiBold: return FontWeights.SemiBold;
+                case Weight.Bold: return FontWeights.Bold;
+                case Weight.ExtraBold: return FontWeights.ExtraBold;
+                case Weight.UltraBold: return FontWeights.UltraBold;
+                case Weight.Black: return FontWeights.Black;
+                case Weight.Heavy: return FontWeights.Heavy;
+                case Weight.ExtraBlack: return FontWeights.ExtraBlack;
+                case Weight.UltraBlack: return FontWeights.UltraBlack;
+                default: return FontWeights.Normal;
                 }
             }
             public Weight weight;

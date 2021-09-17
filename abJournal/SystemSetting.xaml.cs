@@ -23,6 +23,14 @@ namespace abJournal {
         }
 
         private void OK_Click(object sender, RoutedEventArgs e) {
+            int time;
+            if (int.TryParse(AfterEraseWaitTime.Text, out time)) {
+                Properties.Settings.Default.WaitAfterErase = time;
+            } else {
+                MessageBox.Show("不正な値：" + AfterEraseWaitTime.Text);
+                e.Handled = true;
+                return;
+            }
             Properties.Settings.Default.Save();
             DialogResult = true;
         }

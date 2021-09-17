@@ -422,15 +422,19 @@ namespace abJournal {
             try {
                 var zip = new ZipArchive(fs);
                 var data = zip.GetEntry("_data.abjnt");
-                using (var reader = data.Open()) {
-                    protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData));
+                using(var reader = data.Open()) {
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData>(reader, new ablibInkCanvasCollectionSavingProtobufData());
+                    //protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData(),typeof(ablibInkCanvasCollectionSavingProtobufData));
                 }
                 AttachedFile.Open(zip, protodata.AttachedFiles);
             }
             catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             // protobufデシリアライズ
             if (protodata == null) {
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); }
+                try {
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData>(fs, new ablibInkCanvasCollectionSavingProtobufData());
+                    //protodata = (ablibInkCanvasCollectionSavingProtobufData)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData)); 
+                }
                 catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             }
             if (protodata != null) {
@@ -451,14 +455,18 @@ namespace abJournal {
                 var zip = new ZipArchive(fs);
                 var data = zip.GetEntry("_data.abjnt");
                 using (var reader = data.Open()) {
-                    protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData2(), typeof(ablibInkCanvasCollectionSavingProtobufData2));
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData2>(reader, new ablibInkCanvasCollectionSavingProtobufData2());
+                    //protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(reader, new ablibInkCanvasCollectionSavingProtobufData2(),typeof(ablibInkCanvasCollectionSavingProtobufData2));
                 }
                 AttachedFile.Open(zip, protodata.AttachedFiles);
             }
             catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             // protobufデシリアライズ
-            if (protodata == null) {
-                try { protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData(), typeof(ablibInkCanvasCollectionSavingProtobufData2)); }
+            if(protodata == null) {
+                try {
+                    protodata = model.Deserialize<ablibInkCanvasCollectionSavingProtobufData2>(fs, new ablibInkCanvasCollectionSavingProtobufData2());
+                    //protodata = (ablibInkCanvasCollectionSavingProtobufData2)model.Deserialize(fs, new ablibInkCanvasCollectionSavingProtobufData2(), typeof(ablibInkCanvasCollectionSavingProtobufData2));
+                }
                 catch (Exception e) { System.Diagnostics.Debug.WriteLine(e.Message); }
             }
             if (protodata != null) {
@@ -491,6 +499,7 @@ namespace abJournal {
             var watch = new Stopwatch();
             using (var fs = new System.IO.FileStream(file, System.IO.FileMode.Open)) {
                 if (LoadProtoBuf2(fs) || LoadProtoBuf(fs)) { }
+
             }
             if (Count == 0) AddCanvas();
             FileName = file;
@@ -523,6 +532,7 @@ namespace abJournal {
             DrawNoteContents(c, Info);
         }
         public static void DrawNoteContents(ABInkCanvas c, CanvasCollectionInfo info) {
+            var PixelsPerDip = VisualTreeHelper.GetDpi(c).PixelsPerDip;
             if (noteContents.ContainsKey(c)) {
                 c.VisualChildren.Remove(noteContents[c]);
             }
@@ -537,9 +547,9 @@ namespace abJournal {
                         if (info.ShowDate) textheight -= 20;
                         double width = c.Width - 2 * xyohaku - 2 * hankei;
                         var pt = new Point(xyohaku + hankei, yyohaku);
-                        double fontsize = GuessFontSize(info.Title, pdfFontName, width, textheight);
-                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), fontsize, Brushes.Black);
-                        var textSize = GetStringSize(info.Title, pdfFontName, fontsize);
+                        double fontsize = GuessFontSize(info.Title, pdfFontName, width, textheight, PixelsPerDip);
+                        var text = new FormattedText(info.Title, System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), fontsize, Brushes.Black, PixelsPerDip);
+                        var textSize = GetStringSize(info.Title, pdfFontName, fontsize, PixelsPerDip);
                         text.MaxTextWidth = width;
                         text.MaxTextHeight = textSize.Height;
                         int n = (int)(textSize.Width / width) + 1;
@@ -549,7 +559,7 @@ namespace abJournal {
                     }
 
                     if (info.ShowDate) {
-                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), 12, Brushes.Gray);
+                        var text = new FormattedText(info.Date.ToLongDateString(), System.Globalization.CultureInfo.CurrentCulture, FlowDirection.LeftToRight, new Typeface(pdfFontName), 12, Brushes.Gray, PixelsPerDip);
                         dc.DrawText(text, new Point(c.Width - xyohaku - text.Width - hankei, yyohaku + 2 * hankei + height - text.Height - 4));
 
                         var pen = new Pen(Brushes.LightGray, 1);
@@ -589,7 +599,7 @@ namespace abJournal {
                 double dateTextHeight = 0;
                 Size datetextSize = new Size();
                 if (info.ShowDate) {
-                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
+                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12, 1.0);
                     dateTextHeight = datetextSize.Height + 8;
                 }
                 if (info.Title != null && info.Title != "") {
@@ -601,7 +611,7 @@ namespace abJournal {
                     //writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.BLACK);
                     //writer.DirectContent.Rectangle(rect.Left,rect.Bottom,rect.Width,rect.Height);
                     //writer.DirectContent.Stroke();
-                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.GetWidth() / scale, rect.GetHeight() / scale);
+                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.GetWidth() / scale, rect.GetHeight() / scale, 1.0);
                     var font = iText.Kernel.Font.PdfFontFactory.CreateFont(pdfFontName, iText.IO.Font.PdfEncodings.IDENTITY_H, true);
                     canvas.SetFillColor(iText.Kernel.Colors.ColorConstants.BLACK);
                     /*
@@ -625,7 +635,7 @@ namespace abJournal {
                 double dateTextHeight = 0;
                 Size datetextSize = new Size();
                 if (info.ShowDate) {
-                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12);
+                    datetextSize = GetStringSize(info.Date.ToLongDateString(), pdfFontName, 12, 1.0);
                     dateTextHeight = datetextSize.Height + 8;
                 }
                 if (info.Title != null && info.Title != "") {
@@ -637,7 +647,7 @@ namespace abJournal {
                     //writer.DirectContent.SetColorStroke(iTextSharp.text.BaseColor.BLACK);
                     //writer.DirectContent.Rectangle(rect.Left,rect.Bottom,rect.Width,rect.Height);
                     //writer.DirectContent.Stroke();
-                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.Width / scale, rect.Height / scale);
+                    double fontsize = GuessFontSize(info.Title, pdfFontName, rect.Width / scale, rect.Height / scale, 1.0);
                     var font = iTextSharp.text.FontFactory.GetFont(pdfFontName, iTextSharp.text.pdf.BaseFont.IDENTITY_H, iTextSharp.text.pdf.BaseFont.EMBEDDED, (float)(scale * fontsize));
                     writer.DirectContent.SetColorFill(iTextSharp.text.BaseColor.BLACK);
                     // 調整
@@ -733,22 +743,24 @@ namespace abJournal {
             }
         }
 
-        public static Size GetStringSize(string str, string fontname, double fontsize) {
+        public static Size GetStringSize(string str, string fontname, double fontsize, double PixelsPerDip) {
             var ft = new FormattedText(str, System.Globalization.CultureInfo.CurrentCulture,
                 FlowDirection.LeftToRight,
                 new Typeface(fontname),
                 fontsize,
-                Brushes.White);
+                Brushes.White,
+                PixelsPerDip
+                );
             return new Size(ft.Width, ft.Height);
         }
 
         // 推測が怪しい気がしてきたので，後で考え直す．
-        public static double GuessFontSize(string str, string fontname, double width, double height) {
-            var size = GetStringSize(str, fontname, 100);
+        public static double GuessFontSize(string str, string fontname, double width, double height, double PixelsPerDip) {
+            var size = GetStringSize(str, fontname, 100, PixelsPerDip);
             int n = (int)Math.Sqrt(height * size.Width / (width * size.Height));
             var f = 100 * Math.Max(n * width / size.Width, height / ((n + 1) * size.Height));
             while (f > 0) {
-                size = GetStringSize(str, fontname, f);
+                size = GetStringSize(str, fontname, f, PixelsPerDip);
                 int k = (int)(size.Width / width) + 1;
                 if (k * size.Height > height) --f;
                 else return f;

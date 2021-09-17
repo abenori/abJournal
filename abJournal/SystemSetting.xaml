@@ -1,7 +1,11 @@
 ﻿<Window x:Class="abJournal.SystemSetting"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="システム設定" Height="170" Width="300">
+        xmlns:local="clr-namespace:abJournal"
+        Title="システム設定" Height="260" Width="330">
+  <Window.Resources>
+    <local:ToStringConverter x:Key="ToStringConverter"/>
+  </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="1*"/>
@@ -10,14 +14,20 @@
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
             <RowDefinition Height="1*"/>
-        </Grid.RowDefinitions>
-        
+      <RowDefinition Height="1*"/>
+    </Grid.RowDefinitions>
         <CheckBox Grid.Row="0" IsChecked="{Binding IgnorePressure}">筆圧を無視する（描画時）</CheckBox>
         <CheckBox Grid.Row="1" IsChecked="{Binding IsBlockWindowsKey}">（左の）Windows キーを無効化する</CheckBox>
         <CheckBox Grid.Row="2" IsChecked="{Binding SaveTextToPDF}">PDF にテキスト情報を保存する</CheckBox>
         <CheckBox Grid.Row="3" IsChecked="{Binding SaveWithPDF}">保存時にPDFも保存する</CheckBox>
         <CheckBox Grid.Row="4" IsChecked="{Binding Landscape}">縦横入れ替え</CheckBox>
-        <Grid Grid.Row="6">
+    <StackPanel Grid.Row="5" Orientation="Horizontal">
+      <TextBlock>消しゴム終了後次の時間ペン入力を禁止する：</TextBlock>
+      <TextBox x:Name="AfterEraseWaitTime" Width="30" Text="{Binding WaitAfterErase,Converter={StaticResource ToStringConverter},Mode=OneWay}"/>
+      <TextBlock>ミリ秒</TextBlock>
+    </StackPanel>
+
+    <Grid Grid.Row="7">
             <Grid.RowDefinitions>
                 <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
