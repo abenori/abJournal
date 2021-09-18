@@ -124,35 +124,35 @@ namespace abJournal {
             nokoriPoints.Add(Points[0]);
             for (int i = 0; i < Points.Count - 1; ++i) {
                 double pressuresum = 0;
-                for (int j = i + 2; j < Points.Count - 1; ++j) {
-                    // 間を結ぶ直線の法線
+                for (int j = i + 2; j < Points.Count; ++j) {
                     pressuresum += Points[j].PressureFactor;
                     double pressuremean = pressuresum / (j - i - 1);
-                    var hou = new Vector(Points[j].Y - Points[i].Y, -Points[j].X + Points[i].X);
-                    hou.Normalize();
-                    // 直線：(hou,x) + c = 0
-                    double c = -hou.X * Points[i].X - hou.Y * Points[i].Y;
-                    bool mabiku = false;
-                    for (int k = i + 1; k < j; ++k) {
-                        double length = Math.Abs(hou.X * Points[k].X + hou.Y * Points[k].Y + c);
-                        if (length > 0.1) {
-                            mabiku = true;
-                            break;
+                    bool mabiku = true;
+                    if ((new Vector(Points[j].X - Points[i].X, Points[j].Y - Points[i].Y)).Length > 10) {
+                        mabiku = false;
+                    } else {
+                        for (int k = i + 1; k < j; ++k) {
+                            Vector vec1 = new Vector(Points[k].X - Points[i].X, Points[k].Y - Points[i].Y);
+                            Vector vec2 = new Vector(Points[j].X - Points[k].X, Points[j].Y - Points[k].Y);
+                            if (Math.Abs(Vector.AngleBetween(vec1, vec2)) > 20) {
+                                mabiku = false;
+                                break;
+                            } else if (!dattr.IgnorePressure && Math.Abs(Points[k].PressureFactor - pressuremean) > 0.1) {
+                                mabiku = false;
+                                break;
+                            }
                         }
-                        /*
-                        if (!dattr.IgnorePressure && Math.Abs(Points[k].PressureFactor - pressuremean) > 0.1) {
-                            mabiku = true;
-                            break;
-                        }*/
                     }
-                    if (mabiku) {
-                        nokoriPoints.Add(Points[j]);
-                        i = j;
+                    if (!mabiku) {
+                        //System.Diagnostics.Debug.WriteLine("added points at : " + (j - 1).ToString());
+                        nokoriPoints.Add(Points[j - 1]);
+                        i = j - 2;
                         break;
                     }
                 }
             }
             nokoriPoints.Add(Points.Last());
+            //System.Diagnostics.Debug.WriteLine("nokori / zentai = " + nokoriPoints.Count.ToString() + " / " + Points.Count.ToString() + " = "  + ((double)nokoriPoints.Count/(double)Points.Count).ToString());
             return nokoriPoints;
         }
         /*
@@ -187,11 +187,17 @@ namespace abJournal {
             double prevLength = (Points[1].ToPoint() - Points[0].ToPoint()).Length;
             for (int i = 1; i < Points.Count - 1; ++i) {
                 double length = (Points[i + 1].ToPoint() - Points[i].ToPoint()).Length;
-                Vector vec = (Points[i + 1].ToPoint() - Points[i - 1].ToPoint()) / 2;
-                ctrlpt1.Add(firstCtrlPoint);
-                ctrlpt2.Add(Points[i].ToPoint() - (vec * prevLength / (length + prevLength)));
-                firstCtrlPoint = Points[i].ToPoint() + (vec * length) / (length + prevLength);
-                prevLength = length;
+                if (prevLength + length == 0) {
+                    ctrlpt1.Add(Points[i].ToPoint());
+                    ctrlpt2.Add(Points[i].ToPoint());
+                    firstCtrlPoint = Points[i].ToPoint();
+                } else {
+                    Vector vec = (Points[i + 1].ToPoint() - Points[i - 1].ToPoint()) / 2;
+                    ctrlpt1.Add(firstCtrlPoint);
+                    ctrlpt2.Add(Points[i].ToPoint() - (vec * prevLength / (length + prevLength)));
+                    firstCtrlPoint = Points[i].ToPoint() + (vec * length) / (length + prevLength);
+                    prevLength = length;
+                }
             }
             ctrlpt1.Add(firstCtrlPoint);
             ctrlpt2.Add(Points.Last().ToPoint());
