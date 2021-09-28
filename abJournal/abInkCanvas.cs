@@ -77,6 +77,7 @@ namespace abJournal {
 
         protected override void OnPreviewStylusUp(StylusEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnPreviewStylusUp");
+            //EndUndoGroup();
             if (base.EditingMode != InkCanvasEditingMode.Select) RestoreEditingMode();
             base.OnPreviewStylusUp(e);
         }
@@ -104,7 +105,7 @@ namespace abJournal {
                 }
             }
             if (base.EditingMode == InkCanvasEditingMode.EraseByStroke) {
-                BeginUndoGroup();
+                //BeginUndoGroup();
             }
             SetCursor();
             base.OnPreviewStylusDown(e);
@@ -117,17 +118,19 @@ namespace abJournal {
             }
         }
 
+        /*
         private void Strokes_StrokesChanged(object sender, StrokeCollectionChangedEventArgs e) {
             var group = new UndoGroup();
-            foreach (var s in e.Added) {
-                group.Add(new AddStrokeCommand(new abStroke(s.StylusPoints, s.DrawingAttributes, DefaultDrawingAttributesPlus)));
-            }
-            foreach(var s in e.Removed) {
+            foreach (var s in e.Removed) {
                 group.Add(new DeleteStrokeCommand(new abStroke(s.StylusPoints, s.DrawingAttributes, DefaultDrawingAttributesPlus)));
+            }
+            foreach (var s in e.Added) {
+                var abstroke = new abStroke(s.StylusPoints, s.DrawingAttributes, DefaultDrawingAttributesPlus);
+                group.Add(new AddStrokeCommand(abstroke));
             }
             group.Normalize();
             AddUndo(group);
-        }
+        }*/
 
         protected override void OnStrokeCollected(InkCanvasStrokeCollectedEventArgs e) {
             System.Diagnostics.Debug.WriteLine("OnStrokeCollected");
