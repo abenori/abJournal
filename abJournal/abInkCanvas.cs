@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Diagnostics;
 using System.ComponentModel;
 using ProtoBuf;
+using System.Windows.Interop;
 
 namespace abJournal {
     public class abInkCanvas : FrameworkElement, IabInkCanvas {
@@ -100,6 +101,11 @@ namespace abJournal {
         // newしまくらないためだけ
         static List<double> DottedDoubleCollection = new List<double>(new double[] { 1, 1 });
 
+        double DpiScaleX = 1.0;
+        double DpiScaleY = 1.0;
+        double DpiAdjustX = 0.0;
+        double DpiAdjustY = 0.0;
+
         #region カーソル
         // Cursors.Noneを指定してCanvasに書いて動かそうと思ったけど，
         // Cursors.Noneを指定しても変わらないことが多々あるので，
@@ -170,11 +176,38 @@ namespace abJournal {
             InkData.UndoChainChanged += InkData_UndoChainChanged;
 
             TouchDown += ((s, e) => {
-                //                var pt = e.GetTouchPoint(this);
-                //                if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
+                //var pt = e.GetTouchPoint(this);
+                //if(pt.Size.Width > 5 || pt.Size.Height > 5) e.Handled = true;
                 e.Handled = true;
             });
         }
+
+        protected override void OnDpiChanged(DpiScale oldDpi, DpiScale newDpi) {
+            // マルチモニター時の処理．
+            // イベントで取得できるタッチのポイントが別モニターに映るとおかしくなる
+            // DpiScale[XY]にDpiの補正を入れる．
+            // がまだずれる……
+            DpiScaleX = DpiScaleX * oldDpi.DpiScaleX / newDpi.DpiScaleX;
+            DpiScaleY = DpiScaleY * oldDpi.DpiScaleY / newDpi.DpiScaleY;
+            DependencyObject obj;
+            obj = this;
+            while (true) {
+                obj = VisualTreeHelper.GetParent(obj);
+                if (obj == null) break;
+                if (obj is DockPanel d) {
+                    if (d.Name == "MainPanel") break;
+                }
+            }
+            if (obj != null && obj != this) {
+                var p = (DockPanel)obj;
+                var spt = this.PointToScreen(new Point(0, 0));
+                var pt = p.PointFromScreen(spt);
+                DpiAdjustX = pt.X;
+                DpiAdjustY = pt.Y;
+            }
+            base.OnDpiChanged(oldDpi, newDpi);
+        }
+
 
         #region InkDataからの通知を受け取る
         public event abInkData.UndoChainChangedEventhandelr UndoChainChanged = ((sender, e) => { });
@@ -529,7 +562,12 @@ namespace abJournal {
             if (PenID != 0) return;
             if (TouchType == IGNORING) TouchType = 0;
             if (TouchType != 0) return;
-            if(StartStylus(e.StylusDevice)) DrawingStart(e.GetStylusPoints(this)[0]);
+            if (StartStylus(e.StylusDevice)) {
+                var pt = e.GetStylusPoints(this)[0];
+                pt.X = pt.X * DpiScaleX + DpiAdjustX * (DpiScaleX - 1.0);
+                pt.Y = pt.Y * DpiScaleY + DpiAdjustY * (DpiScaleY - 1.0);
+                DrawingStart(pt);
+            }
         }
 
         public new event StylusEventHandler StylusMove = ((s, e) => { });
@@ -554,6 +592,8 @@ namespace abJournal {
             if (TouchType != STYLUS) return;
             if (PenID != e.StylusDevice.Id) return;
             var pt = e.GetStylusPoints(this)[0];
+            pt.X = pt.X * DpiScaleX + DpiAdjustX * (DpiScaleX - 1.0);
+            pt.Y = pt.Y * DpiScaleY + DpiAdjustY * (DpiScaleY - 1.0);
             Drawing(pt);
         }
         void OnStylusUpLeave(System.Windows.Input.StylusEventArgs e) {
@@ -562,7 +602,10 @@ namespace abJournal {
             if (TouchType != STYLUS && TouchType != IGNORING) return;
             PenID = 0;// 描画終了
             TouchType = 0;
-            DrawingEnd(e.GetStylusPoints(this)[0]);
+            var pt = e.GetStylusPoints(this)[0];
+            pt.X = pt.X * DpiScaleX + DpiAdjustX * (DpiScaleX - 1.0);
+            pt.Y = pt.Y * DpiScaleY + DpiAdjustY * (DpiScaleY - 1.0);
+            DrawingEnd(pt);
             RestoreMode();
         }
         public new event StylusEventHandler StylusUp = ((s, e) => { });
